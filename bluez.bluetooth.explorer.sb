@@ -1,0 +1,314 @@
+
+//******************************************************************************
+// Definitions
+//******************************************************************************
+
+        // size of i[]
+		#define NUM_OF_I_PARAMS                     (8)
+//******************************************************************************
+// Global Variable Declarations
+//******************************************************************************
+dim rc
+dim stRsp$ as string        //Uart rx data is stored here
+dim ok$,er$,pr$
+dim urtcmd$                 //cmd line from uart
+dim tkn$,tlen               //used by command parser
+dim urts                    //will be <0 if uart parser suspended
+dim i[NUM_OF_I_PARAMS]      // index 0 used for return values
+//******************************************************************************
+// Initialisse Global Variable
+//******************************************************************************
+
+ok$    = "\nOK"
+er$    = "\nERROR "
+pr$    = "\r\n>"
+
+urts=0 //not suspended
+
+//-------------------------------------------------------------------------
+//-------------------------------------------------------------------------
+function ExtractIntTokens(u$,stIdx,num)
+  while num>0
+    tlen = ExtractIntToken(u$,i[stIdx])
+    if tlen == 0 then
+      exitfunc 4
+    endif
+    num=num-1
+    stIdx = stIdx+1
+  endwhile
+endfunc 0
+//------------------------------------------------------------------------------
+//** #include the correct library file for the smartBASIC module being used 
+//------------------------------------------------------------------------------
+// #include "lib\cmd.ble.def.sblib"            //comment out line below and uncomment this line if running on a single mode (BLE) module
+//#include "lib\cmd.btc.manager.sblib"     //comment out line above and uncomment this line if running on a dual mode (BLE & BT Classic) module
+#include "lib\cmd.bluez.manager.sblib"		//comment out lines above if you are using the bluez commands
+
+//==============================================================================
+//==============================================================================
+sub UartRsp(rsp as integer)
+  if rsp == 0 then
+    print pr$
+  elseif rsp > 0 then 
+    print er$;integer.h' rsp;pr$
+  endif
+  urts = rsp
+endsub
+//==============================================================================
+//==============================================================================
+function _Help()
+	PRINT "\n Available Commands: "
+	PRINT "\n		help"
+	PRINT "\n		hcitool"
+	PRINT "\n		gatttool"
+	//PRINT "\n		quit\exit"
+	PRINT "\nFor more information on the usage of each command use:"
+	PRINT "<command> --help"
+endfunc 1
+
+//==============================================================================
+//==============================================================================
+function _HciHelp()
+
+	PRINT "Usage:"
+	PRINT "	hcitool [options] <command> [command parameters]"
+	PRINT "Commands:"
+	PRINT "	dev 		Display local devices\n"
+	PRINT "	inq 		Inquire remote devices\n"
+	PRINT "	scan		Scan for remote devices\n"
+	PRINT "	name		Get name from remote device\n"
+	PRINT "	info		Get information from remote device\n"
+	PRINT "	spinq		Start periodic inquiry\n"
+	PRINT "	epinq		Exit periodic inquiry\n"
+	PRINT "	cmd 		Submit arbitrary HCI commands\n"
+	PRINT "	con 		Display active connections\n"
+	PRINT "	cc  		Create connection to remote device\n"
+	PRINT "	dc  		Disconnect from remote device\n"
+	PRINT "	sr  		Switch master/slave role\n"
+	PRINT "	cpt 		Change connection packet type\n"
+	PRINT "	rssi		Display connection RSSI\n"
+	PRINT "	lq  		Display link quality\n"
+	PRINT "	tpl 		Display transmit power level\n"
+	PRINT "	afh 		Display AFH channel map\n"
+	PRINT "	lp  		Set/display link policy settings\n"
+	PRINT "	lst 		Set/display link supervision timeout\n"
+	PRINT "	auth		Request authentication\n"
+	PRINT "	enc 		Set connection encryption\n"
+	PRINT "	key 		Change connection link key\n"
+	PRINT "	clkoff		Read clock offset\n"
+	PRINT "	clock		Read local or remote clock\n"
+	PRINT "	lescan		Start LE scan\n"
+	PRINT "	lewladd		Add device to LE White List\n"
+	PRINT "	lewlrm		Remove device from LE White List\n"
+	PRINT "	lewlsz		Read size of LE White List\n"
+	PRINT "	lewlclr		Clear LE White list\n"
+	PRINT "	lecc		Create a LE Connection\n"
+	PRINT "	ledc		Disconnect a LE Connection\n"
+	PRINT "	lecup		LE Connection Update\n"
+	PRINT "\n"
+	PRINT "For more information on the usage of each command use:\n"
+	PRINT "	hcitool <command> --help\n"
+	
+endfunc 1
+//==============================================================================
+//==============================================================================
+function _GattHelp()
+//
+//Help Options:
+//  -h, --help                                Show help options
+//  --help-all                                Show all help options
+//  --help-gatt                               Show all GATT commands
+//  --help-params                             Show all Primary Services/Characteristics arguments
+//  --help-char-read-write                    Show all Characteristics Value/Descriptor Read/Write arguments
+
+	PRINT "Usage:\n"
+	PRINT "  gatttool [OPTION...]\n"
+	PRINT "\n"
+	PRINT "GATT commands\n"
+	PRINT "	--primary                                 Primary Service Discovery\n"
+	PRINT "	--characteristics                         Characteristics Discovery\n"
+	PRINT "	--char-read                               Characteristics Value/Descriptor Read\n"
+	PRINT "	--char-write                              Characteristics Value Write Without Response (Write Command) \n"
+	PRINT "	--char-write-req                          Characteristics Value Write (Write Request)	\n"
+	PRINT "	--char-desc                               Characteristics Descriptor Discovery\n"
+	PRINT "	--listen                                  Listen for notifications and indications\n"
+	PRINT "	-I, --interactive                         Use interactive mode\n"
+	PRINT "\n"
+	PRINT "Application Options:\n"
+	PRINT "	-i, --adapter=hciX                        Specify local adapter interface\n"
+	PRINT "	-b, --device=MAC                          Specify remote Bluetooth address\n"
+	PRINT "	-t, --addr-type=[public | random]         Set LE address type. Default: public\n"
+	PRINT "	-m, --mtu=MTU                             Specify the MTU size\n"
+	PRINT "	-p, --psm=PSM                             Specify the PSM for GATT/ATT over BR/EDR\n"
+	PRINT "	-l, --sec-level=[low | medium | high]     Set security level. Default: low\n"
+	PRINT "	-I, --interactive                         Use interactive mode"
+
+endfunc 1
+//-------------------------------------------------------------------------
+//#CMD#// advert report initadv   #INTstridx# #INTadflags# #INTadappearance# #INTmaxdevname#
+//#CMD#// advert report initscn   #INTstridx#
+//#CMD#// advert report ADuuid16  #INTstridx# #INTuuid0# #INTuuid1# #INTuuid2# #INTuuid3# #INTuuid4# #INTuuid5#
+//#CMD#// advert report ADuuid128 #INTstridx# #INTuuidhandle#
+//#CMD#// advert report ADany     #INTstridx# #INTtag# #HEXdata$#
+//#CMD#// advert report commit    #INTstridx0# #INTstridx1#
+//#CMD#// advert undirected       #INTintervalms# #INTtimeoutms# #INTfilterpolicy#
+//#CMD#// advert scan             #INTintervalms# #INTtimeoutms# #INTfilterpolicy#
+//#CMD#// advert nonconn          #INTintervalms# #INTtimeoutms# #INTfilterpolicy#
+//#CMD#// advert directed         #INTintervalms# #INTtimeoutms# #INTfilterpolicy# #HEXaddr14Bytes#
+//#CMD#// advert stop
+//-------------------------------------------------------------------------
+function _Hci()
+	
+	tlen = ExtractStrToken(urtcmd$,tkn$)
+	if tlen == 0 THEN
+		exitfunc 5			//Youssif: Here must display message need mroe parameters						//or display the whole help menu
+	endif
+	//=================================================
+	if strcmp(tkn$,"help")==0 then
+		rc = _HciHelp()
+	endif
+	
+	if strcmp(tkn$,"inq")==0 then
+		rc = _inquiry()
+	endif
+	
+	if strcmp(tkn$,"dev")==0 then
+		rc = _dev()
+	endif
+endfunc 1
+//-------------------------------------------------------------------------
+//#CMD#// advert report initadv   #INTstridx# #INTadflags# #INTadappearance# #INTmaxdevname#
+//#CMD#// advert report initscn   #INTstridx#
+//#CMD#// advert report ADuuid16  #INTstridx# #INTuuid0# #INTuuid1# #INTuuid2# #INTuuid3# #INTuuid4# #INTuuid5#
+//#CMD#// advert report ADuuid128 #INTstridx# #INTuuidhandle#
+//#CMD#// advert report ADany     #INTstridx# #INTtag# #HEXdata$#
+//#CMD#// advert report commit    #INTstridx0# #INTstridx1#
+//#CMD#// advert undirected       #INTintervalms# #INTtimeoutms# #INTfilterpolicy#
+//#CMD#// advert scan             #INTintervalms# #INTtimeoutms# #INTfilterpolicy#
+//#CMD#// advert nonconn          #INTintervalms# #INTtimeoutms# #INTfilterpolicy#
+//#CMD#// advert directed         #INTintervalms# #INTtimeoutms# #INTfilterpolicy# #HEXaddr14Bytes#
+//#CMD#// advert stop
+//-------------------------------------------------------------------------
+function _Gatt()
+		tlen = ExtractStrToken(urtcmd$,tkn$)
+		if tlen == 0 THEN
+			exitfunc 5		//Youssif: Here must display message need mroe parameters
+		endif
+	//=================================================
+	if strcmp(tkn$,"help")==0 then
+		rc = _GattHelp()
+	endif
+	
+endfunc 1
+//-------------------------------------------------------------------------
+//#CMD#// advert report initadv   #INTstridx# #INTadflags# #INTadappearance# #INTmaxdevname#
+//#CMD#// advert report initscn   #INTstridx#
+//#CMD#// advert report ADuuid16  #INTstridx# #INTuuid0# #INTuuid1# #INTuuid2# #INTuuid3# #INTuuid4# #INTuuid5#
+//#CMD#// advert report ADuuid128 #INTstridx# #INTuuidhandle#
+//#CMD#// advert report ADany     #INTstridx# #INTtag# #HEXdata$#
+//#CMD#// advert report commit    #INTstridx0# #INTstridx1#
+//#CMD#// advert undirected       #INTintervalms# #INTtimeoutms# #INTfilterpolicy#
+//#CMD#// advert scan             #INTintervalms# #INTtimeoutms# #INTfilterpolicy#
+//#CMD#// advert nonconn          #INTintervalms# #INTtimeoutms# #INTfilterpolicy#
+//#CMD#// advert directed         #INTintervalms# #INTtimeoutms# #INTfilterpolicy# #HEXaddr14Bytes#
+//#CMD#// advert stop
+//-------------------------------------------------------------------------
+function _HciCfg()
+	PRINT "Entered HCICONFIG\n"
+endfunc 1
+
+//==============================================================================
+//==============================================================================
+function OnUartCmd() as integer
+
+	tlen = ExtractStrToken(urtcmd$,tkn$) //get first token
+	
+	if strcmp(tkn$,"hcitool")==0 then
+		rc = _Hci()
+      
+    elseif strcmp(tkn$,"gatttool")==0 then
+		rc = _Gatt()
+	  
+	elseif strcmp(tkn$,"hciconfig")==0 then
+		rc = _HciCfg()
+	  
+	elseif strcmp(tkn$, "help")==0 then
+		rc = _Help()
+	
+	elseif strcmp(tkn$,"exit")==0 || strcmp(tkn$,"quit")==0  then
+      reset(0)
+	
+	endif
+	// send a response back to the user
+	UartRsp(rc)
+endfunc 1
+
+//******************************************************************************
+// Handler definitions
+//******************************************************************************
+
+//==============================================================================
+// This handler is called when there is an inquiry report waiting to be read 
+// Algorithm will prevent display of data from the same peer consecutively 
+//==============================================================================
+function HandlerInqResp(respType) as integer
+	dim ad$,dta$,ndx,rsi,tag
+	rc = BtcInquiryGetReport(ad$,dta$,ndx,rsi)
+	print "\n		"; StrHexize$(ad$)
+	
+endfunc 1
+
+//==============================================================================
+// This handler is called when there is an inquiry timeout
+//==============================================================================
+function HandlerBtcInqTimOut() as integer 
+	print "\nScanning stopped via timeout" 
+	UartRsp(0)
+endfunc 1
+
+
+//==============================================================================
+// This handler is called when data has arrived at the serial port
+//==============================================================================
+function HandlerUartRxCmd() as integer
+	dim nMatch
+	
+	
+	//Youssif: why is the 13 used?
+	nMatch=UartReadMatch(stRsp$,13)
+	if nMatch!=0 then
+		//CR exists in the input buffer
+		urtcmd$ = strsplitleft$(stRsp$, nMatch)
+		exitfunc OnUartCmd()
+	endif
+endfunc 1
+
+//******************************************************************************
+//******************************************************************************
+// Equivalent to main() in C
+//******************************************************************************
+
+//------------------------------------------------------------------------------
+// Enable synchronous event handlers
+//------------------------------------------------------------------------------
+OnEvent  EVUARTRX			call HandlerUartRxCmd
+
+OnEvent	EVINQRESP			call HandlerInqResp
+OnEvent  EVBTC_INQUIRY_TIMEOUT    call HandlerBtcInqTimOut	
+
+//==============================================================================
+//==============================================================================
+sub Initialise()
+  PRINT "BLUETOOTH EXPLORTER v0.0"
+endsub
+
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+Initialise()
+
+UartRsp(rc)
+//------------------------------------------------------------------------------
+// Wait for a synchronous event.
+// An application can have multiple <WaitEvent> statements
+//------------------------------------------------------------------------------
+WaitEvent

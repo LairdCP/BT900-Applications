@@ -1,0 +1,110 @@
+
+//-------------------------------------------------------------------------
+//#CMD#//  inquiry config #INTcfgID# #INTvalue#
+//#CMD#//  inquiry start #INTinqTimeoutS#
+//#CMD#//  inquiry cancel
+//-------------------------------------------------------------------------
+function _inquiry()  
+	DIM inqLen, numRsp, si$
+	
+	print "Inquiring...\n"
+	
+	//Initialise the default values for inquiry length and number of responses
+	inqLen = 0
+	numRsp = 50
+	
+	//Configure Classic Inquiry
+	//Youssif: posssibly moved to hciconfig in the future
+	rc = BtcInquiryConfig(0, 0)			//Inquiry type: General
+	rc = BtcInquiryConfig(1, 0)			//Inquiry mode: standard
+	
+    //if strcmp(tkn$,"cancel")==0 then
+    //    //cancel the inquiry
+    //    exitfunc BtcInquiryCancel()
+    //endif
+	
+    //if strcmp(tkn$,"config")==0 then
+        //extract 2 : (cfgID value) and store starting at i[1]
+    //    rc = ExtractIntTokens(urtcmd$,1,2)
+    //    if rc != 0 then
+    //        exitfunc rc
+    //    endif
+    //    exitfunc BtcInquiryConfig(i[1],i[2])  
+    //endif
+
+	//if strcmp(tkn$,"start")==0 then
+    //    //extract 1 : (inqTimeoutS) and store starting at i[1]
+    //    rc = ExtractIntTokens(urtcmd$,1,1)
+    //    if rc != 0 then
+    //        exitfunc rc
+    //    endif
+	//	print "Inquiring...\n"
+    //    exitfunc BtcInquiryStart(30)
+    //endif
+
+	//tlen = ExtractStrToken(urtcmd$,tkn$)
+	
+	//if strcmp(tkn$,"help")==0 then
+		//print the inquiry help menu
+	//	PRINT "Usage:\n"
+	//	PRINT "inq [--length=N] maximum inquiry duration in 1.28 s units\n"
+	//	PRINT "		[--numrsp=N] specify maximum number of inquiry responses\n"
+	//	PRINT "		[--iac=lap]  specify the inquiry access code\n"
+	//	PRINT "		[--flush]    flush the inquiry cache\n"
+	
+	//else
+		
+		//Extract all parameters to understand function before processing
+		while ExtractStrToken(urtcmd$, tkn$)!=0
+			si$ = Left$(tkn$,10)
+			if strcmp(tkn$,"help")==0 then
+				//print the inquiry help menu
+				PRINT "Usage:\n"
+				PRINT "inq [--length=N] maximum inquiry duration in 1.28 s units\n"
+				PRINT "		[--numrsp=N] specify maximum number of inquiry responses\n"
+				PRINT "		[--iac=lap]  specify the inquiry access code\n"
+				PRINT "		[--flush]    flush the inquiry cache\n"
+				exitfunc 1
+			elseif strcmp(tkn$,"length")==0 then
+
+				strshiftleft(urtcmd$, 1)					//discard the = sign
+				rc = extractStrToken(urtcmd$, tkn$)			//take the next string from the command
+				rc = extractInttoken(tkn$,inqLen)			//extract the integer value of the string
+			
+			elseif strcmp(tkn$,"numrsp")==0 then
+
+				strshiftleft(urtcmd$, 1)					//discard the = sign
+				rc = extractStrToken(urtcmd$, tkn$)			//take the next string from the command
+				rc = extractInttoken(tkn$,numRsp)			//extract the integer value of the string
+			
+			endif
+		endwhile
+
+		//Now begin inquiry
+		rc = btcInquiryConfig(4, numRsp)
+		exitfunc btcinquirystart(inqLen)
+		
+	//endif
+	
+endfunc 5
+//-------------------------------------------------------------------------
+//#CMD#//  inquiry config #INTcfgID# #INTvalue#
+//#CMD#//  inquiry start #INTinqTimeoutS#
+//#CMD#//  inquiry cancel
+//-------------------------------------------------------------------------
+function _dev()
+	
+	DIM str$
+	
+	if strcmp(tkn$,"help")==0 then
+		//print the dev help menu
+		PRINT "Usage:\n"
+		PRINT "		dev\n"
+	else
+		str$ = SYSINFO$(4)
+		str$ = right$(str$, 6)
+		//str$ = StrHexize$(str$)
+		PRINT "\n ";StrHexize$(str$)
+	endif
+		
+endfunc 5
