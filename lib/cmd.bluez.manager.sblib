@@ -96,15 +96,54 @@ function _dev()
 	
 	DIM str$
 	
-	if strcmp(tkn$,"help")==0 then
-		//print the dev help menu
-		PRINT "Usage:\n"
-		PRINT "		dev\n"
-	else
-		str$ = SYSINFO$(4)
-		str$ = right$(str$, 6)
-		//str$ = StrHexize$(str$)
-		PRINT "\n ";StrHexize$(str$)
-	endif
+	while ExtractStrToken(urtcmd$, tkn$)!=0
+		if strcmp(tkn$,"help")==0 then
+			//print the dev help menu
+			PRINT "Usage:\n"
+			PRINT "		dev\n"
+			exitfunc 1
+		endif
+	endwhile
+	
+	str$ = SYSINFO$(4)
+	str$ = right$(str$, 6)
+	//str$ = StrHexize$(str$)
+	PRINT "\n ";StrHexize$(str$)
+			
+endfunc 5
+//-------------------------------------------------------------------------
+//#CMD#//  inquiry config #INTcfgID# #INTvalue#
+//#CMD#//  inquiry start #INTinqTimeoutS#
+//#CMD#//  inquiry cancel
+//-------------------------------------------------------------------------
+function _leScan()
+	
+	print "Entered LeScan function\n"
+	dim si$
+	
+	while ExtractStrToken(urtcmd$, tkn$)!=0
+			si$ = Left$(tkn$,10)
+			if strcmp(tkn$,"help")==0 then
+				//print the lescan help menu
+			Print "Usage:\n"
+			Print "		lescan [--privacy] enable privacy\n"
+			print "		lescan [--passive] set scan type passive (default active)\n"
+			Print "		lescan [--discovery=g|l] enable general or limited discoveryprocedure\n"
+			Print "		lescan [--duplicates] don't filter duplicates\n"
+				exitfunc 1
+			//elseif strcmp(tkn$,"privacy")==0 then
+
+			//	strshiftleft(urtcmd$, 1)					//discard the = sign
+			//	rc = extractStrToken(urtcmd$, tkn$)			//take the next string from the command
+			//	rc = extractInttoken(tkn$,inqLen)			//extract the integer value of the string
+			
+			//elseif strcmp(tkn$,"numrsp")==0 then
+
+			//	strshiftleft(urtcmd$, 1)					//discard the = sign
+			//	rc = extractStrToken(urtcmd$, tkn$)			//take the next string from the command
+			//	rc = extractInttoken(tkn$,numRsp)			//extract the integer value of the string
+			endif
+		endwhile
 		
+		exitfunc BleScanStart(30000, 0)						//Scan for 30 seconds. No filtering of adverts.	
 endfunc 5

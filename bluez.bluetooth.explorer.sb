@@ -47,11 +47,11 @@ endfunc 0
 //==============================================================================
 //==============================================================================
 sub UartRsp(rsp as integer)
-  if rsp == 0 then
+  //if rsp == 0 then
     print pr$
-  elseif rsp > 0 then 
-    print er$;integer.h' rsp;pr$
-  endif
+  //elseif rsp > 0 then 
+  //  print er$;integer.h' rsp;pr$
+  //endif
   urts = rsp
 endsub
 //==============================================================================
@@ -75,12 +75,12 @@ function _HciHelp()
 	PRINT "Commands:"
 	PRINT "	dev 		Display local devices\n"
 	PRINT "	inq 		Inquire remote devices\n"
-	PRINT "	scan		Scan for remote devices\n"
-	PRINT "	name		Get name from remote device\n"
-	PRINT "	info		Get information from remote device\n"
-	PRINT "	spinq		Start periodic inquiry\n"
-	PRINT "	epinq		Exit periodic inquiry\n"
-	PRINT "	cmd 		Submit arbitrary HCI commands\n"
+//	PRINT "	scan		Scan for remote devices\n"
+//	PRINT "	name		Get name from remote device\n"
+//	PRINT "	info		Get information from remote device\n"
+//	PRINT "	spinq		Start periodic inquiry\n"
+//	PRINT "	epinq		Exit periodic inquiry\n"
+//	PRINT "	cmd 		Submit arbitrary HCI commands\n"
 	PRINT "	con 		Display active connections\n"
 	PRINT "	cc  		Create connection to remote device\n"
 	PRINT "	dc  		Disconnect from remote device\n"
@@ -168,13 +168,23 @@ function _Hci()
 		rc = _HciHelp()
 	endif
 	
-	if strcmp(tkn$,"inq")==0 then
-		rc = _inquiry()
+	if strcmp(tkn$,"dev")==0 then
+		rc = _dev()								//Display the address of the local device
 	endif
 	
-	if strcmp(tkn$,"dev")==0 then
-		rc = _dev()
+	if strcmp(tkn$,"inq")==0 then				
+		rc = _inquiry()							//This function only needs to show the address of remote devices
 	endif
+	
+	//if strcmp(tkn$,"scan")==0 then
+	//	rc = _BtcScan()							//This function must show the address and name of remote devices
+	//endif
+	
+	if strcmp(tkn$, "lescan")==0 then
+		print "Call _lescan function NOW\n"
+		rc = _leScan()
+	endif
+	
 endfunc 1
 //-------------------------------------------------------------------------
 //#CMD#// advert report initadv   #INTstridx# #INTadflags# #INTadappearance# #INTmaxdevname#
@@ -262,11 +272,30 @@ endfunc 1
 // This handler is called when there is an inquiry timeout
 //==============================================================================
 function HandlerBtcInqTimOut() as integer 
-	print "\nScanning stopped via timeout" 
+	print "\nBtc Scanning stopped via timeout" 
 	UartRsp(0)
 endfunc 1
-
-
+//==============================================================================
+// This handler is called when there is an inquiry report waiting to be read 
+// Algorithm will prevent display of data from the same peer consecutively 
+//==============================================================================
+function HandlerAdvRpt() as integer
+  dim ad$,dta$,ndisc,rsi
+  rc = BleScanGetAdvReport(ad$,dta$,ndisc,rsi)
+  while rc==0
+	ad$ = right$(ad$,6)
+    print "\nADV:";strhexize$(ad$)
+	//;" ";strhexize$(dta$);" ";ndisc;" ";rsi
+    rc = BleScanGetAdvReport(ad$,dta$,ndisc,rsi)
+  endwhile
+endfunc 1
+//==============================================================================
+// This handler is called when there is a Ble scan timeout
+//==============================================================================
+function HandlerBlrScanTimOut() as integer 
+	print "\nScanning stopped via timeout"
+	UartRsp(0)
+endfunc 1
 //==============================================================================
 // This handler is called when data has arrived at the serial port
 //==============================================================================
@@ -291,15 +320,17 @@ endfunc 1
 //------------------------------------------------------------------------------
 // Enable synchronous event handlers
 //------------------------------------------------------------------------------
-OnEvent  EVUARTRX			call HandlerUartRxCmd
+OnEvent  EVUARTRX					call HandlerUartRxCmd
 
-OnEvent	EVINQRESP			call HandlerInqResp
-OnEvent  EVBTC_INQUIRY_TIMEOUT    call HandlerBtcInqTimOut	
+OnEvent EVINQRESP					call HandlerInqResp
+OnEvent	EVBTC_INQUIRY_TIMEOUT		call HandlerBtcInqTimOut	
 
+OnEvent EVBLE_ADV_REPORT			call HandlerAdvRpt
+OnEvent  EVBLE_SCAN_TIMEOUT       call HandlerBlrScanTimOut
 //==============================================================================
 //==============================================================================
 sub Initialise()
-  PRINT "BLUETOOTH EXPLORTER v0.0"
+  PRINT "BLUETOOTH EXPLORTER v0.1"
 endsub
 
 //------------------------------------------------------------------------------
