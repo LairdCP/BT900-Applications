@@ -60,7 +60,7 @@ function _inquiry()
 			if strcmp(tkn$,"help")==0 then
 				//print the inquiry help menu
 				print "Usage:\n"
-				print "	inq [--length=N] maximum inquiry duration in 1.28 s units\n"
+				print "	inq	[--length=N] maximum inquiry duration in 1.28 s units\n"
 				print "		[--numrsp=N] specify maximum number of inquiry responses\n"
 				print "		[--iac=lap]  specify the inquiry access code\n"
 				print "		[--flush]    flush the inquiry cache\n"
@@ -122,7 +122,7 @@ function _SppConnect()
 	
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
-		//print the dev help menu
+		//print the  hcitool cc help menu
 		print "Usage:\n"
 		print "		cc [--role=m|s] [--ptype=pkt_types] <bdaddr>\n"
 		print "Example:\n"
@@ -138,6 +138,54 @@ function _SppConnect()
 		endif
 	endwhile
 endfunc 5
+
+//-------------------------------------------------------------------------
+//#CMD#//  inquiry config #INTcfgID# #INTvalue#
+//#CMD#//  inquiry start #INTinqTimeoutS#
+//#CMD#//  inquiry cancel
+//-------------------------------------------------------------------------
+function _SppDisconnect()
+	DIM str$
+	
+	while ExtractStrToken(urtcmd$, tkn$)!=0
+		if strcmp(tkn$,"help")==0 then
+		//print the hcitool dc help menu
+		print "Usage:\n"
+		print "		dc <bdaddr> [reason]\n"
+		
+		exitfunc 1
+		
+		else
+			tkn$ = strdehexize$(tkn$)
+			rc = BtcGetHandleFromBDAddr(tkn$,hcSpp)
+			rc = BtcSppDisconnect(hcSpp)
+		endif
+	endwhile
+endfunc 5
+
+//-------------------------------------------------------------------------
+//#CMD#//  inquiry config #INTcfgID# #INTvalue#
+//#CMD#//  inquiry start #INTinqTimeoutS#
+//#CMD#//  inquiry cancel
+//-------------------------------------------------------------------------
+function _auth()
+	
+	print "Trying to authenticate to device\n"
+	while ExtractStrToken(urtcmd$, tkn$)!=0
+		if strcmp(tkn$,"help")==0 then
+			//print the hcitool auth help menu
+			print "Usage:\n"
+			print "		auth <bdaddr>\n"
+		
+			exitfunc 1
+		
+		else
+			tkn$ = strdehexize$(tkn$)
+			print "the address here is ";tkn$
+			rc = BtcPair(tkn$, 0)						// Do not store bonding information 
+		endif
+	endwhile
+endfunc 1
 //-------------------------------------------------------------------------
 //#CMD#//  inquiry config #INTcfgID# #INTvalue#
 //#CMD#//  inquiry start #INTinqTimeoutS#

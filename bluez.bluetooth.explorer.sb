@@ -14,15 +14,16 @@
 dim rc
 dim stRsp$ as string        //Uart rx data is stored here
 dim ok$,er$,pr$
-dim urtcmd$                 //cmd line from uart
-dim tkn$,tlen               //used by command parser
-dim urts                    //will be <0 if uart parser suspended
+dim urtcmd$                 // cmd line from uart
+dim tkn$,tlen               // used by command parser
+dim urts                    // will be <0 if uart parser suspended
 dim i[NUM_OF_I_PARAMS]      // index 0 used for return values
-dim hc[NUM_OF_CONNS+1]      //contains connection handles
-dim conns                   //number of connections
-dim name$					//device name
+dim hc[NUM_OF_CONNS+1]      // contains connection handles
+dim conns                   // number of connections
+dim name$					// device name
 
-dim hcSpp                   //handle of connection to use for VSP service
+dim prAddr$              //BT address of last device pairing requested from or initiated with
+dim hcSpp                   // handle of connection to use for VSP service
 //******************************************************************************
 // Initialisse Global Variable
 //******************************************************************************
@@ -99,9 +100,10 @@ endfunc 1
 //==============================================================================
 function _HciHelp()
 
-	print "Usage:"
-	print "	hcitool [options] <command> [command parameters]"
-	print "Commands:"
+	print "Usage:\n"
+	print "	hcitool [options] <command> [command parameters]\n"
+	print "Commands:\n"
+	print "\n"
 	print "	dev 		Display local devices\n"
 	print "	inq 		Inquire remote devices\n"
 //	print "	scan		Scan for remote devices\n"
@@ -113,24 +115,24 @@ function _HciHelp()
 	print "	con 		Display active connections\n"
 	print "	cc  		Create connection to remote device\n"
 	print "	dc  		Disconnect from remote device\n"
-	print "	sr  		Switch master/slave role\n"
-	print "	cpt 		Change connection packet type\n"
-	print "	rssi		Display connection RSSI\n"
-	print "	lq  		Display link quality\n"
-	print "	tpl 		Display transmit power level\n"
-	print "	afh 		Display AFH channel map\n"
-	print "	lp  		Set/display link policy settings\n"
-	print "	lst 		Set/display link supervision timeout\n"
+//	print "	sr  		Switch master/slave role\n"
+//	print "	cpt 		Change connection packet type\n"
+//	print "	rssi		Display connection RSSI\n"
+//	print "	lq  		Display link quality\n"
+//	print "	tpl 		Display transmit power level\n"
+//	print "	afh 		Display AFH channel map\n"
+//	print "	lp  		Set/display link policy settings\n"
+//	print "	lst 		Set/display link supervision timeout\n"
 	print "	auth		Request authentication\n"
 	print "	enc 		Set connection encryption\n"
 	print "	key         Change connection link key\n"
 	print "	clkoff      Read clock offset\n"
 	print "	clock       Read local or remote clock\n"
 	print "	lescan      Start LE scan\n"
-	print "	lewladd     Add device to LE White List\n"
-	print "	lewlrm      Remove device from LE White List\n"
-	print "	lewlsz      Read size of LE White List\n"
-	print "	lewlclr     Clear LE White list\n"
+//	print "	lewladd     Add device to LE White List\n"
+//	print "	lewlrm      Remove device from LE White List\n"
+//	print "	lewlsz      Read size of LE White List\n"
+//	print "	lewlclr     Clear LE White list\n"
 	print "	lecc        Create a LE Connection\n"
 	print "	ledc        Disconnect a LE Connection\n"
 	print "	lecup       LE Connection Update\n"
@@ -274,8 +276,15 @@ function _Hci()
 	//endif
 	
 	if strcmp(tkn$, "cc")==0 then
-		print "Entered hcitool cc command"
 		rc = _sppConnect()						//This function should connect to an SPP device
+	endif
+	
+	if strcmp(tkn$, "dc")==0 then
+		rc = _sppDisconnect()
+	endif
+	
+	if strcmp(tkn$, "auth")== 0 then
+		rc = _auth()							//This is the equivalent of pair
 	endif
 	
 	if strcmp(tkn$, "lescan")==0 then
@@ -333,6 +342,11 @@ function _HciCfg()
 	
 	if strcmp(tkn$,"help")==0 then
 		rc = _HciCfgHelp()
+	endif
+	
+	if strcmp(tkn$,"auth")==0 then 
+		print "Set the device to be pairable\n" 
+		rc = BtcModeSet(0x0B)
 	endif
 	
 endfunc 1
@@ -447,6 +461,41 @@ function HandlerSppData()
     endwhile
 endfunc 1
 //==============================================================================
+// Called when there is a pairing request from another device
+//==============================================================================
+function HandlerPairReq()
+    print "Received Pairing request \n"
+	dim s$
+    rc=BtcGetPAIRRequestBDAddr(s$)
+    prAddr$ = s$
+    print "\nPair Req: "; StrHexize$(s$);pr$
+	rc = BtcSendPAIRResp(1)
+endfunc 1
+
+//==============================================================================
+// Called on a pin request from another device
+//==============================================================================
+function HandlerPINReq() 
+    print "Received Pin request\n"
+	dim mac$
+    rc=BtcGetPinRequestBDAddr(mac$)
+    if rc==0 then
+        print "\nPIN Req: "; StrHexize$(mac$);pr$
+    else
+        //AssertResCode(rc,2273)
+		print "Handler PIN Req is a problem\n"
+    endif
+endfunc 1
+
+//==============================================================================
+// Called after a pairing attempt
+//==============================================================================
+function HandlerPairRes(res)
+    //print "Received the pin result\n"
+	print "\nPair Result: ";res; " "; StrHexize$(prAddr$);pr$
+endfunc 1
+
+//==============================================================================
 // This handler is called when there is an inquiry report waiting to be read 
 // Algorithm will prevent display of data from the same peer consecutively 
 //==============================================================================
@@ -502,6 +551,10 @@ OnEvent  EVBTC_SPP_CONN_TIMEOUT   call HandlerSppConnTimOut
 OnEvent  EVSPPDISCON              call HandlerSppDiscon
 OnEvent  EVBTC_SPP_DATA_RECIEVED  call HandlerSppData
 
+OnEvent  EVBTC_PAIR_REQUEST       call HandlerPairReq
+OnEvent  EVBTC_PIN_REQUEST        call HandlerPinReq
+OnEvent  EVBTC_PAIR_RESULT        call HandlerPairRes
+
 OnEvent EVBLE_ADV_REPORT			call HandlerAdvRpt
 OnEvent  EVBLE_SCAN_TIMEOUT       call HandlerBlrScanTimOut
 
@@ -510,7 +563,7 @@ OnEvent  EVBLE_SCAN_TIMEOUT       call HandlerBlrScanTimOut
 //==============================================================================
 sub Initialise()
 	InitBtDevice()
-	print "BLUETOOTH EXPLORTER v0.1"
+	print "\nBLUETOOTH EXPLORTER v0.1\n"
 endsub
 
 //------------------------------------------------------------------------------
