@@ -3,8 +3,11 @@
 // Definitions
 //******************************************************************************
 
+        // Number of connections
+#define NUM_OF_CONNS                         8
+
         // size of i[]
-		#define NUM_OF_I_PARAMS                     (8)
+#define NUM_OF_I_PARAMS                     (8)
 //******************************************************************************
 // Global Variable Declarations
 //******************************************************************************
@@ -15,6 +18,11 @@ dim urtcmd$                 //cmd line from uart
 dim tkn$,tlen               //used by command parser
 dim urts                    //will be <0 if uart parser suspended
 dim i[NUM_OF_I_PARAMS]      // index 0 used for return values
+dim hc[NUM_OF_CONNS+1]      //contains connection handles
+dim conns                   //number of connections
+dim name$					//device name
+
+dim hcSpp                   //handle of connection to use for VSP service
 //******************************************************************************
 // Initialisse Global Variable
 //******************************************************************************
@@ -54,60 +62,81 @@ sub UartRsp(rsp as integer)
   //endif
   urts = rsp
 endsub
+
+//==============================================================================
+//==============================================================================
+sub InitBtDevice()
+	
+	dim nHandle
+	
+	name$ = SYSINFO$(4)
+	name$ = right$(name$, 6)
+	name$ = StrHexize$(name$)
+	name$ = "bluez-" + name$
+	rc = BTCSETFRIENDLYNAME (name$)			
+	
+	rc = BtcModeSet(9)							//Connectable and general discoverability
+												//This should be altered from hciconfig later
+
+	rc = btcSppOpen(nHandle)
+	print "\nOpened successfully  ";rc
+endsub											
 //==============================================================================
 //==============================================================================
 function _Help()
-	PRINT "\n Available Commands: "
-	PRINT "\n		help"
-	PRINT "\n		hcitool"
-	PRINT "\n		gatttool"
+	print "\n Available Commands: "
+	print "\n"
+	print "\n		help"
+	print "\n		hcitool"
+	print "\n		gatttool"
 	//PRINT "\n		quit\exit"
-	PRINT "\nFor more information on the usage of each command use:"
-	PRINT "<command> --help"
+	print "\n"
+	print "\nFor more information on the usage of each command use:"
+	print "<command> --help"
 endfunc 1
 
 //==============================================================================
 //==============================================================================
 function _HciHelp()
 
-	PRINT "Usage:"
-	PRINT "	hcitool [options] <command> [command parameters]"
-	PRINT "Commands:"
-	PRINT "	dev 		Display local devices\n"
-	PRINT "	inq 		Inquire remote devices\n"
-//	PRINT "	scan		Scan for remote devices\n"
-//	PRINT "	name		Get name from remote device\n"
-//	PRINT "	info		Get information from remote device\n"
-//	PRINT "	spinq		Start periodic inquiry\n"
-//	PRINT "	epinq		Exit periodic inquiry\n"
-//	PRINT "	cmd 		Submit arbitrary HCI commands\n"
-	PRINT "	con 		Display active connections\n"
-	PRINT "	cc  		Create connection to remote device\n"
-	PRINT "	dc  		Disconnect from remote device\n"
-	PRINT "	sr  		Switch master/slave role\n"
-	PRINT "	cpt 		Change connection packet type\n"
-	PRINT "	rssi		Display connection RSSI\n"
-	PRINT "	lq  		Display link quality\n"
-	PRINT "	tpl 		Display transmit power level\n"
-	PRINT "	afh 		Display AFH channel map\n"
-	PRINT "	lp  		Set/display link policy settings\n"
-	PRINT "	lst 		Set/display link supervision timeout\n"
-	PRINT "	auth		Request authentication\n"
-	PRINT "	enc 		Set connection encryption\n"
-	PRINT "	key 		Change connection link key\n"
-	PRINT "	clkoff		Read clock offset\n"
-	PRINT "	clock		Read local or remote clock\n"
-	PRINT "	lescan		Start LE scan\n"
-	PRINT "	lewladd		Add device to LE White List\n"
-	PRINT "	lewlrm		Remove device from LE White List\n"
-	PRINT "	lewlsz		Read size of LE White List\n"
-	PRINT "	lewlclr		Clear LE White list\n"
-	PRINT "	lecc		Create a LE Connection\n"
-	PRINT "	ledc		Disconnect a LE Connection\n"
-	PRINT "	lecup		LE Connection Update\n"
-	PRINT "\n"
-	PRINT "For more information on the usage of each command use:\n"
-	PRINT "	hcitool <command> --help\n"
+	print "Usage:"
+	print "	hcitool [options] <command> [command parameters]"
+	print "Commands:"
+	print "	dev 		Display local devices\n"
+	print "	inq 		Inquire remote devices\n"
+//	print "	scan		Scan for remote devices\n"
+//	print "	name		Get name from remote device\n"
+//	print "	info		Get information from remote device\n"
+//	print "	spinq		Start periodic inquiry\n"
+//	print "	epinq		Exit periodic inquiry\n"
+//	print "	cmd 		Submit arbitrary HCI commands\n"
+	print "	con 		Display active connections\n"
+	print "	cc  		Create connection to remote device\n"
+	print "	dc  		Disconnect from remote device\n"
+	print "	sr  		Switch master/slave role\n"
+	print "	cpt 		Change connection packet type\n"
+	print "	rssi		Display connection RSSI\n"
+	print "	lq  		Display link quality\n"
+	print "	tpl 		Display transmit power level\n"
+	print "	afh 		Display AFH channel map\n"
+	print "	lp  		Set/display link policy settings\n"
+	print "	lst 		Set/display link supervision timeout\n"
+	print "	auth		Request authentication\n"
+	print "	enc 		Set connection encryption\n"
+	print "	key         Change connection link key\n"
+	print "	clkoff      Read clock offset\n"
+	print "	clock       Read local or remote clock\n"
+	print "	lescan      Start LE scan\n"
+	print "	lewladd     Add device to LE White List\n"
+	print "	lewlrm      Remove device from LE White List\n"
+	print "	lewlsz      Read size of LE White List\n"
+	print "	lewlclr     Clear LE White list\n"
+	print "	lecc        Create a LE Connection\n"
+	print "	ledc        Disconnect a LE Connection\n"
+	print "	lecup       LE Connection Update\n"
+	print "\n"
+	print "For more information on the usage of each command use:\n"
+	print "	hcitool <command> --help\n"
 	
 endfunc 1
 //==============================================================================
@@ -121,29 +150,91 @@ function _GattHelp()
 //  --help-params                             Show all Primary Services/Characteristics arguments
 //  --help-char-read-write                    Show all Characteristics Value/Descriptor Read/Write arguments
 
-	PRINT "Usage:\n"
-	PRINT "  gatttool [OPTION...]\n"
-	PRINT "\n"
-	PRINT "GATT commands\n"
-	PRINT "	--primary                                 Primary Service Discovery\n"
-	PRINT "	--characteristics                         Characteristics Discovery\n"
-	PRINT "	--char-read                               Characteristics Value/Descriptor Read\n"
-	PRINT "	--char-write                              Characteristics Value Write Without Response (Write Command) \n"
-	PRINT "	--char-write-req                          Characteristics Value Write (Write Request)	\n"
-	PRINT "	--char-desc                               Characteristics Descriptor Discovery\n"
-	PRINT "	--listen                                  Listen for notifications and indications\n"
-	PRINT "	-I, --interactive                         Use interactive mode\n"
-	PRINT "\n"
-	PRINT "Application Options:\n"
-	PRINT "	-i, --adapter=hciX                        Specify local adapter interface\n"
-	PRINT "	-b, --device=MAC                          Specify remote Bluetooth address\n"
-	PRINT "	-t, --addr-type=[public | random]         Set LE address type. Default: public\n"
-	PRINT "	-m, --mtu=MTU                             Specify the MTU size\n"
-	PRINT "	-p, --psm=PSM                             Specify the PSM for GATT/ATT over BR/EDR\n"
-	PRINT "	-l, --sec-level=[low | medium | high]     Set security level. Default: low\n"
-	PRINT "	-I, --interactive                         Use interactive mode"
+	print "Usage:\n"
+	print "  gatttool [OPTION...]\n"
+	print "\n"
+	print "GATT commands\n"
+	print "	--primary                                 Primary Service Discovery\n"
+	print "	--characteristics                         Characteristics Discovery\n"
+	print "	--char-read                               Characteristics Value/Descriptor Read\n"
+	print "	--char-write                              Characteristics Value Write Without Response (Write Command) \n"
+	print "	--char-write-req                          Characteristics Value Write (Write Request)	\n"
+	print "	--char-desc                               Characteristics Descriptor Discovery\n"
+	print "	--listen                                  Listen for notifications and indications\n"
+	print "	-I, --interactive                         Use interactive mode\n"
+	print "\n"
+	print "Application Options:\n"
+	print "	-i, --adapter=hciX                        Specify local adapter interface\n"
+	print "	-b, --device=MAC                          Specify remote Bluetooth address\n"
+	print "	-t, --addr-type=[public | random]         Set LE address type. Default: public\n"
+	print "	-m, --mtu=MTU                             Specify the MTU size\n"
+	print "	-p, --psm=PSM                             Specify the PSM for GATT/ATT over BR/EDR\n"
+	print "	-l, --sec-level=[low | medium | high]     Set security level. Default: low\n"
+	print "	-I, --interactive                         Use interactive mode"
 
 endfunc 1
+
+//==============================================================================
+//==============================================================================
+function _HciCfgHelp() as integer
+	
+	print "Commands:\n"
+	print "	up                 	Open and initialize HCI device\n"
+	print "	down               	Close HCI device\n"
+	print "	reset              	Reset HCI device\n"
+	print "	rstat              	Reset statistic counters\n"
+	print "	auth               	Enable Authentication\n"
+	print "	noauth             	Disable Authentication\n"
+	print "	encrypt            	Enable Encryption\n"
+	print "	noencrypt          	Disable Encryption\n"
+	print "	piscan             	Enable Page and Inquiry scan\n"
+	print "	noscan             	Disable scan\n"
+	print "	iscan              	Enable Inquiry scan\n"
+	print "	pscan              	Enable Page scan\n"
+	print "	ptype      [type]  	Get/Set default packet type\n"
+	print "	lm         [mode]  	Get/Set default link mode\n"
+	print "	lp         [policy]	Get/Set default link policy\n"
+	print "	name       [name]  	Get/Set local name\n"
+	print "	class      [class] 	Get/Set class of device\n"
+	print "	voice      [voice] 	Get/Set voice setting\n"
+	print "	iac        [iac]   	Get/Set inquiry access code\n"
+	print "	inqtpl     [level] 	Get/Set inquiry transmit power level\n"
+	print "	inqmode    [mode]  	Get/Set inquiry mode\n"
+	print "	inqdata    [data]  	Get/Set inquiry data\n"
+	print "	inqtype    [type]  	Get/Set inquiry scan type\n"
+	print "	inqparms   [win:int]	Get/Set inquiry scan window and interval\n"
+	print "	pageparms  [win:int]	Get/Set page scan window and interval\n"
+	print "	pageto     [to]    	Get/Set page timeout\n"
+	print "	afhmode    [mode]  	Get/Set AFH mode\n"
+	print "	sspmode    [mode]  	Get/Set Simple Pairing Mode\n"
+	print "	aclmtu     <mtu:pkt>	Set ACL MTU and number of packets\n"
+	print "	scomtu     <mtu:pkt>	Set SCO MTU and number of packets\n"
+	print "	putkey     <bdaddr>	Store link key on the device\n"
+	print "	delkey     <bdaddr>	Delete link key from the device\n"
+	print "	oobdata            	Display local OOB data\n"
+	print "	commands           	Display supported commands\n"
+	print "	features           	Display device features\n"
+	print "	version            	Display version information\n"
+	print "	revision           	Display revision information\n"
+	print "	block      <bdaddr>	Add a device to the blacklist\n"
+	print "	unblock    <bdaddr>	Remove a device from the blacklist\n"
+	print "	lerandaddr <bdaddr>	Set LE Random Address\n"
+	print "	leadv              	Enable LE advertising\n"
+	print "	noleadv            	Disable LE advertising\n"
+	print "	lestates           	Display the supported LE states\n"
+
+endfunc 1
+//==============================================================================
+//==============================================================================
+function AcqConnHandle(hConn)
+  dim z
+  for z=1 to (NUM_OF_CONNS)
+    if hc[z] == -1 then
+      hc[z]=hConn
+      exitfunc z
+    endif
+  next
+endfunc 0
 //-------------------------------------------------------------------------
 //#CMD#// advert report initadv   #INTstridx# #INTadflags# #INTadappearance# #INTmaxdevname#
 //#CMD#// advert report initscn   #INTstridx#
@@ -161,6 +252,8 @@ function _Hci()
 	
 	tlen = ExtractStrToken(urtcmd$,tkn$)
 	if tlen == 0 THEN
+		print "\nInsufficient parameters. For more information use"
+		print "\nhcitool help"
 		exitfunc 5			//Youssif: Here must display message need mroe parameters						//or display the whole help menu
 	endif
 	//=================================================
@@ -180,9 +273,13 @@ function _Hci()
 	//	rc = _BtcScan()							//This function must show the address and name of remote devices
 	//endif
 	
+	if strcmp(tkn$, "cc")==0 then
+		print "Entered hcitool cc command"
+		rc = _sppConnect()						//This function should connect to an SPP device
+	endif
+	
 	if strcmp(tkn$, "lescan")==0 then
-		print "Call _lescan function NOW\n"
-		rc = _leScan()
+		rc = _leScan()							//This function should show the addresses of Low Energy devices
 	endif
 	
 endfunc 1
@@ -200,10 +297,12 @@ endfunc 1
 //#CMD#// advert stop
 //-------------------------------------------------------------------------
 function _Gatt()
-		tlen = ExtractStrToken(urtcmd$,tkn$)
-		if tlen == 0 THEN
-			exitfunc 5		//Youssif: Here must display message need mroe parameters
-		endif
+	tlen = ExtractStrToken(urtcmd$,tkn$)
+	if tlen == 0 THEN
+		print "\nInsufficient parameters. For more information use"
+		print "\ngatttool help"
+		exitfunc 5		//Youssif: Here must display message need mroe parameters
+	endif
 	//=================================================
 	if strcmp(tkn$,"help")==0 then
 		rc = _GattHelp()
@@ -224,7 +323,18 @@ endfunc 1
 //#CMD#// advert stop
 //-------------------------------------------------------------------------
 function _HciCfg()
-	PRINT "Entered HCICONFIG\n"
+	tlen = ExtractStrToken(urtcmd$,tkn$)
+	
+	if tlen == 0 THEN
+		print "\nInsufficient parameters. For more information use"
+		print "\nhciconfig help"
+		exitfunc 5		//Youssif: Here must display message need mroe parameters
+	endif
+	
+	if strcmp(tkn$,"help")==0 then
+		rc = _HciCfgHelp()
+	endif
+	
 endfunc 1
 
 //==============================================================================
@@ -248,7 +358,13 @@ function OnUartCmd() as integer
 	elseif strcmp(tkn$,"exit")==0 || strcmp(tkn$,"quit")==0  then
       reset(0)
 	
+	elseif strcmp(tkn$,"")==0 then
+		//exitfunc 1
+
+	else
+		print tkn$;": command not found\n"
 	endif
+	
 	// send a response back to the user
 	UartRsp(rc)
 endfunc 1
@@ -269,11 +385,66 @@ function HandlerInqResp(respType) as integer
 endfunc 1
 
 //==============================================================================
+// Called after an SPP connection attempt
+//==============================================================================
+function HandlerSppCon(hConn, res) as integer
+    dim hz
+
+    print "\n --- SPP Connect: (";integer.h' res;")"
+    //if connected successfully
+    if res == 0 then
+        //try and acquire a connection handle
+        hz = AcqConnHandle(hConn)
+        
+        //disconnect if failed
+        if hz==0 then
+            rc=BtcSppDisconnect(hConn)
+            print " DROPPED"
+        else
+            hcSpp = hc[hz]     //always assume most recent connection for SPP
+            conns = conns + 1
+            print " handle = ";hz;pr$
+        endif
+    endif        
+endfunc 1
+
+//==============================================================================
+// Called when a connection attempt to an SPP device times out
+//==============================================================================
+function HandlerSppConnTimOut() as integer
+    print "\n --- SPP Conn Attempt Timeout"
+endfunc 1
+
+//==============================================================================
+// Called when an SPP disconnection occurs
+//==============================================================================
+function HandlerSppDiscon(hConn)
+    dim hz
+    
+    //hz = RelConnHandle(hConn)
+    conns = conns - 1
+    print "\n --- Spp Disconnect: handle=";hz
+endfunc 1
+//==============================================================================
 // This handler is called when there is an inquiry timeout
 //==============================================================================
 function HandlerBtcInqTimOut() as integer 
 	print "\nBtc Scanning stopped via timeout" 
 	UartRsp(0)
+endfunc 1
+
+//==============================================================================
+// Called when data is received via SPP
+//==============================================================================
+function HandlerSppData()
+    dim hPort, data$, rLen
+    
+    '//read and print data while there is data available to read
+    while BtcSppRead(hPort, data$, rLen) == 0    
+        if rLen>0 then
+            print"\nPort Handle: ";hPort; " Length: ";rLen;"\nData: ";data$;pr$
+        endif
+    endwhile
 endfunc 1
 //==============================================================================
 // This handler is called when there is an inquiry report waiting to be read 
@@ -284,7 +455,7 @@ function HandlerAdvRpt() as integer
   rc = BleScanGetAdvReport(ad$,dta$,ndisc,rsi)
   while rc==0
 	ad$ = right$(ad$,6)
-    print "\nADV:";strhexize$(ad$)
+    print "\n ";strhexize$(ad$)
 	//;" ";strhexize$(dta$);" ";ndisc;" ";rsi
     rc = BleScanGetAdvReport(ad$,dta$,ndisc,rsi)
   endwhile
@@ -313,6 +484,7 @@ function HandlerUartRxCmd() as integer
 endfunc 1
 
 //******************************************************************************
+
 //******************************************************************************
 // Equivalent to main() in C
 //******************************************************************************
@@ -325,12 +497,20 @@ OnEvent  EVUARTRX					call HandlerUartRxCmd
 OnEvent EVINQRESP					call HandlerInqResp
 OnEvent	EVBTC_INQUIRY_TIMEOUT		call HandlerBtcInqTimOut	
 
+OnEvent  EVSPPCON                 call HandlerSppCon
+OnEvent  EVBTC_SPP_CONN_TIMEOUT   call HandlerSppConnTimOut
+OnEvent  EVSPPDISCON              call HandlerSppDiscon
+OnEvent  EVBTC_SPP_DATA_RECIEVED  call HandlerSppData
+
 OnEvent EVBLE_ADV_REPORT			call HandlerAdvRpt
 OnEvent  EVBLE_SCAN_TIMEOUT       call HandlerBlrScanTimOut
+
+//OnEvent 
 //==============================================================================
 //==============================================================================
 sub Initialise()
-  PRINT "BLUETOOTH EXPLORTER v0.1"
+	InitBtDevice()
+	print "BLUETOOTH EXPLORTER v0.1"
 endsub
 
 //------------------------------------------------------------------------------

@@ -46,11 +46,11 @@ function _inquiry()
 	
 	//if strcmp(tkn$,"help")==0 then
 		//print the inquiry help menu
-	//	PRINT "Usage:\n"
-	//	PRINT "inq [--length=N] maximum inquiry duration in 1.28 s units\n"
-	//	PRINT "		[--numrsp=N] specify maximum number of inquiry responses\n"
-	//	PRINT "		[--iac=lap]  specify the inquiry access code\n"
-	//	PRINT "		[--flush]    flush the inquiry cache\n"
+	//	print "Usage:\n"
+	//	print "inq [--length=N] maximum inquiry duration in 1.28 s units\n"
+	//	print "		[--numrsp=N] specify maximum number of inquiry responses\n"
+	//	print "		[--iac=lap]  specify the inquiry access code\n"
+	//	print  "		[--flush]    flush the inquiry cache\n"
 	
 	//else
 		
@@ -59,11 +59,11 @@ function _inquiry()
 			si$ = Left$(tkn$,10)
 			if strcmp(tkn$,"help")==0 then
 				//print the inquiry help menu
-				PRINT "Usage:\n"
-				PRINT "inq [--length=N] maximum inquiry duration in 1.28 s units\n"
-				PRINT "		[--numrsp=N] specify maximum number of inquiry responses\n"
-				PRINT "		[--iac=lap]  specify the inquiry access code\n"
-				PRINT "		[--flush]    flush the inquiry cache\n"
+				print "Usage:\n"
+				print "	inq [--length=N] maximum inquiry duration in 1.28 s units\n"
+				print "		[--numrsp=N] specify maximum number of inquiry responses\n"
+				print "		[--iac=lap]  specify the inquiry access code\n"
+				print "		[--flush]    flush the inquiry cache\n"
 				exitfunc 1
 			elseif strcmp(tkn$,"length")==0 then
 
@@ -99,8 +99,8 @@ function _dev()
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 			//print the dev help menu
-			PRINT "Usage:\n"
-			PRINT "		dev\n"
+			print "Usage:\n"
+			print "		dev\n"
 			exitfunc 1
 		endif
 	endwhile
@@ -108,8 +108,35 @@ function _dev()
 	str$ = SYSINFO$(4)
 	str$ = right$(str$, 6)
 	//str$ = StrHexize$(str$)
-	PRINT "\n ";StrHexize$(str$)
+	print "\n ";StrHexize$(str$)
 			
+endfunc 5
+//-------------------------------------------------------------------------
+//#CMD#//  inquiry config #INTcfgID# #INTvalue#
+//#CMD#//  inquiry start #INTinqTimeoutS#
+//#CMD#//  inquiry cancel
+//-------------------------------------------------------------------------
+
+function _SppConnect()
+	DIM str$
+	
+	while ExtractStrToken(urtcmd$, tkn$)!=0
+		if strcmp(tkn$,"help")==0 then
+		//print the dev help menu
+		print "Usage:\n"
+		print "		cc [--role=m|s] [--ptype=pkt_types] <bdaddr>\n"
+		print "Example:\n"
+		print "		cc --ptype=dm1,dh3,dh5 01:02:03:04:05:06\n"
+		print "		cc --role=m 01:02:03:04:05:06\n"
+		
+		exitfunc 1
+		
+		else
+			tkn$ = strdehexize$(tkn$)
+			print "\nThe address is ";tkn$
+			rc = BtcSppConnect(tkn$)
+		endif
+	endwhile
 endfunc 5
 //-------------------------------------------------------------------------
 //#CMD#//  inquiry config #INTcfgID# #INTvalue#
@@ -125,11 +152,11 @@ function _leScan()
 			si$ = Left$(tkn$,10)
 			if strcmp(tkn$,"help")==0 then
 				//print the lescan help menu
-			Print "Usage:\n"
-			Print "		lescan [--privacy] enable privacy\n"
+			print "Usage:\n"
+			print "		lescan [--privacy] enable privacy\n"
 			print "		lescan [--passive] set scan type passive (default active)\n"
-			Print "		lescan [--discovery=g|l] enable general or limited discoveryprocedure\n"
-			Print "		lescan [--duplicates] don't filter duplicates\n"
+			print "		lescan [--discovery=g|l] enable general or limited discoveryprocedure\n"
+			print "		lescan [--duplicates] don't filter duplicates\n"
 				exitfunc 1
 			//elseif strcmp(tkn$,"privacy")==0 then
 
