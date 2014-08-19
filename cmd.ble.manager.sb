@@ -2145,7 +2145,7 @@ function SetMode(msgID, cmd) as integer
         OnEvent  EVUARTRX       call HandlerUartRxCmd    
         Onevent  EVNOTIFYBUF    call HandlerNotifyBufCmd
         OnEvent  EVATTRNOTIFY   call HandlerAttrNtfyCmd
-        OnEvent  EVBTC_SPP_DATA_RECIEVED call HandlerSppDataCmd
+        OnEvent  EVBTC_SPP_DATA_RECEIVED call HandlerSppDataCmd
         carCnt=0
         UartRsp(0)
         
@@ -2154,7 +2154,7 @@ function SetMode(msgID, cmd) as integer
             OnEvent  EVUARTRX                call HandlerUartRxSpp    
             Onevent  EVNOTIFYBUF             call HandlerNotifyBufCmd
             OnEvent  EVATTRNOTIFY            call HandlerAttrNtfyCmd 
-            OnEvent  EVBTC_SPP_DATA_RECIEVED call HandlerSppData
+            OnEvent  EVBTC_SPP_DATA_RECEIVED call HandlerSppData
             print ok$
         endif
     endif
