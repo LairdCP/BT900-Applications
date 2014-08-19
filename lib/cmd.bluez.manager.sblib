@@ -220,5 +220,101 @@ function _leScan()
 			endif
 		endwhile
 		
-		exitfunc BleScanStart(30000, 0)						//Scan for 30 seconds. No filtering of adverts.	
+		exitfunc BleScanStart(10000, 0)						//Scan for 30 seconds. No filtering of adverts.	
 endfunc 5
+//-------------------------------------------------------------------------
+//#CMD#//  inquiry config #INTcfgID# #INTvalue#
+//#CMD#//  inquiry start #INTinqTimeoutS#
+//#CMD#//  inquiry cancel
+//-------------------------------------------------------------------------
+function _leConnect() as integer
+	
+	while ExtractStrToken(urtcmd$, tkn$)!=0
+		if strcmp(tkn$,"help")==0 then
+			//print the hcitool lecc help menu
+			print "Usage:\n"
+			print "		lecc [--random] <bdaddr>\n"
+			print "		lecc --whitelist\n"
+		
+			exitfunc 1
+		
+		else
+			//tkn$ = right$(tkn$, 6)
+			print "the address before hexizing is ";tkn$
+			print "\n"
+			tkn$ = strdehexize$(tkn$)
+			print "the address after hexizing is ";tkn$
+			print "\n"
+			rc = BleConnect(tkn$, 5000, 20000, 75000, 5000000)						// ConnectionTimeoutms, minConIntervalus, maxConIntervalus, nSupervisionTimeoutus
+			if rc == 0 then
+				print "connectong \n"
+			else
+				print "rc = ";integer.h' rc;"  not connectong, there is a problem \n"
+			endif
+		endif
+	endwhile
+endfunc 5
+//-------------------------------------------------------------------------
+//#CMD#//  inquiry config #INTcfgID# #INTvalue#
+//#CMD#//  inquiry start #INTinqTimeoutS#
+//#CMD#//  inquiry cancel
+//-------------------------------------------------------------------------
+function _leDisconnect() as integer
+	while ExtractStrToken(urtcmd$, tkn$)!=0
+		if strcmp(tkn$,"help")==0 then
+			//print the hcitool ledc help menu
+			print "Usage:\n"
+			print "		ledc <handle>\n"
+		
+			exitfunc 1
+		
+		else
+			tkn$ = strdehexize$(tkn$)
+			print "the address here is ";tkn$
+			rc = bledisconnect(hz)						// Do not store bonding information 
+		endif
+	endwhile
+endfunc 5
+//-------------------------------------------------------------------------
+//						GATTTOOL
+//-------------------------------------------------------------------------
+function _GattPrimary() as integer
+
+print "Reached gatt primary\n"
+	dim addr$
+	while ExtractStrToken(urtcmd$, tkn$)!=0
+		if strcmp(tkn$,"help")==0 then
+			//print the gatttool help menu
+			print "Usage:\n"
+			print "		gatttool -b <MAC Address> \n"
+			
+			exitfunc 1
+		else
+			if strcmp(tkn$,"b")==0 then
+				rc = ExtractStrToken(urtcmd$,addr$)
+				// connect to this device and get handle
+				//addr$ = right$(addr$, 6)
+				addr$ = strdehexize$(addr$)
+				rc = BleConnect(addr$, 5000, 20000, 75000, 5000000)
+				if rc == 0 then
+					print "connectong \n"
+				else
+					print "not connectong, there is a problem\n"
+				endif
+				// discover services from handle
+				rc = BleDiscServiceFirst(hz,0,0)
+				print "The connection handle heree os : ";hz
+				print "\n"
+				// disconnect
+				rc = BleDisconnect(hz)
+			endif
+		endif
+	endwhile
+endfunc 1
+//-------------------------------------------------------------------------
+//#CMD#//  inquiry config #INTcfgID# #INTvalue#
+//#CMD#//  inquiry start #INTinqTimeoutS#
+//#CMD#//  inquiry cancel
+//-------------------------------------------------------------------------
+function _GattChar() as integer
+endfunc 1
