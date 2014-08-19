@@ -1,0 +1,162 @@
+'//******************************************************************************
+'// Laird Technologies (c) 2013
+'//
+'// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+'// +++++                                                                      ++
+'// +++++  When UwTerminal downloads the app it will store it as a filenname   ++
+'// +++++  which consists of all characters up to the first . and excluding it ++
+'// +++++                                                                      ++
+'// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+'//
+'// Poll Temperature sensor
+'//
+'//******************************************************************************
+
+'//******************************************************************************
+'// Definitions
+'//******************************************************************************
+
+        '//The temperature sensor is polled this timeout
+#define TEMPERATURE_POLL_MS                  (2000)
+
+#define BT900_DEV_ID            0x42370900 
+#define BL600_DEV_ID            0x424C0600
+#define BL620_DEV_ID            0x424C0620
+
+
+'//******************************************************************************
+'// Global Variable Declarations
+'//******************************************************************************
+
+dim adRpt$ as string  '//contains the most recent Advertise report
+dim scRpt$ as string  '//contains the most recent scan report
+dim stRsp$ as string  '//Uart rx data is stored here
+dim rc                '//return code from function calls
+dim inconn            '//will be 0 for no connection, otherwise nonzsero
+dim oldtmp
+
+
+'//******************************************************************************
+'// Library Import
+'//******************************************************************************
+//------------------------------------------------------------------------------
+//** #include the correct GPIO library file for the smartBASIC module being used 
+//------------------------------------------------------------------------------
+// #include "lib\gpio.bl6xx.sblib"
+#include "lib\gpio.bt9xx.sblib"
+
+
+
+'//******************************************************************************
+'// Initialisse Global Variable
+'//******************************************************************************
+inconn = 0            '//no connection yet
+
+'//******************************************************************************
+'// Function and Subroutine definitions
+'//******************************************************************************
+
+'//==============================================================================
+'//==============================================================================
+sub AssertResCode(rc,byval msg$ as string)
+  if(rc!=0)then
+    print "\n";msg$;" failed with ";integer.h' rc
+  else
+    print "\n";msg$;" OK"
+  endif
+endsub
+
+'//==============================================================================
+'//==============================================================================
+sub DbgMsg(byval msg$ as string)
+  print msg$
+endsub
+
+'//==============================================================================
+'//==============================================================================
+sub DbgVal(val)
+  print val
+endsub
+
+'//==============================================================================
+'//==============================================================================
+sub InitTempSensor()
+  '// poll sensor on a timer
+  TimerStart(0,TEMPERATURE_POLL_MS,1)
+
+  '// Temperature sensor is AIN4 which is on the S3 pin
+  rc = GpioSetFunc(GPIO_TEMP_SENSOR,1,2)  //remover the pull resistor
+  AssertResCode(rc,"GpioSetFunc")
+
+  rc = GpioSetFunc(GPIO_TEMP_SENSOR,3,0)  //set as analog in
+  AssertResCode(rc,"GpioSetFunc")
+endsub
+
+
+
+'//******************************************************************************
+'// Handler definitions
+'//******************************************************************************
+
+'//==============================================================================
+'// This handler is called when TIMER 0 expires
+'//==============================================================================
+function HandlerTimer0() as integer
+  dim mV,tmp
+  mv = Adc2Mv(GpioRead(GPIO_TEMP_SENSOR))
+  //DbgMsg("\nAdc mV=") : DbgVal(mv)
+
+  tmp = Mv2Temperature(mv)
+  DbgMsg("\nTemperature=") : DbgVal(tmp)
+
+endfunc 1
+
+
+'//******************************************************************************
+'// Equivalent to main() in C
+'//******************************************************************************
+'//Print devkit config info    
+select DEV_ID
+    print "\nEnsure the DIP switches on CON14 are set as follows:"
+    case BT900_DEV_ID
+        print "\n        OFF      ON"
+        print "\nLED0    [1   x    ]"
+        print "\nLED1    [2   x    ]"
+        print "\nTempS   [3     -->]"
+        print "\nTrimPot [4   x    ]"
+        print "\nx = doesn't matter"
+    '//BL600 or BL620    
+    case else
+        print "\n        OFF      ON"
+        print "\n        [1   x    ]"
+        print "\nTempS   [2     -->]"
+        print "\nTrimPot [3   x    ]"
+        print "\n        [4   x    ]"
+        print "\nx = doesn't matter"
+endselect
+
+print "\n\n"
+
+
+'//------------------------------------------------------------------------------
+'// Enable synchronous event handlers
+'//------------------------------------------------------------------------------
+OnEvent  EVTMR0             call HandlerTimer0
+
+'//------------------------------------------------------------------------------
+'// Initialise and then wait for events
+'//------------------------------------------------------------------------------
+
+DbgMsg( "\nPoll Temperature")
+
+InitTempSensor()
+
+'//------------------------------------------------------------------------------
+'// Wait for a synchronous event.
+'// A Script can have multiple <WaitEvent> statements
+'//------------------------------------------------------------------------------
+DbgMsg( "\nWait for event")
+WaitEvent
+DbgMsg( "\nPost WAITEVENT" )
+
+

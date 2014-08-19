@@ -1,0 +1,102 @@
+'//******************************************************************************
+'// Laird Technologies (c) 2013
+'//
+'// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+'// +++++                                                                      ++
+'// +++++  When UwTerminal downloads the app it will store it as a filenname   ++
+'// +++++  which consists of all characters up to the first . and excluding it ++
+'// +++++                                                                      ++
+'// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+'//
+'// Simple program that activates the buzzer in one of two tones based on the
+'// state of button 0
+'//
+'// Hit the reset button on the dev board to stop the irritating sound!
+'//
+'// 28/01/2013
+'//
+'//******************************************************************************
+
+'//******************************************************************************
+'// Definitions
+'//******************************************************************************
+#define BT900_DEV_ID            0x42370900 
+#define BL600_DEV_ID            0x424C0600
+#define BL620_DEV_ID            0x424C0620
+
+
+'//******************************************************************************
+'// Global Variable Declarations
+'//******************************************************************************
+dim rc      '//result code
+dim n
+
+
+'//******************************************************************************
+'// Library Import
+'//******************************************************************************
+//------------------------------------------------------------------------------
+//** #include the correct GPIO library file for the smartBASIC module being used 
+//------------------------------------------------------------------------------
+// #include "lib\gpio.bl6xx.sblib"
+#include "lib\gpio.bt9xx.sblib"
+
+
+
+
+'//******************************************************************************
+'// Function and Subroutine definitions
+'//******************************************************************************
+
+'//******************************************************************************
+'// Handler definitions
+'//******************************************************************************
+
+'//******************************************************************************
+'// Equivalent to main() in C
+'//******************************************************************************
+
+'//Print devkit config info    
+select DEV_ID
+    print "\nEnsure the DIP switches on CON15 are set as follows:"
+    case BT900_DEV_ID
+        print "\n        OFF      ON"
+        print "\nRTC_SDA [1   x    ]"
+        print "\nRTC_SCL [2   x    ]"
+        print "\nBuzzer  [3     -->]"
+        print "\n        [4   x    ]"
+        print "\nx = doesn't matter"
+    '//BL600 or BL620    
+    case else
+        print "\n       OFF      ON"
+        print "\n       [1   x    ]"
+        print "\nBuzzer [2     -->]"
+        print "\nLED0   [3   x    ]"
+        print "\nLED1   [4   x    ]"
+        print "\nx = doesn't matter"
+endselect
+
+print "\n\n"
+
+
+rc=GpioSetFunc(GPIO_BUZZER,2,0)  '// configure the SIO for the buzzer
+
+for n = 1 to 10000000
+ rc=gpioread(GPIO_BTN0)    '// reads the state of button 0
+ IF rc==1 then
+  _gpiowrite(GPIO_BUZZER,1)
+  _gpiowrite(GPIO_BUZZER,0)
+ ELSE
+  _gpiowrite(GPIO_BUZZER,1)
+  _gpiowrite(GPIO_BUZZER,1)
+  _gpiowrite(GPIO_BUZZER,0)
+  _gpiowrite(GPIO_BUZZER,0)
+ endif
+next
+
+
+'//------------------------------------------------------------------------------
+'// Wait for a synchronous event.
+'// An application can have multiple <WaitEvent> statements
+'//------------------------------------------------------------------------------
+'//waitevent  // PURPOSELY COMMENTED OUT
