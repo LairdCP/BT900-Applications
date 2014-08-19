@@ -1,0 +1,52 @@
+//******************************************************************************
+// Laird Technologies (c) 2014
+//
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// +++++                                                                      ++
+// +++++  When UwTerminal downloads the app it will store it as a filenname   ++
+// +++++  which consists of all characters up to the first . and excluding it ++
+// +++++                                                                      ++
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//
+// cmd.ble.def.sblib
+//
+// This library file is to be included in cmd.ble.manager.sb if running on a 
+// single mode module e.g. BL600. It contains blank functions for BT Classic
+// operation so that cmd.ble.manager.sb will compile if cmd.btc.manager.sblib isn't
+// #included.
+//
+//******************************************************************************
+
+
+//******************************************************************************
+// Function and Subroutine definitions
+//******************************************************************************
+function _inquiry()  
+endfunc 0
+
+function _spp()  
+endfunc 0
+
+function _btc()  
+endfunc 0
+
+function _btcbond()  
+endfunc 0
+
+function Pair()
+endfunc -2
+
+//******************************************************************************
+// Definitions
+//******************************************************************************
+'//Temporary workaround until BlePair is implemented for BL620
+#define BLE_PAIR    Pair()
+
+
+
+'//******************************************************************************
+'// Handler definitions
+'//******************************************************************************
+function HandlerUartRxSpp()
+endfunc 1
+

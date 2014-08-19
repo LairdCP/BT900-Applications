@@ -1,0 +1,103 @@
+'//******************************************************************************
+'// Laird Technologies (c) 2013
+'//
+'// Author & Conductor:  Mark Duncombe
+//
+'//******************************************************************************
+'//******************************************************************************
+'// Definitions
+'//******************************************************************************
+#define BT900_DEV_ID            0x42370900 
+#define BL600_DEV_ID            0x424C0600
+#define BL620_DEV_ID            0x424C0620
+
+
+'//******************************************************************************
+'// Global Variable Declarations
+'//******************************************************************************
+dim rc
+dim n
+dim scale[7]
+dim text$[7]
+
+
+//------------------------------------------------------------------------------
+//** #include the correct GPIO library file for the smartBASIC module being used 
+//------------------------------------------------------------------------------
+// #include "lib\gpio.bl6xx.sblib"
+#include "lib\gpio.bt9xx.sblib"
+
+
+scale[0] = 262 '// Do
+scale[1] = 294 '// Re
+scale[2] = 330 '// Mi
+scale[3] = 349 '// Fa
+scale[4] = 392 '// So
+scale[5] = 440 '// La
+scale[6] = 494 '// Si
+
+text$[0] = "Do"
+text$[1] = "Re"
+text$[2] = "Mi"
+text$[3] = "Fa"
+text$[4] = "So"
+text$[5] = "La"
+text$[6] = "Si"
+
+rc=GpioSetFunc(GPIO_BUZZER,2,3)  '// configure the SIO for the buzzer
+
+sub sound()
+ _gpiowrite(GPIO_BUZZER,scale[n])
+endsub
+
+sub quit()
+ timercancel(0)
+ _gpiowrite(GPIO_BUZZER,0)
+endsub
+
+
+'//Print devkit config info    
+select DEV_ID
+    print "\nEnsure the DIP switches on CON15 are set as follows:"
+    case BT900_DEV_ID
+        print "\n        OFF      ON"
+        print "\nRTC_SDA [1   x    ]"
+        print "\nRTC_SCL [2   x    ]"
+        print "\nBuzzer  [3     -->]"
+        print "\n        [4   x    ]"
+        print "\nx = doesn't matter"
+    '//BL600 or BL620    
+    case else
+        print "\n       OFF      ON"
+        print "\n       [1   x    ]"
+        print "\nBuzzer [2     -->]"
+        print "\nLED0   [3   x    ]"
+        print "\nLED1   [4   x    ]"
+        print "\nx = doesn't matter"
+endselect
+
+print "\n\n"
+
+
+TIMERSTART(0,500,1)
+n=0
+sound()
+Print text$[n];"\n"
+
+FUNCTION handlerTimer0()
+n=n+1
+if n>6 then
+ quit()
+ Print "\nExiting app"
+ EXITFUNC 0
+else
+ sound()
+ Print text$[n];"\n"
+endif
+ENDFUNC 1
+
+ONEVENT EVTMR0 CALL handlerTimer0
+
+WAITEVENT
+
+

@@ -1,0 +1,71 @@
+'//******************************************************************************
+'// Laird Technologies (c) 2014
+'//
+'// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+'// ######                                                                #######
+'// ######        Library File meant to be #included in files             #######
+'// ######                                                                #######
+'// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+'//
+'// This library contains all the GPIO related #defines that will help to make 
+'// your app portable between smartBASIC modules
+'//
+'// Module: BT900
+'//
+'//******************************************************************************
+
+AssertBT900()       //this is to make sure the application doesn't compile if this 
+                    //sblib file is #included for the wrong module
+'//******************************************************************************
+'// Definitions
+'//******************************************************************************
+#define DEV_ID                  SysInfo(0)
+#define GPIO_BUZZER             12
+
+#define GPIO_BTN0               13
+#define GPIO_BTN1               20
+
+#define GPIO_LED0               17
+#define GPIO_LED1               18
+
+#define GPIO_UART_RX            0
+#define GPIO_UART_TX            1
+#define GPIO_UART_RTS           2
+#define GPIO_UART_CTS           3
+#define GPIO_UART_DTR           4
+#define GPIO_UART_DCD           5
+#define GPIO_UART_RI            8
+
+#define GPIO_TEMP_SENSOR        21
+
+#define GPIO_TRIM_POT           20
+
+//-----------------------------------------------------------------------------
+// Max val from ADC = 0x0FFF (4095)
+// Max voltage = 3.3V
+//
+// mV = [3.3 * (adc/0x0FFF)] * 1000  
+//    = [33/10 * (adc/0x0FFF)] * 1000
+//-----------------------------------------------------------------------------
+function Adc2Mv(adc)
+endfunc (3300 * adc)/4095
+
+
+//-----------------------------------------------------------------------------
+//  ((1864-mV)*16)/1889 * 10 in 10th of mV
+//-----------------------------------------------------------------------------
+function Mv2Temperature(mv)
+// endfunc (mv/-1167) - (185830/-1167)
+endfunc ((1864-mV) * 160)/189
+
+
+//-----------------------------------------------------------------------------
+// GpioWrite -> Function in BT900
+//-----------------------------------------------------------------------------
+sub _gpiowrite(nSig, nVal)
+    rc=GpioWrite(nSig, nVal)
+endsub
+
+
+
+

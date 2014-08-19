@@ -1,0 +1,126 @@
+'//******************************************************************************
+'// Laird Technologies (c) 2013
+'//
+'// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+'// +++++                                                                      ++
+'// +++++  When UwTerminal downloads the app it will store it as a filenname   ++
+'// +++++  which consists of all characters up to the first . and excluding it ++
+'// +++++                                                                      ++
+'// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+'//
+'// Simple program that reads the development board trim pot value and
+'// prints it to the UART
+'//
+'// 25/01/2013
+'//
+'//******************************************************************************
+
+
+'//******************************************************************************
+'// Laird Technologies (c) 2013
+'//
+'// Close the uart to reduce current consumption
+'//
+'//******************************************************************************
+
+'//******************************************************************************
+'// Definitions
+'//******************************************************************************
+
+'//define how often to read the adc value in milliseconds
+#define pollrate 1000
+
+#define BT900_DEV_ID            0x42370900 
+#define BL600_DEV_ID            0x424C0600
+#define BL620_DEV_ID            0x424C0620
+
+'//******************************************************************************
+'// Global Variable Declarations
+'//******************************************************************************
+
+dim rc      '//result code
+dim adc
+dim mv
+
+
+'//******************************************************************************
+'// Library Import
+'//******************************************************************************
+//------------------------------------------------------------------------------
+//** #include the correct GPIO library file for the smartBASIC module being used 
+//------------------------------------------------------------------------------
+// #include "lib\gpio.bl6xx.sblib"
+#include "lib\gpio.bt9xx.sblib"
+
+
+
+
+'//******************************************************************************
+'// Function and Subroutine definitions
+'//******************************************************************************
+
+'//==============================================================================
+'//==============================================================================
+sub pollgpio()                  '//this subroutine sets up the GPIO and starts the main timer
+rc=GpioSetFunc(GPIO_TRIM_POT,1,2)               '//remover the pull resistor
+rc=GpioSetFunc(GPIO_TRIM_POT,3,0)               '//set as SIO 5 as analog in
+TimerStart(0,pollrate,1)            '//starts a repeating timer using the value defined by poll rate
+endsub
+
+'//==============================================================================
+'//==============================================================================
+sub printvalues()               '//this subroutine prints the ADC values every time the timer rolls over
+print "adc value is ";adc;"\n"
+print "Trim Pot millivolt value is ";mv;"\n"
+print "\n"
+endsub
+
+'//******************************************************************************
+'// Handler definitions
+'//******************************************************************************
+
+'//==============================================================================
+'//==============================================================================
+function HandlerTimer0()            '//this is what happens everytime the timer rolls over
+adc=GpioRead(GPIO_TRIM_POT)                 '//get the adc value from SIO 5
+mv=(adc*225)/128                '//convert the adc value into millivolts
+printvalues()                   '//call the subroutine that prints the values
+endfunc 1
+
+
+
+'//******************************************************************************
+'// Equivalent to main() in C
+'//******************************************************************************
+'//Print devkit config info    
+select DEV_ID
+    print "\nEnsure the DIP switches on CON14 are set as follows:"
+    case BT900_DEV_ID
+        print "\n        OFF      ON"
+        print "\nLED1    [1   x    ]"
+        print "\nLED1    [2   x    ]"
+        print "\nTempS   [3   x    ]"
+        print "\nTrimPot [4     -->]"
+        print "\nx = doesn't matter"
+    '//BL600 or BL620    
+    case else
+        print "\n        OFF      ON"
+        print "\n        [1   x    ]"
+        print "\nTempS   [2   x    ]"
+        print "\nTrimPot [3     -->]"
+        print "\n        [4   x    ]"
+        print "\nx = doesn't matter"
+endselect
+
+print "\n\n"
+
+OnEvent  EVTMR0             call HandlerTimer0  '//wait for timer to roll over and  then do everthing in handlertimer0
+
+pollgpio()                  '//this is what kicks it all off by calling the pollgpio subroutine
+
+'//------------------------------------------------------------------------------
+'// Wait for a synchronous event.
+'// An application can have multiple <WaitEvent> statements
+'//------------------------------------------------------------------------------
+waitevent
+

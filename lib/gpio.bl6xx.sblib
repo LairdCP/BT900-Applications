@@ -1,0 +1,83 @@
+'//******************************************************************************
+'// Laird Technologies (c) 2014
+'//
+'// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+'// ######                                                                #######
+'// ######        Library File meant to be #included in files             #######
+'// ######                                                                #######
+'// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+'//
+'// This library contains all the GPIO related #defines that will help to make 
+'// your app portable between smartBASIC modules
+'//
+'// Module: BL6xx
+'//
+'//******************************************************************************
+GpioWrite(18,0)     //this is to make sure the application doesn't compile if this 
+                        //sblib file is #included for the wrong module
+'//******************************************************************************
+'// Definitions
+'//******************************************************************************
+#define DEV_ID                  SysInfo(0)
+#define GPIO_BUZZER             15
+
+#define GPIO_BTN0               16
+#define GPIO_BTN1               17
+
+#define GPIO_LED0               18
+#define GPIO_LED1               19
+
+#define GPIO_UART_RX            22
+#define GPIO_UART_TX            21
+#define GPIO_UART_RTS           23
+#define GPIO_UART_CTS           24
+#define GPIO_UART_DTR           25
+#define GPIO_UART_DCD           29
+#define GPIO_UART_RI            30
+#define GPIO_UART_DSR           28
+
+#define GPIO_I2C_SDA            8
+#define GPIO_I2C_SCL            9
+#define GPIO_SPI_MOSI           10
+#define GPIO_SPI_MISO           11
+#define GPIO_SPI_CLK            12
+
+#define GPIO_TEMP_SENSOR        4
+
+#define GPIO_TRIM_POT           5
+
+
+// -----------------------------------------------------------------------------
+// Bandgap = 1200mv
+// Max Adc = 1024
+// Input scaled by 2/3
+//
+// Hence mV = (((adc/MaxADC) * Bandgap)*3)/2
+// refactoring for integer maths gives
+//  mv = (adc * Bandgap * 3)/(MaxADC*2)
+//  mv = (adc * 1200 * 3)/(1024 * 2)
+//  mv = (adc *  600 * 3)/1024
+//  mv = (adc *  150 * 3)/256
+//  mv = (adc *   75 * 3)/128
+//  mv = (adc *   225)/128
+// -----------------------------------------------------------------------------
+function Adc2Mv(adc)
+  adc = (adc * 225)/128
+endfunc adc
+
+//-----------------------------------------------------------------------------
+//  ((1864-mV)*16)/1889 * 10 in 10th of mV
+//-----------------------------------------------------------------------------
+function Mv2Temperature(mv)
+  mv = ((1864-mV) * 160)/189
+endfunc mv
+
+
+//-----------------------------------------------------------------------------
+// GpioWrite -> Subroutine in BL600
+//-----------------------------------------------------------------------------
+sub _gpiowrite(nSig, nVal)
+    GpioWrite(nSig, nVal)
+endsub
+
+
