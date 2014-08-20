@@ -133,7 +133,6 @@ function _SppConnect()
 		
 		else
 			tkn$ = strdehexize$(tkn$)
-			print "\nThe address is ";tkn$
 			rc = BtcSppConnect(tkn$)
 		endif
 	endwhile
@@ -181,7 +180,6 @@ function _auth()
 		
 		else
 			tkn$ = strdehexize$(tkn$)
-			print "the address here is ";tkn$
 			rc = BtcPair(tkn$, 0)						// Do not store bonding information 
 		endif
 	endwhile
@@ -193,7 +191,6 @@ endfunc 1
 //-------------------------------------------------------------------------
 function _leScan()
 	
-	print "Entered LeScan function\n"
 	dim si$
 	
 	while ExtractStrToken(urtcmd$, tkn$)!=0
@@ -220,7 +217,8 @@ function _leScan()
 			endif
 		endwhile
 		
-		exitfunc BleScanStart(10000, 0)						//Scan for 30 seconds. No filtering of adverts.	
+		print "LE Scan ...\n"
+		exitfunc BleScanStart(5000, 0)						//Scan for 30 seconds. No filtering of adverts.	
 endfunc 5
 //-------------------------------------------------------------------------
 //#CMD#//  inquiry config #INTcfgID# #INTvalue#
@@ -239,12 +237,7 @@ function _leConnect() as integer
 			exitfunc 1
 		
 		else
-			//tkn$ = right$(tkn$, 6)
-			print "the address before hexizing is ";tkn$
-			print "\n"
 			tkn$ = strdehexize$(tkn$)
-			print "the address after hexizing is ";tkn$
-			print "\n"
 			rc = BleConnect(tkn$, 5000, 20000, 75000, 5000000)						// ConnectionTimeoutms, minConIntervalus, maxConIntervalus, nSupervisionTimeoutus
 			if rc == 0 then
 				print "connectong \n"
@@ -270,7 +263,6 @@ function _leDisconnect() as integer
 		
 		else
 			tkn$ = strdehexize$(tkn$)
-			print "the address here is ";tkn$
 			rc = bledisconnect(hz)						// Do not store bonding information 
 		endif
 	endwhile
@@ -293,20 +285,22 @@ print "Reached gatt primary\n"
 			if strcmp(tkn$,"b")==0 then
 				rc = ExtractStrToken(urtcmd$,addr$)
 				// connect to this device and get handle
-				//addr$ = right$(addr$, 6)
 				addr$ = strdehexize$(addr$)
-				rc = BleConnect(addr$, 5000, 20000, 75000, 5000000)
-				if rc == 0 then
-					print "connectong \n"
-				else
-					print "not connectong, there is a problem\n"
-				endif
+				//rc = BleConnect(addr$, 5000, 20000, 75000, 5000000)
+				//if rc == 0 then
+				//	print "connectong \n"
+				//else
+				//	print "not connectong, there is a problem\n"
+				//endif
 				// discover services from handle
+				
+				rc = BleGattcOpen(0,0)
+				
 				rc = BleDiscServiceFirst(hz,0,0)
-				print "The connection handle heree os : ";hz
-				print "\n"
+				print "rc here is : ";integer.h' rc
+				//BleGattcClose()
 				// disconnect
-				rc = BleDisconnect(hz)
+				//rc = BleDisconnect(hz)
 			endif
 		endif
 	endwhile
