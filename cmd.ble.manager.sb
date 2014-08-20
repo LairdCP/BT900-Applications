@@ -352,9 +352,9 @@
 //    - #INTidx# will be checked for valid index 
 //
 // -----------------------------------------------------------------------------
-// pair authenticate #INTconnHandle# #INTenablebonding#
+// blepair #INTconnHandle# #INTenablebonding#
 //    - Security Manager related
-//    - This will result in BleAuthenticate() being called and is used to
+//    - This will result in BlePair() being called and is used to
 //      initiate a pairing and if #INTenablebonding# is nonzero then a bonding
 //      will be performed which means the trusted device database will be updated
 //
@@ -1493,7 +1493,6 @@ endfunc 5
 //#CMD#//  pair keysize  #INTminsize# #INTmaxsize#
 //#CMD#//  pair iocap    #INTiocap#
 //#CMD#//  pair passkey  #INTconnHandle# #INTpasscode#
-//#CMD#//  pair authenticate #INTconnHandle# #INTenablebonding#
 //-------------------------------------------------------------------------
 function _Pair()  
     tlen = ExtractStrToken(urtcmd$,tkn$)
@@ -1529,32 +1528,24 @@ function _Pair()
             exitfunc rc
         endif
         exitfunc BleSecMngrPassKey(hc[i[1]],i[2])
-    endif 
-    
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    if strcmp(tkn$,"authenticate")==0 then
-        //extract 2 (#INTconnHandle# #INTenablebonding#) and store starting at i[1]
-        rc = ExtractIntTokens(urtcmd$,1,2)
-        if rc != 0 then
-            exitfunc rc
-        endif
-        rc = BleSecMngrBondReq(i[2])
-        if rc != 0 then
-            exitfunc rc
-        endif
-        exitfunc BleAuthenticate(hc[i[1]])
     endif  
-    
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+endfunc 5
+
+
+//-------------------------------------------------------------------------
+//#CMD#//  blepair  #INTconnHandle# #INTenablebonding#
+//-------------------------------------------------------------------------
+function _BlePair() 
     //extract 2 (#INTconnHandle# #INTenablebonding#) and store starting at i[1]
     rc = ExtractIntTokens(urtcmd$,1,2)
     if rc != 0 then
         exitfunc rc
     endif
-    // exitfunc BlePair(hc[i[1]], i[2])
     '//Temporary workaround until BlePair is implemented for BL620
+    // exitfunc BlePair(hc[i[1]], i[2])   
     exitfunc BLE_PAIR       //see #define in sblib file
 endfunc 5
+
 
 //-------------------------------------------------------------------------
 //#CMD#//  misc s$ clearall
@@ -1671,6 +1662,9 @@ function OnUartCmd() as integer
       
     elseif strcmp(tkn$,"pair")==0 then
       rc = _Pair()
+      
+    elseif strcmp(tkn$,"blepair")==0 || strcmp(tkn$,"ble pair")==0 then
+      rc = _BlePair()
     
     elseif strcmp(tkn$,"txpower")==0 then
       rc = _TxPower()

@@ -203,6 +203,8 @@
 '//Temporary workaround until BlePair is implemented for BL620
 #define BLE_PAIR    BlePair(hc[i[1]], i[2])
 
+
+
 //******************************************************************************
 // Global Variable Declarations
 //******************************************************************************

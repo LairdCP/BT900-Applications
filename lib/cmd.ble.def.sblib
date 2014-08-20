@@ -33,8 +33,25 @@ endfunc 0
 function _btcbond()  
 endfunc 0
 
+
+'//Temporary workaround until BlePair is implemented for BL620
 function Pair()
-endfunc -2
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    //extract 2 (#INTconnHandle# #INTenablebonding#) and store starting at i[1]
+    rc = ExtractIntTokens(urtcmd$,1,2)
+    if rc != 0 then
+        exitfunc rc
+    endif
+    
+    rc=BleSecMngrBondReq(i[2])
+    if rc != 0 then
+        exitfunc rc
+    endif
+    
+    exitfunc BleAuthenticate(hc[i[1]])
+endfunc 5
+
+
 
 //******************************************************************************
 // Definitions
