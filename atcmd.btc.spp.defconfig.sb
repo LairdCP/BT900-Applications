@@ -1,0 +1,84 @@
+//******************************************************************************
+// Laird Technologies (c) 2014
+//
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// +++++                                                                      ++
+// +++++  When UwTerminal downloads the app it will store it as a filenname   ++
+// +++++  which consists of all characters up to the first . and excluding it ++
+// +++++                                                                      ++
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//
+// atcmd.btc.spp.defconfig.sb
+//
+//
+// This smartBASIC application provides a command line interface for testing SPP.
+//
+// This top level .sb file is used to configure the application for individual modules
+// so you can configure and save a different copy of this file for each module.
+// It imports atcmd.btc.spp.sblib.
+// 
+// *Instructions*
+//      1. Set FRIENDLY_NAME to the name you want other devices to identify your module as
+//      2. Set PEER_BT_ADDR to the BT Address of the peer device you want to connect to by default
+//      3. Set DEV_DEFAULT_MODE, OPEN_SPP_ON_STARTUP and CONNECT_ON_STARTUP
+//
+//
+// *Example* - 2 BT900 modules. BT900-A is an SPP client and connects to BT900-B, an SPP server
+//      ::BT900-A config::
+//          #define CONNECT_ON_STARTUP       1
+//          #define DEV_DEFAULT_MODE         0x01               //connectable, discoverable (general)  
+//          #define PEER_BT_ADDR             "11233AABBCC"     //BT address of BT900-B
+//
+//      ::BT900-B config::
+//          #define OPEN_SPP_ON_STARTUP      1                  //connect to BT900-A on startup
+//          #define CONNECT_ON_STARTUP       0
+//          #define DEV_DEFAULT_MODE         0x09               //connectable, discoverable (general)      
+//
+//******************************************************************************
+
+//******************************************************************************
+// Definitions
+//******************************************************************************
+
+        //if set to 1, on startup an SPP port will be opened for peer devices to connect to
+#define OPEN_SPP_ON_STARTUP                  0
+
+        //if set to 1, on startup the module will connect to device PEER_BT_ADDR for SPP
+#define CONNECT_ON_STARTUP                   0
+
+
+       '//Default mode to put the module in on startup
+        // Bit	Description
+        // 0	Connectable
+        // 1 	Pairable (Bit 0 must be set if you set Bit 1)
+        // 2	Limited Discoverability
+        // 3	General Discoverability 
+#define DEV_DEFAULT_MODE                     0x09   //connectable, discoverable (general)  
+
+        //Default BT Friendly Name - name of device seen by other devices
+#define FRIENDLY_NAME                    "Laird BT900"
+
+        //Set this to the BT address of the BT classic device you want to connect to by default
+#define PEER_BT_ADDR                     "0016A4093A5F"
+
+
+//Inquiry config parameters (See description for BtcInquiryConfig() in BT900 Extention user manual)
+#define INQR_TMT                           10   //Inquiry timeout in seconds   
+#define INQR_TYPE                          0    //Inquiry type - general inquiry     
+#define INQR_MODE                          2    //Inquiry mode - extended inquiry        
+#define MAX_DEVS_REC_RESP                  100  //Max number of devices to receive inquiry responses from
+
+       
+
+        //Set this to 0 to disable all debugging messages
+#define ENABLE_DEBUG_PRINTS                  1
+
+
+
+//******************************************************************************
+// Library Import
+//******************************************************************************
+#include "lib\atcmd.btc.spp.sblib"
+
+
+
