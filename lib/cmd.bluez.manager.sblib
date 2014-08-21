@@ -297,7 +297,6 @@ print "Reached gatt primary\n"
 				rc = BleGattcOpen(0,0)
 				
 				rc = BleDiscServiceFirst(hz,0,0)
-				print "rc here is : ";integer.h' rc
 				//BleGattcClose()
 				// disconnect
 				//rc = BleDisconnect(hz)
@@ -311,4 +310,34 @@ endfunc 1
 //#CMD#//  inquiry cancel
 //-------------------------------------------------------------------------
 function _GattChar() as integer
+		dim addr$
+		while ExtractStrToken(urtcmd$, tkn$)!=0
+		if strcmp(tkn$,"help")==0 then
+			//print the gatttool help menu
+			print "Usage:\n"
+			print "		gatttool -b <MAC Address> \n"
+			
+			exitfunc 1
+		else
+			if strcmp(tkn$,"b")==0 then
+				rc = ExtractStrToken(urtcmd$,addr$)
+				// connect to this device and get handle
+				addr$ = strdehexize$(addr$)
+				//rc = BleConnect(addr$, 5000, 20000, 75000, 5000000)
+				//if rc == 0 then
+				//	print "connectong \n"
+				//else
+				//	print "not connectong, there is a problem\n"
+				//endif
+				// discover services from handle
+				
+				rc = BleGattcOpen(0,0)
+				
+				rc = BleDiscServiceFirst(hz,0,0)
+				//BleGattcClose()
+				// disconnect
+				//rc = BleDisconnect(hz)
+			endif
+		endif
+	endwhile
 endfunc 1

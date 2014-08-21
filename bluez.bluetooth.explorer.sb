@@ -66,6 +66,49 @@
 #define BLE_EVBLEMSGID_UNENCRYPTED                     20 // msgCtx = connection handle
 #define BLE_EVBLEMSGID_DEVICENAME_WRITE                21 // msgCtx = connection handle 
 
+//BLUEZ COMMAND IDs: HCITOOL
+#define BLUEZ_COMMAND_HCITOOL_DEV						1
+#define BLUEZ_COMMAND_HCITOOL_INQ						2
+#define BLUEZ_COMMAND_HCITOOL_SCAN						3
+#define BLUEZ_COMMAND_HCITOOL_NAME						5
+#define BLUEZ_COMMAND_HCITOOL_INFO						6
+#define BLUEZ_COMMAND_HCITOOL_SPINQ						7
+#define BLUEZ_COMMAND_HCITOOL_EPINQ						8
+#define BLUEZ_COMMAND_HCITOOL_CMD						9
+#define BLUEZ_COMMAND_HCITOOL_CON						10
+#define BLUEZ_COMMAND_HCITOOL_CC						11
+#define BLUEZ_COMMAND_HCITOOL_DC						12
+#define BLUEZ_COMMAND_HCITOOL_SR						13
+#define BLUEZ_COMMAND_HCITOOL_CPT						14
+#define BLUEZ_COMMAND_HCITOOL_RSSI						15
+//#define BLUEZ_COMMAND_HCITOOL_SCAN						16
+#define BLUEZ_COMMAND_HCITOOL_LQ						17
+#define BLUEZ_COMMAND_HCITOOL_TPL						18
+#define BLUEZ_COMMAND_HCITOOL_AFH						19
+#define BLUEZ_COMMAND_HCITOOL_LP						20
+#define BLUEZ_COMMAND_HCITOOL_LST						21
+#define BLUEZ_COMMAND_HCITOOL_AUTH						22
+#define BLUEZ_COMMAND_HCITOOL_ENC						23
+#define BLUEZ_COMMAND_HCITOOL_KEY						24
+#define BLUEZ_COMMAND_HCITOOL_CLKOFF					25
+#define BLUEZ_COMMAND_HCITOOL_CLOCK						26
+#define BLUEZ_COMMAND_HCITOOL_LESCAN					27
+#define BLUEZ_COMMAND_HCITOOL_LEWLADD					28
+#define BLUEZ_COMMAND_HCITOOL_LEWLRM					29
+#define BLUEZ_COMMAND_HCITOOL_LEWLSZ					30
+#define BLUEZ_COMMAND_HCITOOL_LEWLCLR					31
+#define BLUEZ_COMMAND_HCITOOL_LECC						32
+#define BLUEZ_COMMAND_HCITOOL_LEDC						33
+#define BLUEZ_COMMAND_HCITOOL_LECUP						34
+
+//BLUEZ COMMAND IDs: GATTTOOL
+#define BLUEZ_COMMAND_GATTTOOL_PRIMARY					41
+#define BLUEZ_COMMAND_GATTTOOL_CHARACTERISTICS			42
+#define BLUEZ_COMMAND_GATTTOOL_CHAR_READ				43
+#define BLUEZ_COMMAND_GATTTOOL_CHAR_WRITE				44
+#define BLUEZ_COMMAND_GATTTOOL_CHAR_WRITE_REQ			45
+#define BLUEZ_COMMAND_GATTTOOL_CHAR_DESC				46
+#define BLUEZ_COMMAND_GATTTOOL_LISTEN					47
 
 //******************************************************************************
 // Global Variable Declarations
@@ -80,11 +123,16 @@ dim i[NUM_OF_I_PARAMS]      // index 0 used for return values
 dim hc[NUM_OF_CONNS+1]      // contains connection handles
 dim conns                   // number of connections
 dim name$					// device name
+
 dim hz						// this is the handle of the current connection (currently used by --primary)
 dim gcState                 // gatt client state, 0=IDLE, 1=TableMapping
+dim sAttr
+dim eAttr
 
 dim prAddr$              	// BT address of last device pairing requested from or initiated with
 dim hcSpp                   // handle of connection to use for VSP service
+
+dim command
 //******************************************************************************
 // Initialise Global Variable
 //******************************************************************************
@@ -93,7 +141,8 @@ ok$    = "\nOK"
 er$    = "\nERROR "
 pr$    = "\r\n>"
 
-urts=0 //not suspended
+urts = 0					// not suspended
+command = 0					// no command being processed
 
 //==============================================================================
 //==============================================================================
@@ -397,10 +446,12 @@ function _Gatt()
 	endif
 
 	if strcmp(tkn$,"primary")==0 then
+		command = BLUEZ_COMMAND_GATTTOOL_PRIMARY
 		rc = _GattPrimary()
 	endif	
 
 	if strcmp(tkn$,"characteristics")==0 then
+		command = BLUEZ_COMMAND_GATTTOOL_CHARACTERISTICS
 		rc = _GattChar()
 	endif
 endfunc 1
@@ -657,20 +708,69 @@ endfunc 1
 function HandlerPrimSvc(hConn,hUuid,hStart,hEnd) as integer
   //select gcState
  // case 0
-	print "\n"
-    print "attr handle = ";integer.h' hStart;"  ,end grp handle = ";integer.h' hEnd;//")"
-	//print "hConn = ";integer.h' hConn;", 
-	print "  uuid : ";integer.h' hUuid
-	rc = BleDiscServiceNext(hz) 
-	if rc != 0 then 
-		print "\nScan abort  ";rc
-		exitfunc 0 
+	sAttr = hStart
+	eAttr = hEnd
+	if command == BLUEZ_COMMAND_GATTTOOL_PRIMARY then
+		print "\n"
+		print "attr handle = ";integer.h' hStart;"  ,end grp handle = ";integer.h' hEnd;//")"
+		//print "hConn = ";integer.h' hConn;", 
+		print "  uuid : ";integer.h' hUuid
+		rc = BleDiscServiceNext(hz)
+		if rc != 0 then 
+			print "\n"
+			BleGattcClose()
+			exitfunc 1 
+		endif
+	
+	elseif command == BLUEZ_COMMAND_GATTTOOL_CHARACTERISTICS then
+		rc = BleDiscCharFirst(hz,0,sAttr,eAttr)
+	
 	endif
+	
+	
 endfunc 1
 
 //==============================================================================
 //==============================================================================
-
+function HandlerCharDisc(hConn,hUuid,cProp,hVal,hiUuid) as integer
+    //print "hConn=";integer.h' hConn;",hCharUuid=";integer.h' hUuid;",hIncUuid=";hiUuid
+    //print ",hVal=";hVal;",Props=";integer.h' cProp;")"
+	
+	print "\n"
+	print "handle = ";integer.h' hConn
+	print ", char properties = ";integer.h' cProp
+	print ", char value handle = ";integer.h' hVal
+	print ", uuid = ";integer.h' hUuid
+	
+	//rc=BleGattcRead(hConn,0,0)
+	rc = BleDiscCharNext(hz)
+	if rc != 0 then
+		//print "\n";rc
+		rc = BleDiscServiceNext(hz)
+			if rc !=0 then
+				BleGattcClose()
+			endif
+		exitfunc 1
+	endif
+	
+endfunc 1
+//==============================================================================
+//==============================================================================
+function HandlerAttrRead(hConn,hAttr,nSts) as integer
+  
+  print "Entered HandlerAttrRead\n"
+  //dim a$,ofst  
+  //print "\nEVATTRREAD(hConn=";hConn;",handle=";hAttr;",status=";nSts;")"
+  //if nSts == 0 then
+  //  rc = BleGattcReadData(hConn,hAttr,ofst,a$)
+  //  if rc==0 then
+  //    print "\n >BleGattcReadData(data=";StrHexize$(a$);",offset=";ofst;")"
+  //    print "\n                  (data=";StrEscape$(a$);")"
+  //  endif
+  //endif        
+endfunc 1
+//==============================================================================
+//==============================================================================
 
 //==============================================================================
 // This handler is called when data has arrived at the serial port
@@ -717,6 +817,8 @@ OnEvent  EVBLEMSG                 	call HandlerBleMsg
 OnEvent EvDiscon                  	call HndlrDiscon
 
 OnEvent  EVDISCPRIMSVC            	call HandlerPrimSvc
+OnEvent  EVDISCCHAR               	call HandlerCharDisc
+OnEvent EVATTRREAD 					call HandlerAttrRead
 
 //OnEvent 
 //==============================================================================
