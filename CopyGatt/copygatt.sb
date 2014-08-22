@@ -1,0 +1,356 @@
+'//******************************************************************************
+'//******************************************************************************
+'// Laird Technologies (c) 2014
+'//
+'// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+'// +++++                                                                      ++
+'// +++++  When UwTerminal downloads the app it will store it as a filenname   ++
+'// +++++  which consists of all characters up to the first . and excluding it ++
+'// +++++                                                                      ++
+'// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+'//
+'// CopyGatt Gatt Cloner -- clones a GattServer and then hosts using it's data
+'//
+'//   ####################################
+'//   #                                  #
+'//   #  Search for TODO to make changes #
+'//   #                                  #
+'//   ####################################
+'//
+'//******************************************************************************
+
+'//******************************************************************************
+'// Definitions
+'//******************************************************************************
+#define PeripMac "\01\D9\CC\DF\16\F7\E9" //MAC address of the GATT server to clone from
+
+#define BLE_SERVICE_SECONDARY		0
+#define BLE_SERVICE_PRIMARY			1
+
+'//******************************************************************************
+'// Global Variables
+'//******************************************************************************
+dim rc
+dim hC
+dim PeripMac$ : PeripMac$ = PeripMac
+dim i
+dim mdVal
+
+dim nServices : nServices = 0
+dim uSArray[7] //Stores services
+dim sHArray[7]
+dim eHArray[7]
+dim CHArray[20] //Stores characteristics
+dim DSArray[40] //Stores descriptors
+dim SPos : SPos=0	//Current service position
+dim CHPos : CHPos=0	//Current characteristic position
+dim DSPos : DSPos=0	//Current descriptor position
+
+dim TempDSPosition
+dim TempDSArrayUUID[7]
+dim TempDSArrayData$[7]
+dim TempCCCD$
+dim TempSCCD$
+dim TempType
+
+dim mdAttr, mdCccd, mdSccd, cP, cH
+
+dim l
+
+dim hService[7]
+dim resCode
+
+dim a : a = 0
+
+dim Mode : Mode = 0 //0 when cloning, 1 when running
+
+'//******************************************************************************
+'// Register Error Handler as early as possible
+'//******************************************************************************
+SUB HandlerOnErr()
+	//TODO
+ENDSUB
+ONERROR NEXT HandlerOnErr
+
+'//******************************************************************************
+'// Command success handler
+'//******************************************************************************
+SUB AssertRC(rc,ln)   
+    IF rc!=0 THEN
+        PRINT "\nFail :";integer.h' rc;" at tag ";ln
+		rc=BleDisconnect(hC)
+    ENDIF
+ENDSUB
+
+FUNCTION AddChar()
+	//Function to add a characteristic
+	dim hrs$
+	IF ((cP & 32) == 32 || (cP & 16) == 16) THEN
+		//CCCD present
+		mdCccd = BleAttrMetadata(1,1,2,0,rc)
+	ELSE
+		//No CCCD
+		mdCccd = 0
+	ENDIF
+		
+	IF ((cP & 1) == 1) THEN
+		//SCCD present
+		mdSccd = BleAttrMetadata(1,1,2,0,rc)
+	ELSE
+		//No SCCD
+		mdSccd = 0
+	ENDIF
+
+	//This adds the characteristic
+	IF ((cP & 2) == 2 && ((cP & 4) == 4 || (cP & 8) == 8)) THEN
+		//Readable and writeable
+		mdAttr = BleAttrMetadata(1,1,20,0,rc)
+	ELSEIF ((cP & 2) == 2) THEN
+		//Readable
+		mdAttr = BleAttrMetadata(1,0,20,0,rc)
+	ELSEIF ((cP & 4) == 4 || (cP & 8) == 8) THEN
+		//Writeable
+		mdAttr = BleAttrMetadata(0,1,20,0,rc)
+	ELSE
+		//No access
+		mdAttr = BleAttrMetadata(0,0,20,0,rc)
+	ENDIF
+	rc = BleCharNew(cP,cH,mdAttr,mdCccd,MdSccd)
+	assertrc(rc,127)
+
+	//Add descriptors
+	WHILE (a < TempDSPosition)
+		//Each descriptor
+		DIM metasuccess
+		DIM mdChrDsc : mdChrDsc = BleAttrMetadata(1,0,STRLEN(TempDSArrayData$[a]),0,metaSuccess) 
+		rc=BleCharDescAdd(TempDSArrayUUID[a],TempDSArrayData$[a],mdChrDsc)
+		assertrc(rc,135)
+		A = A+1
+	ENDWHILE
+
+	//Commit characteristic
+	rc = BleCharCommit(hService[i],hrs$,CHArray[CHPos])  
+	assertrc(rc,141)
+ENDFUNC 1
+
+'//******************************************************************************
+'// a
+'//******************************************************************************
+FUNCTION ConnectionSuccess(nMsgID, nCtx)
+	IF nMsgID == 0 THEN
+		//Connection active
+		hC = nCtx
+		print "Connected!\n"
+		IF Mode == 0 THEN
+			i = 0
+			rc=BLEDISCSERVICEFIRST(hC,0,0)
+			AssertRC(rc,158)
+		ENDIF
+	ELSEIF nMsgID == 1 THEN
+		//Disconnected
+		print "Disconnected.\n"
+
+		//Commit all characteristics to the services
+		i = 0
+		while i < NServices
+		//Commit the characteristic to the service
+			rc=BLESERVICECOMMIT(hService[i+1])
+			assertrc(rc,169)
+			i = i+1
+		ENDWHILE
+
+		//768 = BLE_APPEARANCE_GENERIC_THERMOMETER
+		rc=BLEGAPSVCINIT("CopyGATT", 0, 768, 80000, 100000, 4000000, 0)
+		AssertRC(rc,175)
+		rc=BLESVCREGDEVINFO("Laird", "BT900", "", "1.0", "1.0", "", "", "")
+		AssertRC(rc,177)
+
+DIM advRpt$ : advRpt$=""
+DIM scRpt$ : scRpt$=""
+DIM discovMode : discovMode = 1
+DIM advApprnce : advApprnce = 1
+DIM maxDevName : maxDevName = 10
+
+		dim addr$ : addr$ = ""
+		rc=BLEADVERTSTART(0, addr$, 800, 0, 0)
+		AssertRC(rc,187)
+		Mode = 1
+		print "Now running as a GATT server.\n"
+	ELSEIF nMsgID == 4 THEN
+		//Service error
+		print "Service error!\n"
+	ELSEIF nMsgID == 10 THEN
+		//New bond created
+		print "New bond created.\n"
+	ELSEIF nMsgID == 11 THEN
+		//Pairing in progress, Ctx is passkey
+		print "Passkey request for pairing, type: ";nCtx;"\n"
+	ELSEIF nMsgID == 14 THEN
+		//New connection parameters
+		print "New parameter update.\n"
+		hC = nCtx
+'		rc=BleGattcFindDesc(Hc, BleHandleUuid16(SERVICE_UUID), 0, BleHandleUuid16(CHAR_UUID), 0, BleHandleUuid16(DESC_UUID), 0)
+	ELSEIF nMsgID == 16 THEN
+		//Connected to bonded master
+		PRINT "Bonded to master.\n"
+	ELSEIF nMsgID == 17 THEN
+		//Bonding updated with long-term key
+		PRINT "Bonding Updated!\n"
+	ELSEIF nMsgID == 18 THEN
+		//Connection now encrypted
+		PRINT "Connection Encrypted!\n"
+	ELSEIF nMsgID == 20 THEN
+		//Connection no longer encrypted
+		PRINT "Connection Unencrypted!\n"
+	ELSE
+		//Unknown
+		PRINT "Unknown msg (";nMsgID;")"
+	ENDIF
+ENDFUNC 1
+
+FUNCTION ConnectionFail()
+	PRINT "Error: connection timed out\n"
+ENDFUNC 0
+
+//FUNCTION DescFound(hC, Hndl)
+//		rc=BleGattcWrite(hC, Hndl, Ns$)
+//		AssertRC(rc,129)
+//		PRINT "Got Desc (";hC;") (";Hndl;")\n"
+//		rc=BleGattcWrite(hC, Hndl, s$)
+//		AssertRC(rc,132)
+//ENDFUNC 1
+
+//cHndl=130816 attrHndl=29 data=041F0100FF02 discarded=0 
+
+FUNCTION ReadGattData(hC, hA, Status)
+	//Runs when data has been read from the GATT Server
+	dim offset, RData$
+	IF Status == 0 THEN
+		//Successfully retrieved data, add to the store
+		rc=BleGATTcReadData(hC, hA, offset, RData$)
+		IF (TempType == 0) THEN
+			//Append to descriptor array
+			TempDSArrayData$[TempDSPosition] = RData$
+			TempDSPosition = TempDSPosition+1
+		ELSEIF (TempType == 1) THEN
+			//CCCD
+			TempCCCD$ = RData$
+		ELSEIF (TempType == 2) THEN
+			//SCCD
+			TempSCCD$ = RData$
+		ENDIF
+	ENDIF
+		rc=BLEDISCDESCNEXT(hC)
+		IF rc != 0 THEN
+			//End of scanning.
+			PRINT "Finished!\n"
+			rc=BLEDISCCHARNEXT(hC)
+			IF rc != 0 THEN
+				rc=BLEDISCCHARNEXT(hC)
+				IF rc != 0 THEN
+					rc=BLEDISCSERVICENEXT(hC)
+				ENDIF
+			ENDIF
+		ENDIF
+		
+ENDFUNC 1
+
+FUNCTION ServDiscover(uC, uS, sH, eH)
+	IF (uS == 0 || sH == 0 || eH == 0) THEN
+		//Reached the end of the service list
+		rc=BleDisconnect(hC)
+	ELSE
+		IF (uS == -33482751 || uS ==  -33482752 || uS == -33482742) THEN
+			//Ignore this service and skip to the next one
+			rc=BLEDISCSERVICENEXT(uC)
+		ELSE
+			//Store the service details in an array
+			uSArray[i] = uS
+			sHArray[i] = sH
+			eHArray[i] = eH
+			nServices = nServices+1
+
+			//Add the service
+			i = i+1
+			rc=(uS & 0xffff)
+			rc=BleHandleUuid16(rc)
+			rc=BLESERVICENEW(BLE_SERVICE_PRIMARY, rc, hService[i])
+			assertrc(rc,296)
+			rc=BLEDISCCHARFIRST(uC, 0, sH, eH)
+		ENDIF
+	ENDIF
+ENDFUNC 1
+
+FUNCTION CharDiscover(uC, cH2, cP2, cV, junk)
+	if (cH2 != 0 && cP2 != 0 && cV != 0) THEN
+		cP = cP2
+		cH = cH2
+
+		//Increment the characteristic array position
+		CHPos = CHPos+1
+ 
+		rc=BLEDISCDESCFIRST(uC, 0, cV)
+		IF rc != 0 THEN
+			print "Finished this scan\n"
+			rc=BLEDISCSERVICENEXT(uC)
+		ENDIF
+	ELSE
+		
+		//Scanning of remote GATT table complete
+		rc=BLEDISCONNECT(uC)
+	ENDIF
+ENDFUNC 1
+
+FUNCTION DescDiscover(uC, dH, rGTH)
+	//Runs when a descriptor is discovered
+	IF (dH == 0 && rGTH == 0) THEN
+		//Add the characteristic now
+		rc=AddChar()
+		
+		//Search for next characteristic
+		rc=BLEDISCCHARNEXT(uC)
+		IF rc != 0 THEN
+			//Search for the next service
+			rc=BLEDISCSERVICENEXT(uC)
+		ENDIF
+	ELSE
+		dim dH_UUID : dH_UUID = (dH & 0xffff)
+		IF (dH_UUID >= 0x2905 && dH_UUID <= 0x2999) THEN
+			//Normal descriptor
+			TempDSArrayUUID[TempDSPosition] = dH_UUID
+			TempType = 0
+		ELSEIF (dH_UUID == 0x2902) THEN
+			//CCCD
+			TempType = 1
+		ELSEIF (dH_UUID == 0x2903) THEN
+			//SCCD
+			TempType = 2
+		ELSE
+			//Unsupported
+			TempType = 10
+		ENDIF
+
+		//Read the descriptor
+		rc=BLEGATTCREAD(uC, rGTH, 0)
+	ENDIF
+ENDFUNC 1
+
+//Create a GATT client
+rc=BleGattcOpen(0,0)
+AssertRC(rc,358)
+
+//Connect to the peripheral device
+PRINT "Connecting...\n"
+rc=BleConnect(PeripMac$, 10000, 50, 200, 20000000)
+AssertRC(rc,363)
+
+//Events
+ONEVENT EVBLEMSG CALL ConnectionSuccess //Runs on bluetooth event
+ONEVENT EVBLE_CONN_TIMEOUT CALL ConnectionFail //Runs on connection timeout
+//ONEVENT EVFINDDESC CALL DescFound //Runs when a descriptor has been found
+ONEVENT EVATTRREAD CALL ReadGattData //Runs when data is retrieved from the GATT server
+ONEVENT EVDISCPRIMSVC CALL ServDiscover //Runs when a service has been discovered
+ONEVENT EVDISCCHAR CALL CharDiscover //Runs when a characteristic has been discovered
+ONEVENT EVDISCDESC CALL DescDiscover //Runs when a descriptor has been been discovered
+
+WAITEVENT
