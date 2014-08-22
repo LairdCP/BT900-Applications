@@ -15,7 +15,7 @@
 //
 // This top level .sb file is used to configure the application for individual modules
 // so you can configure and save a different copy of this file for each module.
-// It imports atcmd.btc.spp.sblib.
+// It #includes atcmd.btc.spp.sblib.
 // 
 // *Instructions*
 //      1. Set FRIENDLY_NAME to the name you want other devices to identify your module as
@@ -68,7 +68,8 @@
 #define INQR_MODE                          2    //Inquiry mode - extended inquiry        
 #define MAX_DEVS_REC_RESP                  100  //Max number of devices to receive inquiry responses from
 
-       
+        //for subsequent incoming pair requests, if set to 1, pairing information will be saved in bonding manager
+#define SAVE_PAIRINGS                      1         
 
         //Set this to 0 to disable all debugging messages
 #define ENABLE_DEBUG_PRINTS                  1
