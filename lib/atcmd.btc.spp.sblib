@@ -70,6 +70,9 @@
 //    -> Upon successful connection the application enters bridge mode. Any data 
 //       arriving at the UART is sent over the SPP connection.
 //
+//    -> Note: The SPP port must be open on the device you are connecting to
+//             ptherwise the two devices will not connect to eachother. 
+//
 // -----------------------------------------------------------------------------
 // ^^^
 //    - exit from bridge mode to command mode to accept the commands in this list.
@@ -469,7 +472,7 @@ function _connect()
     
     s$[1] = StrDehexize$(s$[1])
 
-    '//Stop inquiring in case
+    //Stop inquiring in case
     rc=BtcInquiryCancel()   
     
     rc=BtcSppConnect(s$[1])
@@ -635,7 +638,7 @@ function OnUartCmd() as integer
             rc=SendMsgApp(0,BRIDGE_SPP_MODE)
             rc=-1       //don't give response to user
             
-        elseif StrCmp(tkn$,"ath")==0 then
+        elseif StrCmp(tkn$,"ath")==0 || StrCmp(tkn$,"disconnect")==0 then
             rc = _disconnect()
     
         elseif strcmp(tkn$,"misc")==0 then
@@ -967,7 +970,7 @@ endfunc 1
 OnEvent  EVUARTRX               call HandlerUartRx
 OnEvent  EVINQRESP              call HandlerInqResp
 OnEvent  EVBTC_INQUIRY_TIMEOUT  call HandlerInqTO
-OnEvent  EVSPPCON               call HandlerSppConn
+OnEvent  EVSPPCONN               call HandlerSppConn
 OnEvent  EVSPPDISCON            call HandlerSppDiscon
 OnEvent  EVMSGAPP               call SetMode
 OnEvent  EVBTC_PAIR_RESULT      call HandlerPairRes

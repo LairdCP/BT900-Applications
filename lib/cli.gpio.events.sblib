@@ -474,15 +474,15 @@ function OnUartCmd(stData$,datalen) as integer
 
     elseif strcmp(stRS$,"gS ")==0 then   //gS nnnn   - Invoke _gpiowrite(nnnn,1)
       sio = strvaldec(stData$)
-      __gpiowrite(sio,1)
+      _gpiowrite(sio,1)
 
     elseif strcmp(stRS$,"gC ")==0 then   //gC nnnn   - Invoke __gpiowrite(nnnn,0)
       sio = strvaldec(stData$)
-      __gpiowrite(sio,0)
+      _gpiowrite(sio,0)
 
     elseif strcmp(stRS$,"gw ")==0 then   //gW nnnn   - Invoke __gpiowrite(nSioWr,nnnn)
       vl = strvaldec(stData$)
-      __gpiowrite(nSioWr,vl)
+      _gpiowrite(nSioWr,vl)
 
     elseif strcmp(stRS$,"prg")==0 then   //prg       - print current states of the 4 gpio pins (5,17,19,30)
       PrnGpioStates()

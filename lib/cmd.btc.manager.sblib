@@ -780,7 +780,7 @@ OnEvent  EVBTC_PAIR_REQUEST       call HandlerPairReq
 OnEvent  EVBTC_PIN_REQUEST        call HandlerPinReq
 OnEvent  EVBTC_PAIR_RESULT        call HandlerPairRes
 
-OnEvent  EVSPPCONN                 call HandlerSppCon
+OnEvent  EVSPPCONN                call HandlerSppCon
 OnEvent  EVBTC_SPP_CONN_TIMEOUT   call HandlerSppConnTimOut
 OnEvent  EVSPPDISCON              call HandlerSppDiscon
 OnEvent  EVBTC_SPP_DATA_RECEIVED  call HandlerSppDataCmd

@@ -383,6 +383,11 @@
 //    - #INTconnHandle# sepecifies the connection handle
 //
 // -----------------------------------------------------------------------------
+// blebond stats
+//    --- bluetooth classic functionality ---
+//    - Get the classic BT bonding manager database statistics.
+//
+// -----------------------------------------------------------------------------
 // scan abort
 //   - abort a scan operation (memory is not freed)
 //
@@ -1535,7 +1540,7 @@ endfunc 5
 //-------------------------------------------------------------------------
 //#CMD#//  blepair  #INTconnHandle# #INTenablebonding#
 //-------------------------------------------------------------------------
-function _BlePair() 
+function _BlePair()  
     //extract 2 (#INTconnHandle# #INTenablebonding#) and store starting at i[1]
     rc = ExtractIntTokens(urtcmd$,1,2)
     if rc != 0 then
@@ -1545,6 +1550,33 @@ function _BlePair()
     // exitfunc BlePair(hc[i[1]], i[2])   
     exitfunc BLE_PAIR       //see #define in sblib file
 endfunc 5
+
+
+// -------------------------------------------------------------------------
+// #CMD#//  blebond stats
+// -------------------------------------------------------------------------
+// function _BleBond() 
+    // tlen = ExtractStrToken(urtcmd$,tkn$)
+    // if tlen == 0 then
+        // exitfunc 5
+    // endif
+    
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // if strcmp(tkn$,"stats")==0 then
+        // i[0]=BleBondingStats(i[1],i[2])
+        // print "\n Capacity=";i[0];" Rolling=";i[1];" Persistent=";i[2];"\r"
+        // exitfunc 0
+        
+    // elseif
+    // extract 2 (#INTconnHandle# #INTenablebonding#) and store starting at i[1]
+    // rc = ExtractIntTokens(urtcmd$,1,2)
+    // if rc != 0 then
+        // exitfunc rc
+    // endif
+    // '//Temporary workaround until BlePair is implemented for BL620
+    // exitfunc BlePair(hc[i[1]], i[2])   
+    // exitfunc BLE_PAIR       //see #define in sblib file
+// endfunc 5
 
 
 //-------------------------------------------------------------------------
@@ -1663,8 +1695,11 @@ function OnUartCmd() as integer
     elseif strcmp(tkn$,"pair")==0 then
       rc = _Pair()
       
-    elseif strcmp(tkn$,"blepair")==0 || strcmp(tkn$,"ble pair")==0 then
+    elseif strcmp(tkn$,"blepair")==0 then
       rc = _BlePair()
+      
+    // elseif strcmp(tkn$,"blebond")==0 then
+      // rc = _BleBond()
     
     elseif strcmp(tkn$,"txpower")==0 then
       rc = _TxPower()
