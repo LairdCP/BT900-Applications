@@ -133,6 +133,7 @@ dim prAddr$              	// BT address of last device pairing requested from or
 dim hcSpp                   // handle of connection to use for VSP service
 
 dim command
+dim testhndl
 //******************************************************************************
 // Initialise Global Variable
 //******************************************************************************
@@ -454,6 +455,16 @@ function _Gatt()
 		command = BLUEZ_COMMAND_GATTTOOL_CHARACTERISTICS
 		rc = _GattChar()
 	endif
+	
+	if strcmp(tkn$, "char")==0 then 
+		strshiftleft(urtcmd$, 1)
+		rc = ExtractStrToken(urtcmd$, tkn$)
+		if strcmp(tkn$, "read")==0 then
+			rc = _GattCharRead()
+		endif
+	
+	endif
+	
 endfunc 1
 //==============================================================================
 //==============================================================================
@@ -651,7 +662,8 @@ function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as intege
     //hz = AcqConnHandle(nCtx)
     hz = nCtx
 	//conns = conns + 1
-    print "\n --- Connect: (";integer.h' nCtx;") handle=";hz
+    print "\nConnected\n" 
+	//(";integer.h' nCtx;") handle=";hz
     if hz == 0 then
       //Could not store the handle so drop the connection
       rc = BleDisconnect(nCtx)
@@ -700,7 +712,7 @@ endfunc 1
 // This handler is called when a BLE device disconnects
 //==============================================================================
 function HndlrDiscon(nCtx,nRsn) as integer
-	print "something must happen here\n"
+	print "Disconnected\n"
 endfunc 1 
 
 //==============================================================================
@@ -711,10 +723,10 @@ function HandlerPrimSvc(hConn,hUuid,hStart,hEnd) as integer
 	sAttr = hStart
 	eAttr = hEnd
 	if command == BLUEZ_COMMAND_GATTTOOL_PRIMARY then
-		print "\n"
-		print "attr handle = ";integer.h' hStart;"  ,end grp handle = ";integer.h' hEnd;//")"
-		//print "hConn = ";integer.h' hConn;", 
-		print "  uuid : ";integer.h' hUuid
+		print "\n" 
+		print "attr handle = 0x";integer.h' hStart
+		print ", end grp handle = 0x";integer.h' hEnd
+		print ", uuid = ";integer.h' hUuid
 		rc = BleDiscServiceNext(hz)
 		if rc != 0 then 
 			print "\n"
@@ -733,19 +745,17 @@ endfunc 1
 //==============================================================================
 //==============================================================================
 function HandlerCharDisc(hConn,hUuid,cProp,hVal,hiUuid) as integer
-    //print "hConn=";integer.h' hConn;",hCharUuid=";integer.h' hUuid;",hIncUuid=";hiUuid
-    //print ",hVal=";hVal;",Props=";integer.h' cProp;")"
+
+	if hUuid != 0 then
+		print "\n"
+		print "handle = 0x";integer.h' hVal-1
+		print ", char properties = 0x";integer.h' cProp
+		print ", char value handle = 0x";integer.h' hVal
+		print ", uuid = ";integer.h' hUuid
+	endif
 	
-	print "\n"
-	print "handle = ";integer.h' hConn
-	print ", char properties = ";integer.h' cProp
-	print ", char value handle = ";integer.h' hVal
-	print ", uuid = ";integer.h' hUuid
-	
-	//rc=BleGattcRead(hConn,0,0)
 	rc = BleDiscCharNext(hz)
 	if rc != 0 then
-		//print "\n";rc
 		rc = BleDiscServiceNext(hz)
 			if rc !=0 then
 				BleGattcClose()
@@ -757,17 +767,23 @@ endfunc 1
 //==============================================================================
 //==============================================================================
 function HandlerAttrRead(hConn,hAttr,nSts) as integer
-  
-  print "Entered HandlerAttrRead\n"
-  //dim a$,ofst  
-  //print "\nEVATTRREAD(hConn=";hConn;",handle=";hAttr;",status=";nSts;")"
-  //if nSts == 0 then
-  //  rc = BleGattcReadData(hConn,hAttr,ofst,a$)
-  //  if rc==0 then
-  //    print "\n >BleGattcReadData(data=";StrHexize$(a$);",offset=";ofst;")"
-  //    print "\n                  (data=";StrEscape$(a$);")"
-  //  endif
-  //endif        
+
+	dim a$,ofst  
+	if nSts == 0 then
+		rc = BleGattcReadData(hConn,testhndl,ofst,a$)
+		if rc==0 then
+			print "Characteristic value/descriptor: "
+			print "";StrHexize$(a$)
+			print " (";StrEscape$(a$);") \n"
+			print "\n"
+		else	
+			print "At handleAttrRea,d rc returns ";rc;"\n"
+		endif
+	
+	else 
+		print "nSts is not 0 \n"									//Must print correct error message here
+	endif  
+	
 endfunc 1
 //==============================================================================
 //==============================================================================
@@ -802,10 +818,10 @@ OnEvent  EVUARTRX					call HandlerUartRxCmd
 OnEvent EVINQRESP					call HandlerInqResp
 OnEvent	EVBTC_INQUIRY_TIMEOUT		call HandlerBtcInqTimOut	
 
-OnEvent  EVSPPCON                 	call HandlerSppCon
+OnEvent  EVSPPCONN                	call HandlerSppCon
 OnEvent  EVBTC_SPP_CONN_TIMEOUT   	call HandlerSppConnTimOut
 OnEvent  EVSPPDISCON              	call HandlerSppDiscon
-OnEvent  EVBTC_SPP_DATA_RECIEVED  	call HandlerSppData
+OnEvent  EVBTC_SPP_DATA_RECEIVED  	call HandlerSppData
 
 OnEvent  EVBTC_PAIR_REQUEST       	call HandlerPairReq
 OnEvent  EVBTC_PIN_REQUEST        	call HandlerPinReq

@@ -1,8 +1,6 @@
 
 //-------------------------------------------------------------------------
-//#CMD#//  inquiry config #INTcfgID# #INTvalue#
-//#CMD#//  inquiry start #INTinqTimeoutS#
-//#CMD#//  inquiry cancel
+// hcitool inq [--length=N] [--numrsp=N]				// [] denotes optional parameters
 //-------------------------------------------------------------------------
 function _inquiry()  
 	DIM inqLen, numRsp, si$
@@ -23,74 +21,36 @@ function _inquiry()
     //    exitfunc BtcInquiryCancel()
     //endif
 	
-    //if strcmp(tkn$,"config")==0 then
-        //extract 2 : (cfgID value) and store starting at i[1]
-    //    rc = ExtractIntTokens(urtcmd$,1,2)
-    //    if rc != 0 then
-    //        exitfunc rc
-    //    endif
-    //    exitfunc BtcInquiryConfig(i[1],i[2])  
-    //endif
-
-	//if strcmp(tkn$,"start")==0 then
-    //    //extract 1 : (inqTimeoutS) and store starting at i[1]
-    //    rc = ExtractIntTokens(urtcmd$,1,1)
-    //    if rc != 0 then
-    //        exitfunc rc
-    //    endif
-	//	print "Inquiring...\n"
-    //    exitfunc BtcInquiryStart(30)
-    //endif
-
-	//tlen = ExtractStrToken(urtcmd$,tkn$)
-	
-	//if strcmp(tkn$,"help")==0 then
-		//print the inquiry help menu
-	//	print "Usage:\n"
-	//	print "inq [--length=N] maximum inquiry duration in 1.28 s units\n"
-	//	print "		[--numrsp=N] specify maximum number of inquiry responses\n"
-	//	print "		[--iac=lap]  specify the inquiry access code\n"
-	//	print  "		[--flush]    flush the inquiry cache\n"
-	
-	//else
 		
-		//Extract all parameters to understand function before processing
-		while ExtractStrToken(urtcmd$, tkn$)!=0
-			si$ = Left$(tkn$,10)
-			if strcmp(tkn$,"help")==0 then
-				//print the inquiry help menu
-				print "Usage:\n"
-				print "	inq	[--length=N] maximum inquiry duration in 1.28 s units\n"
-				print "		[--numrsp=N] specify maximum number of inquiry responses\n"
-				print "		[--iac=lap]  specify the inquiry access code\n"
-				print "		[--flush]    flush the inquiry cache\n"
-				exitfunc 1
-			elseif strcmp(tkn$,"length")==0 then
+	//Extract all parameters to understand function before processing
+	while ExtractStrToken(urtcmd$, tkn$)!=0
+	si$ = Left$(tkn$,10)
+		if strcmp(tkn$,"help")==0 then
+			//print the inquiry help menu
+			print "Usage:\n"
+			print "	inq	[--length=N] maximum inquiry duration in 1.28 s units\n"
+			print "		[--numrsp=N] specify maximum number of inquiry responses\n"
+			//print "		[--iac=lap]  specify the inquiry access code\n"
+			//print "		[--flush]    flush the inquiry cache\n"
+			exitfunc 1
+		elseif strcmp(tkn$,"length")==0 then
+			strshiftleft(urtcmd$, 1)					//discard the = sign
+			rc = extractStrToken(urtcmd$, tkn$)			//take the next string from the command
+			rc = extractInttoken(tkn$,inqLen)			//extract the integer value of the string	
+		elseif strcmp(tkn$,"numrsp")==0 then
+			strshiftleft(urtcmd$, 1)					//discard the = sign
+			rc = extractStrToken(urtcmd$, tkn$)			//take the next string from the command
+			rc = extractInttoken(tkn$,numRsp)			//extract the integer value of the string
+		endif
+	endwhile
 
-				strshiftleft(urtcmd$, 1)					//discard the = sign
-				rc = extractStrToken(urtcmd$, tkn$)			//take the next string from the command
-				rc = extractInttoken(tkn$,inqLen)			//extract the integer value of the string
-			
-			elseif strcmp(tkn$,"numrsp")==0 then
-
-				strshiftleft(urtcmd$, 1)					//discard the = sign
-				rc = extractStrToken(urtcmd$, tkn$)			//take the next string from the command
-				rc = extractInttoken(tkn$,numRsp)			//extract the integer value of the string
-			
-			endif
-		endwhile
-
-		//Now begin inquiry
-		rc = btcInquiryConfig(4, numRsp)
-		exitfunc btcinquirystart(inqLen)
+	//Now begin inquiry
+	rc = btcInquiryConfig(4, numRsp)
+	exitfunc btcinquirystart(inqLen)					//Must check for rc here
 		
-	//endif
-	
 endfunc 5
 //-------------------------------------------------------------------------
-//#CMD#//  inquiry config #INTcfgID# #INTvalue#
-//#CMD#//  inquiry start #INTinqTimeoutS#
-//#CMD#//  inquiry cancel
+// hcitool dev
 //-------------------------------------------------------------------------
 function _dev()
 	
@@ -107,16 +67,12 @@ function _dev()
 	
 	str$ = SYSINFO$(4)
 	str$ = right$(str$, 6)
-	//str$ = StrHexize$(str$)
-	print "\n ";StrHexize$(str$)
+	print "";StrHexize$(str$);"\n"
 			
 endfunc 5
 //-------------------------------------------------------------------------
-//#CMD#//  inquiry config #INTcfgID# #INTvalue#
-//#CMD#//  inquiry start #INTinqTimeoutS#
-//#CMD#//  inquiry cancel
+// hcitool cc [--role=m|s] [--ptype=pkt_types] <bdaddr>				//[] denotes optional fields
 //-------------------------------------------------------------------------
-
 function _SppConnect()
 	DIM str$
 	
@@ -139,9 +95,7 @@ function _SppConnect()
 endfunc 5
 
 //-------------------------------------------------------------------------
-//#CMD#//  inquiry config #INTcfgID# #INTvalue#
-//#CMD#//  inquiry start #INTinqTimeoutS#
-//#CMD#//  inquiry cancel
+// hcitool dc <bdaddr>
 //-------------------------------------------------------------------------
 function _SppDisconnect()
 	DIM str$
@@ -163,9 +117,7 @@ function _SppDisconnect()
 endfunc 5
 
 //-------------------------------------------------------------------------
-//#CMD#//  inquiry config #INTcfgID# #INTvalue#
-//#CMD#//  inquiry start #INTinqTimeoutS#
-//#CMD#//  inquiry cancel
+// hcitool auth	<bdaddr>
 //-------------------------------------------------------------------------
 function _auth()
 	
@@ -185,9 +137,7 @@ function _auth()
 	endwhile
 endfunc 1
 //-------------------------------------------------------------------------
-//#CMD#//  inquiry config #INTcfgID# #INTvalue#
-//#CMD#//  inquiry start #INTinqTimeoutS#
-//#CMD#//  inquiry cancel
+// hcitool lescan [--privacy] [--passive] [--discovery=g|l] [--duplicates]			//[] denotes optional fields
 //-------------------------------------------------------------------------
 function _leScan()
 	
@@ -200,7 +150,7 @@ function _leScan()
 			print "Usage:\n"
 			print "		lescan [--privacy] enable privacy\n"
 			print "		lescan [--passive] set scan type passive (default active)\n"
-			print "		lescan [--discovery=g|l] enable general or limited discoveryprocedure\n"
+			print "		lescan [--discovery=g|l] enable general or limited discovery procedure\n"
 			print "		lescan [--duplicates] don't filter duplicates\n"
 				exitfunc 1
 			//elseif strcmp(tkn$,"privacy")==0 then
@@ -221,9 +171,7 @@ function _leScan()
 		exitfunc BleScanStart(5000, 0)						//Scan for 30 seconds. No filtering of adverts.	
 endfunc 5
 //-------------------------------------------------------------------------
-//#CMD#//  inquiry config #INTcfgID# #INTvalue#
-//#CMD#//  inquiry start #INTinqTimeoutS#
-//#CMD#//  inquiry cancel
+// hcitool lecc [--random] <bdaddr>							// [] denotes optional fields
 //-------------------------------------------------------------------------
 function _leConnect() as integer
 	
@@ -232,7 +180,7 @@ function _leConnect() as integer
 			//print the hcitool lecc help menu
 			print "Usage:\n"
 			print "		lecc [--random] <bdaddr>\n"
-			print "		lecc --whitelist\n"
+			//print "		lecc --whitelist\n"
 		
 			exitfunc 1
 		
@@ -240,7 +188,7 @@ function _leConnect() as integer
 			tkn$ = strdehexize$(tkn$)
 			rc = BleConnect(tkn$, 5000, 20000, 75000, 5000000)						// ConnectionTimeoutms, minConIntervalus, maxConIntervalus, nSupervisionTimeoutus
 			if rc == 0 then
-				print "connectong \n"
+				print "connecting... \n"
 			else
 				print "rc = ";integer.h' rc;"  not connectong, there is a problem \n"
 			endif
@@ -248,16 +196,14 @@ function _leConnect() as integer
 	endwhile
 endfunc 5
 //-------------------------------------------------------------------------
-//#CMD#//  inquiry config #INTcfgID# #INTvalue#
-//#CMD#//  inquiry start #INTinqTimeoutS#
-//#CMD#//  inquiry cancel
+// hcitool ledc <bdaddr>
 //-------------------------------------------------------------------------
 function _leDisconnect() as integer
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 			//print the hcitool ledc help menu
 			print "Usage:\n"
-			print "		ledc <handle>\n"
+			print "		ledc <bdaddr>\n"
 		
 			exitfunc 1
 		
@@ -267,8 +213,12 @@ function _leDisconnect() as integer
 		endif
 	endwhile
 endfunc 5
-//-------------------------------------------------------------------------
+//=========================================================================
 //						GATTTOOL
+//=========================================================================
+
+//-------------------------------------------------------------------------
+// gatttool -b <MAC Address> --primary
 //-------------------------------------------------------------------------
 function _GattPrimary() as integer
 
@@ -278,7 +228,7 @@ print "Reached gatt primary\n"
 		if strcmp(tkn$,"help")==0 then
 			//print the gatttool help menu
 			print "Usage:\n"
-			print "		gatttool -b <MAC Address> \n"
+			print "		gatttool -b <MAC Address> --primary\n"
 			
 			exitfunc 1
 		else
@@ -305,9 +255,7 @@ print "Reached gatt primary\n"
 	endwhile
 endfunc 1
 //-------------------------------------------------------------------------
-//#CMD#//  inquiry config #INTcfgID# #INTvalue#
-//#CMD#//  inquiry start #INTinqTimeoutS#
-//#CMD#//  inquiry cancel
+// gatttool -b <MAC Address> --characteristics
 //-------------------------------------------------------------------------
 function _GattChar() as integer
 		dim addr$
@@ -315,7 +263,7 @@ function _GattChar() as integer
 		if strcmp(tkn$,"help")==0 then
 			//print the gatttool help menu
 			print "Usage:\n"
-			print "		gatttool -b <MAC Address> \n"
+			print "		gatttool -b <MAC Address> --characteristics\n"
 			
 			exitfunc 1
 		else
@@ -340,4 +288,34 @@ function _GattChar() as integer
 			endif
 		endif
 	endwhile
+endfunc 1
+//-------------------------------------------------------------------------
+// gatttool -b <MAC Address> --char-read --handle=0x0000
+//-------------------------------------------------------------------------
+function _GattCharRead() as integer
+	dim addr$, hndl
+	
+	while ExtractStrToken(urtcmd$, tkn$)!=0
+		if strcmp(tkn$,"help")==0 then
+			//print the gatttool help menu
+			print "Usage:\n"
+			print "		gatttool -b <MAC Address> --char-read --handle=0x0000 \n"
+			exitfunc 1
+		
+		elseif strcmp(tkn$,"b")==0 then
+			rc = ExtractStrToken(urtcmd$,addr$)
+			addr$ = strdehexize$(addr$)
+		elseif strcmp(tkn$,"handle")==0 then
+			strshiftleft(urtcmd$, 1)
+			rc = ExtractStrToken(urtcmd$, tkn$)
+			rc = ExtractIntToken(tkn$, hndl)
+		endif 
+	endwhile
+	
+	rc = BleGattcOpen(0,0)											//must check rc here
+	rc = BleGattcRead(hz,hndl,0)
+	if rc !=0 then
+		print "verbose error message ";integer.h' rc;"\n"
+	endif
+	
 endfunc 1
