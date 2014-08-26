@@ -2135,20 +2135,20 @@ function SetMode(msgID, cmd) as integer
         endif
         
     elseif cmd==CMD_MODE then
+        OnSetModeCmd()      //let sblib handle it first
         //DTR Deasserted so command mode
         OnEvent  EVUARTRX       call HandlerUartRxCmd    
         Onevent  EVNOTIFYBUF    call HandlerNotifyBufCmd
         OnEvent  EVATTRNOTIFY   call HandlerAttrNtfyCmd
-        OnEvent  EVBTC_SPP_DATA_RECEIVED call HandlerSppDataCmd
         carCnt=0
         UartRsp(0)
         
     elseif cmd==BRIDGE_SPP_MODE then
         if conns>0 then
+            OnSetModeSpp()      //let sblib handle it first
             OnEvent  EVUARTRX                call HandlerUartRxSpp    
             Onevent  EVNOTIFYBUF             call HandlerNotifyBufCmd
-            OnEvent  EVATTRNOTIFY            call HandlerAttrNtfyCmd 
-            OnEvent  EVBTC_SPP_DATA_RECEIVED call HandlerSppData
+            OnEvent  EVATTRNOTIFY            call HandlerAttrNtfyCmd           
             print ok$
         endif
     endif

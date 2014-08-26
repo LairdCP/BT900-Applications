@@ -33,6 +33,13 @@ endfunc 0
 function _btcbond()  
 endfunc 0
 
+sub OnSetModeCmd()
+endsub
+
+sub OnSetModeSpp() 
+endsub
+
+
 
 '//Temporary workaround until BlePair is implemented for BL620
 function Pair()
@@ -65,5 +72,8 @@ endfunc 5
 '// Handler definitions
 '//******************************************************************************
 function HandlerUartRxSpp()
+endfunc 1
+
+function HandlerSppDataCmd()
 endfunc 1
 

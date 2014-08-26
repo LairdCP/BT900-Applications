@@ -101,11 +101,6 @@
 //       bit 3	  General Discoverability 
 //
 // -----------------------------------------------------------------------------
-// btc sendpin #INTpin# 
-//    --- bluetooth classic functionality ---
-//    - Respond to a PIN request with #INTpin# during a pairing procedure
-//
-// -----------------------------------------------------------------------------
 // btc bond stats
 //    --- bluetooth classic functionality ---
 //    - Get the classic BT bonding manager database statistics.
@@ -169,6 +164,11 @@
 //    - Answer the pairing request
 //      with #INTpairResp# - 0 : Decline pair request
 //                           1 : Accept pair request
+//
+// -----------------------------------------------------------------------------
+// btc sendpin #INTpin# 
+//    --- bluetooth classic functionality ---
+//    - Respond to a PIN request with #INTpin# during a pairing procedure
 //
 // -----------------------------------------------------------------------------
 // misc i  clearall
@@ -252,6 +252,8 @@ sub PrintLinkKey()
     print " ROLLING"
   endif
 endsub
+
+
 
 //-------------------------------------------------------------------------
 //#CMD#//  inquiry config #INTcfgID# #INTvalue#
@@ -753,6 +755,20 @@ function HandlerPairRes(res)
 endfunc 1
 
 
+//==============================================================================
+// Called when switching to command mode to register SPP event handler
+//==============================================================================
+sub OnSetModeCmd() 
+    OnEvent  EVBTC_SPP_DATA_RECEIVED call HandlerSppDataCmd
+endsub
+
+
+//==============================================================================
+// Called when switching to SPP mode to register SPP event handler
+//==============================================================================
+sub OnSetModeSpp() 
+    OnEvent  EVBTC_SPP_DATA_RECEIVED call HandlerSppData
+endsub
 
 '//******************************************************************************
 '// Equivalent to main() in C
@@ -764,7 +780,7 @@ OnEvent  EVBTC_PAIR_REQUEST       call HandlerPairReq
 OnEvent  EVBTC_PIN_REQUEST        call HandlerPinReq
 OnEvent  EVBTC_PAIR_RESULT        call HandlerPairRes
 
-OnEvent  EVSPPCON                 call HandlerSppCon
+OnEvent  EVSPPCONN                 call HandlerSppCon
 OnEvent  EVBTC_SPP_CONN_TIMEOUT   call HandlerSppConnTimOut
 OnEvent  EVSPPDISCON              call HandlerSppDiscon
 OnEvent  EVBTC_SPP_DATA_RECEIVED  call HandlerSppDataCmd
