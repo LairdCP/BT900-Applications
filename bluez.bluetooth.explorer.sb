@@ -203,6 +203,7 @@ sub UartRsp(rsp as integer)
 endsub
 
 //==============================================================================
+// Initialise the Bluetooth device
 //==============================================================================
 sub InitBtDevice()
 	
@@ -214,13 +215,15 @@ sub InitBtDevice()
 	name$ = "bluez-" + name$
 	rc = BTCSETFRIENDLYNAME (name$)			
 	
-	rc = BtcModeSet(9)							//Connectable and general discoverability
-												//This should be altered from hciconfig later
+	rc = BtcModeSet(0x0B)							//Connectable, pairable, and general discoverability
+													//This should be added to hciconfig later
+												
 
 	rc = btcSppOpen(nHandle)
 	
 endsub											
 //==============================================================================
+// Print the Help menu
 //==============================================================================
 function _Help()
 
@@ -238,6 +241,7 @@ function _Help()
 endfunc 1
 
 //==============================================================================
+// print the hcitool help menu
 //==============================================================================
 function _HciHelp()
 
@@ -247,7 +251,7 @@ function _HciHelp()
 	print "Commands:\n"
 	print "	dev 		Display local devices\n"
 	print "	inq 		Inquire remote devices\n"
-//	print "	scan		Scan for remote devices\n"
+	print "	scan		Scan for remote devices\n"
 //	print "	name		Get name from remote device\n"
 //	print "	info		Get information from remote device\n"
 //	print "	spinq		Start periodic inquiry\n"
@@ -284,6 +288,7 @@ function _HciHelp()
 	
 endfunc 1
 //==============================================================================
+// Print the gatt help menu
 //==============================================================================
 function _GattHelp()
 //
@@ -320,6 +325,7 @@ function _GattHelp()
 endfunc 1
 
 //==============================================================================
+// Print the hciconfig help menu
 //==============================================================================
 function _HciCfgHelp() as integer
 	
@@ -381,11 +387,12 @@ function AcqConnHandle(hConn)
   next
 endfunc 0
 //==============================================================================
+// Extract the hcitool command
 //==============================================================================
 function _Hci()
 	
 	tlen = ExtractStrToken(urtcmd$,tkn$)
-	if tlen == 0 THEN
+	if tlen == 0 then
 		print "\nInsufficient parameters. For more information use"
 		print "\nhcitool help\n"
 		exitfunc 5			//Youssif: Here must display message need mroe parameters						//or display the whole help menu
@@ -400,12 +407,14 @@ function _Hci()
 	endif
 	
 	if strcmp(tkn$,"inq")==0 then				
+		command = BLUEZ_COMMAND_HCITOOL_INQ
 		rc = _inquiry()							//This function only needs to show the address of remote devices
 	endif
 	
-	//if strcmp(tkn$,"scan")==0 then
-	//	rc = _BtcScan()							//This function must show the address and name of remote devices
-	//endif
+	if strcmp(tkn$,"scan")==0 then
+		command = BLUEZ_COMMAND_HCITOOL_SCAN
+		rc = _inquiry()							//This function must show the address and name of remote devices
+	endif
 	
 	if strcmp(tkn$, "cc")==0 then
 		rc = _sppConnect()						//This function should connect to an SPP device
@@ -433,10 +442,11 @@ function _Hci()
 	
 endfunc 1
 //==============================================================================
+// Extract the gatttool command
 //==============================================================================
 function _Gatt()
 	tlen = ExtractStrToken(urtcmd$,tkn$)
-	if tlen == 0 THEN
+	if tlen == 0 then
 		print "\nInsufficient parameters. For more information use"
 		print "\ngatttool help\n"
 		exitfunc 5		//Youssif: Here must display message need mroe parameters
@@ -461,17 +471,22 @@ function _Gatt()
 		rc = ExtractStrToken(urtcmd$, tkn$)
 		if strcmp(tkn$, "read")==0 then
 			rc = _GattCharRead()
+		elseif strcmp(tkn$, "write")==0 then
+			rc = _GattCharWrite()
 		endif
 	
 	endif
 	
 endfunc 1
 //==============================================================================
+// Extract the hciconfig command
 //==============================================================================
 function _HciCfg()
+	
+	dim s$
 	tlen = ExtractStrToken(urtcmd$,tkn$)
 	
-	if tlen == 0 THEN
+	if tlen == 0 then
 		print "\nInsufficient parameters. For more information use"
 		print "\nhciconfig help"
 		exitfunc 5		//Youssif: Here must display message need mroe parameters
@@ -481,13 +496,44 @@ function _HciCfg()
 		rc = _HciCfgHelp()
 	endif
 	
+	if strcmp(tkn$,"reset")==0 then
+		reset(0)
+	endif
+	
 	if strcmp(tkn$,"auth")==0 then 
 		print "Set the device to be pairable\n" 
 		rc = BtcModeSet(0x0B)
 	endif
 	
+	if strcmp(tkn$,"name")==0 then 
+		tlen = ExtractStrToken(urtcmd$,tkn$)
+		if tlen == 0 then
+			rc = BtcGetFriendlyName(s$)
+			print "\n";s$
+		else
+			rc = BtcSetFriendlyName(tkn$)
+		endif
+	endif
+	
+	if strcmp(tkn$,"piscan")==0 then 
+		//Enable inquiry scan and page scan (default)
+	endif
+	
+	if strcmp(tkn$,"pscan")==0 then 
+		//Enable page scan
+	endif
+	
+	if strcmp(tkn$,"iscan")==0 then 
+		//Enable inquiry scan
+	endif
+	
+	if strcmp(tkn$,"noscan")==0 then 
+		//The adapter in not detectable by other devices and will not accept any incoming connections
+	endif
+	
 endfunc 1
 //==============================================================================
+// Extract the received Uart command
 //==============================================================================
 function OnUartCmd() as integer
 
@@ -528,9 +574,31 @@ endfunc 1
 // Algorithm will prevent display of data from the same peer consecutively 
 //==============================================================================
 function HandlerInqResp(respType) as integer
-	dim ad$,dta$,ndx,rsi,tag
+	
+	dim ad$,dta$,ndx,rsi,tag, name$
+	
 	rc = BtcInquiryGetReport(ad$,dta$,ndx,rsi)
-	print "\n "; StrHexize$(ad$)
+	print "		"; StrHexize$(ad$)
+	if command == BLUEZ_COMMAND_HCITOOL_INQ then
+		print "\n"
+	elseif command == BLUEZ_COMMAND_HCITOOL_SCAN then
+		if respType == 2 then
+			//Get local name
+			tag = 0x09
+			rc=BtcGetEIRbyTag(dta$, tag, name$)
+			if rc == 0x5703 then
+				tag = 0x08
+				rc=BtcGetEIRbyTag(dta$, tag, name$)
+			endif
+				
+			if rc == 0 then
+				print "  ";name$;"\n"
+			endif
+			
+		else
+			print "  - \n"
+		endif
+	endif
 	
 endfunc 1
 
@@ -716,6 +784,7 @@ function HndlrDiscon(nCtx,nRsn) as integer
 endfunc 1 
 
 //==============================================================================
+// This handler is called when a BLE primary service is discovered
 //==============================================================================
 function HandlerPrimSvc(hConn,hUuid,hStart,hEnd) as integer
   //select gcState
@@ -743,6 +812,7 @@ function HandlerPrimSvc(hConn,hUuid,hStart,hEnd) as integer
 endfunc 1
 
 //==============================================================================
+// This handler is called when a BLE characteristic is discovered
 //==============================================================================
 function HandlerCharDisc(hConn,hUuid,cProp,hVal,hiUuid) as integer
 
@@ -765,6 +835,7 @@ function HandlerCharDisc(hConn,hUuid,cProp,hVal,hiUuid) as integer
 	
 endfunc 1
 //==============================================================================
+// This handler is called when a BLE characteristic attribute has been read
 //==============================================================================
 function HandlerAttrRead(hConn,hAttr,nSts) as integer
 
@@ -783,7 +854,36 @@ function HandlerAttrRead(hConn,hAttr,nSts) as integer
 	else 
 		print "nSts is not 0 \n"									//Must print correct error message here
 	endif  
+	BleGattcClose()
 	
+endfunc 1
+//==============================================================================
+// This handler is called when a BLE characteristic attribute has been written to 
+//==============================================================================
+function HandlerAttrWrite(hConn,aHndl,nSts) as integer
+    
+	if nSts == 0 then
+		print "Characteristic value was written successfully\n"
+	else 
+		print "Characteristic Write failed: Attribute Can't be written\n"		//Different error messages should be printed for different nSts
+	endif
+	
+	//"Characteristic value was written successfully" should be printed if sec level must be increased
+endfunc 1
+//==============================================================================
+// This handler is called when there is data notified or indicated
+//==============================================================================
+function HandlerAttrNtfyCmd() as integer
+  dim hConn,hAttr,att$,dscd
+  print "\nEVATTRNOTIFY()"
+  do
+    rc=BleGattcNotifyRead(hConn,hAttr,att$,dscd)
+    if rc==0 then
+      print "\n >BleGattcNotifyRead("
+      print "hConn=";integer.h' hConn;",handle=";hAttr;",Dumped=";dscd
+      print ",data=";StrHexize$(att$);")"
+    endif
+  dowhile rc==0
 endfunc 1
 //==============================================================================
 //==============================================================================
@@ -835,6 +935,8 @@ OnEvent EvDiscon                  	call HndlrDiscon
 OnEvent  EVDISCPRIMSVC            	call HandlerPrimSvc
 OnEvent  EVDISCCHAR               	call HandlerCharDisc
 OnEvent EVATTRREAD 					call HandlerAttrRead
+OnEvent  EVATTRWRITE              	call HandlerAttrWrite
+OnEvent  EVATTRNOTIFY             call HandlerAttrNtfyCmd
 
 //OnEvent 
 //==============================================================================

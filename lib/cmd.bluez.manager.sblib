@@ -8,13 +8,13 @@ function _inquiry()
 	print "Inquiring...\n"
 	
 	//Initialise the default values for inquiry length and number of responses
-	inqLen = 0
+	inqLen = 10
 	numRsp = 50
 	
 	//Configure Classic Inquiry
-	//Youssif: posssibly moved to hciconfig in the future
+	//Youssif: posssibly moved to hciconfig  inqmode in the future
 	rc = BtcInquiryConfig(0, 0)			//Inquiry type: General
-	rc = BtcInquiryConfig(1, 0)			//Inquiry mode: standard
+	rc = BtcInquiryConfig(1, 2)			//Inquiry mode: Extended
 	
     //if strcmp(tkn$,"cancel")==0 then
     //    //cancel the inquiry
@@ -314,6 +314,46 @@ function _GattCharRead() as integer
 	
 	rc = BleGattcOpen(0,0)											//must check rc here
 	rc = BleGattcRead(hz,hndl,0)
+	if rc !=0 then
+		print "verbose error message ";integer.h' rc;"\n"
+	endif
+	
+endfunc 1
+//-------------------------------------------------------------------------
+// gatttool -b <MAC Address> --char-write --handle=0x0000
+//-------------------------------------------------------------------------
+function _GattCharWrite() as integer
+	dim addr$, hndl, val$
+	
+	while ExtractStrToken(urtcmd$, tkn$)!=0
+		if strcmp(tkn$,"help")==0 then
+			//print the gatttool help menu
+			print "Usage:\n"
+			print "		gatttool -b <MAC Address> --char-write --handle=0x0000 \n"
+			exitfunc 1
+		
+		elseif strcmp(tkn$,"b")==0 then
+			rc = ExtractStrToken(urtcmd$,addr$)
+			addr$ = strdehexize$(addr$)
+		elseif strcmp(tkn$,"handle")==0 then
+			strshiftleft(urtcmd$, 1)
+			rc = ExtractStrToken(urtcmd$, tkn$)
+			rc = ExtractIntToken(tkn$, hndl)
+		elseif strcmp(tkn$,"value")==0 then
+			strshiftleft(urtcmd$, 1)
+			rc = ExtractStrToken(urtcmd$, val$)
+			//rc = ExtractIntToken(tkn$, val)
+		endif 
+	endwhile
+	
+	if strcmp(val$,"")==0 then
+		print "A value is required\n"
+		exitfunc 1
+	endif
+	
+	print "At this point, the input data token is : ";val$;" \n"
+	rc = BleGattcOpen(0,0)											//must check rc here
+	rc = BleGattcWrite(hz,hndl,val$)
 	if rc !=0 then
 		print "verbose error message ";integer.h' rc;"\n"
 	endif
