@@ -140,7 +140,7 @@ dim testhndl
 
 ok$    = "\nOK"
 er$    = "\nERROR "
-pr$    = "\r\n>"
+pr$    = "--------->"
 
 urts = 0					// not suspended
 command = 0					// no command being processed
@@ -231,12 +231,13 @@ function _Help()
 	print "\n"
 	print "		help\n"
 	print "		hcitool\n"
+	print "		rfcomm\n"
 	print "		gatttool\n"
 	print "		hciconfig\n"
 	print "		quit/exit\n"
 	print "\n"
 	print "For more information on the usage of each command use:\n"
-	print "<command> --help\n"
+	print "<command> --help\n\n"
 
 endfunc 1
 
@@ -245,7 +246,7 @@ endfunc 1
 //==============================================================================
 function _HciHelp()
 
-	print "\nUsage:\n"
+	print "Usage:\n"
 	print "	hcitool [options] <command> [command parameters]\n"
 	print "\n"
 	print "Commands:\n"
@@ -283,8 +284,7 @@ function _HciHelp()
 	print "	lecup       LE Connection Update\n"
 	print "\n"
 	print "For more information on the usage of each command use:\n"
-	print "	hcitool <command> --help\n"
-	print "\n"
+	print "	hcitool <command> --help\n\n"
 	
 endfunc 1
 //==============================================================================
@@ -299,7 +299,7 @@ function _GattHelp()
 //  --help-params                             Show all Primary Services/Characteristics arguments
 //  --help-char-read-write                    Show all Characteristics Value/Descriptor Read/Write arguments
 
-	print "\nUsage:\n"
+	print "Usage:\n"
 	print "  gatttool [OPTION...]\n"
 	print "\n"
 	print "GATT commands\n"
@@ -319,8 +319,7 @@ function _GattHelp()
 	print "	-m, --mtu=MTU                             Specify the MTU size\n"
 	print "	-p, --psm=PSM                             Specify the PSM for GATT/ATT over BR/EDR\n"
 	print "	-l, --sec-level=[low | medium | high]     Set security level. Default: low\n"
-	print "	-I, --interactive                         Use interactive mode"
-	print "\n"
+	print "	-I, --interactive                         Use interactive mode\n\n"
 	
 endfunc 1
 
@@ -372,7 +371,34 @@ function _HciCfgHelp() as integer
 	print "	lerandaddr <bdaddr>	Set LE Random Address\n"
 	print "	leadv              	Enable LE advertising\n"
 	print "	noleadv            	Disable LE advertising\n"
-	print "	lestates           	Display the supported LE states\n"
+	print "	lestates           	Display the supported LE states\n\n"
+
+endfunc 1
+//==============================================================================
+// Print the rfcomm help menu
+//==============================================================================
+function _rfcommHelp()
+
+	print " Usage:\n"
+	print " rfcomm [options] <command> <dev>\n"
+	print "\n Options:\n"
+	print " 	-i [hciX|bdaddr]      Local HCI device or BD Address\n"
+	print " 	-h, --help            Display help\n"
+	print " 	-r, --raw             Switch TTY into raw mode\n"
+	print " 	-A, --auth            Enable authentication\n"
+	print " 	-E, --encrypt         Enable encryption\n"
+	print " 	-S, --secure          Secure connection\n"
+	print " 	-M, --master          Become the master of a piconet\n"
+	print " 	-f, --config [file]   Specify alternate config file\n"
+	print " 	-a                    Show all devices (default)\n"
+	print "\n Commands:\n"
+	//print " 	bind     <dev> <bdaddr> [channel]	Bind device\n"
+	print " 	release  <dev>                   	Release device\n"
+	print " 	show     <dev>                   	Show device\n"
+	print " 	connect  <bdaddr> 					Connect device\n"
+	print " 	listen   <dev> [channel [cmd]]   	Listen\n"
+	print " 	watch    <dev> [channel [cmd]]   	Watch\n"
+	print " 	write    --handle=0000 -data=abc123 Write\n\n"
 
 endfunc 1
 //==============================================================================
@@ -533,6 +559,26 @@ function _HciCfg()
 	
 endfunc 1
 //==============================================================================
+// Extract the rfcomm command
+//==============================================================================
+function _rfcomm()
+	
+	tlen = ExtractStrToken(urtcmd$,tkn$)
+	if strcmp(tkn$, "help")==0 then
+		rc = _rfcommHelp()
+		exitfunc 1 
+	endif
+	
+	if strcmp(tkn$, "connect")==0 then
+		rc = _rfcommConnect()
+	endif
+	
+	if strcmp(tkn$, "write")==0 then
+		rc = _rfcommWrite()
+	endif
+	
+endfunc 1
+//==============================================================================
 // Extract the received Uart command
 //==============================================================================
 function OnUartCmd() as integer
@@ -547,6 +593,9 @@ function OnUartCmd() as integer
 	  
 	elseif strcmp(tkn$,"hciconfig")==0 then
 		rc = _HciCfg()
+		
+	elseif strcmp(tkn$, "rfcomm")==0 then
+		rc = _rfcomm()
 	  
 	elseif strcmp(tkn$, "help")==0 then
 		rc = _Help()
@@ -563,6 +612,7 @@ function OnUartCmd() as integer
 	
 	// send a response back to the user
 	UartRsp(rc)
+	
 endfunc 1
 
 //******************************************************************************
@@ -578,9 +628,9 @@ function HandlerInqResp(respType) as integer
 	dim ad$,dta$,ndx,rsi,tag, name$
 	
 	rc = BtcInquiryGetReport(ad$,dta$,ndx,rsi)
-	print "		"; StrHexize$(ad$)
+	print "\n		"; StrHexize$(ad$)
 	if command == BLUEZ_COMMAND_HCITOOL_INQ then
-		print "\n"
+		//print "\n"
 	elseif command == BLUEZ_COMMAND_HCITOOL_SCAN then
 		if respType == 2 then
 			//Get local name
@@ -592,7 +642,7 @@ function HandlerInqResp(respType) as integer
 			endif
 				
 			if rc == 0 then
-				print "  ";name$;"\n"
+				print "  ";name$
 			endif
 			
 		else
@@ -647,7 +697,7 @@ endfunc 1
 // This handler is called when there is an inquiry timeout
 //==============================================================================
 function HandlerBtcInqTimOut() as integer 
-	print "\nInquiry stopped via timeout" 
+	print "\nInquiry stopped via timeout\n" 
 	UartRsp(0)
 endfunc 1
 
@@ -716,7 +766,7 @@ endfunc 1
 // This handler is called when there is a Ble scan timeout
 //==============================================================================
 function HandlerBlrScanTimOut() as integer 
-	print "\nScanning stopped via timeout"
+	print "\nScanning stopped via timeout\n"
 	UartRsp(0)
 endfunc 1
 //==============================================================================
@@ -936,14 +986,18 @@ OnEvent  EVDISCPRIMSVC            	call HandlerPrimSvc
 OnEvent  EVDISCCHAR               	call HandlerCharDisc
 OnEvent EVATTRREAD 					call HandlerAttrRead
 OnEvent  EVATTRWRITE              	call HandlerAttrWrite
-OnEvent  EVATTRNOTIFY             call HandlerAttrNtfyCmd
+OnEvent  EVATTRNOTIFY             	call HandlerAttrNtfyCmd
 
 //OnEvent 
 //==============================================================================
 //==============================================================================
 sub Initialise()
 	InitBtDevice()
-	print "\nBLUETOOTH EXPLORTER v0.2\n"
+	print "\n-----------------------\n"
+	print " BLUEZ EXPLORTER v0.4\n"
+	print "-----------------------\n"
+	print "\nType \22help\22 or \22<command> help\22\n"
+	
 endsub
 
 //------------------------------------------------------------------------------

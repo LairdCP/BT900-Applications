@@ -214,6 +214,88 @@ function _leDisconnect() as integer
 	endwhile
 endfunc 5
 //=========================================================================
+//						RFCOMM
+//=========================================================================
+//-------------------------------------------------------------------------
+// rfcomm connect <MAC Address> 
+//-------------------------------------------------------------------------
+function _rfcommConnect()
+	print "Reached rfcomm Connect \n"
+	while ExtractStrToken(urtcmd$, tkn$)!=0
+		if strcmp(tkn$,"help")==0 then
+			//print the gatttool help menu
+			print "Usage:\n"
+			print "		rfcomm connect <MAC Address>\n"
+			exitfunc 1
+			
+		elseif strcmp(tkn$,"connect")==0 then
+			rc = extractStrToken(urtcmd$, tkn$)
+			if strcmp(tkn$,"")==0 then
+				print "A valid Bluetooth address is required\n"
+			else
+				rc = BtcSppConnect(tkn$)
+			endif
+		endif
+	endwhile
+				
+endfunc 1 
+//-------------------------------------------------------------------------
+// rfcomm write --handle=0000 --data=abc123
+//-------------------------------------------------------------------------
+function _rfcommWrite()
+
+	dim hndl, dta$, len
+		
+	print "Reached rfcomm write\n"
+	while ExtractStrToken(urtcmd$, tkn$)!=0
+		if strcmp(tkn$,"help")==0 then
+			print "Usage:\n"
+			print "		rfcomm write <MAC Address>\n"
+			exitfunc 1
+		
+		elseif strcmp(tkn$,"handle")==0 then
+			strshiftleft(urtcmd$, 1)
+			rc = ExtractStrToken(urtcmd$, tkn$)
+			rc = ExtractIntToken(tkn$, hndl)
+		
+		elseif strcmp(tkn$, "data")==0 then
+			strshiftleft(urtcmd$, 1)
+			rc = ExtractStrToken(urtcmd$, dta$)
+		endif
+		
+	
+	endwhile
+	
+	rc = BtcSppWrite(hndl, dta$, len)
+	
+endfunc 1
+//-------------------------------------------------------------------------
+// rfcomm listen --handle=0000
+//-------------------------------------------------------------------------
+function _rfcommLsn()
+
+	dim hndl, dta$, len
+	
+	print "Reached rfcomm write\n"
+	while ExtractStrToken(urtcmd$, tkn$)!=0
+		if strcmp(tkn$,"help")==0 then
+			print "Usage:\n"
+			print "		rfcomm listen --handle=0000\n"
+			exitfunc 1
+		
+		elseif strcmp(tkn$,"handle")==0 then
+			strshiftleft(urtcmd$, 1)
+			rc = ExtractStrToken(urtcmd$, tkn$)
+			rc = ExtractIntToken(tkn$, hndl)
+			
+		endif
+	endwhile
+	
+	rc = BtcSppRead(hndl, dta$, len)
+	print "the data is  :: ";dta$;"\n"
+	
+endfunc 1
+//=========================================================================
 //						GATTTOOL
 //=========================================================================
 
@@ -222,7 +304,6 @@ endfunc 5
 //-------------------------------------------------------------------------
 function _GattPrimary() as integer
 
-print "Reached gatt primary\n"
 	dim addr$
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
