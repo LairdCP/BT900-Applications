@@ -359,6 +359,13 @@
 //      will be performed which means the trusted device database will be updated
 //
 // -----------------------------------------------------------------------------
+// blepair accept #INTaccept#
+//    - Accept or reject a just works pairing request
+//    - #INTaccept#
+//          0 - Reject
+//          1 - Accept
+//
+// -----------------------------------------------------------------------------
 // pair iocap #INTiocap#
 //    - Security Manager related
 //    - This will result in BleSecMngrIoCap() being called
@@ -384,8 +391,23 @@
 //
 // -----------------------------------------------------------------------------
 // blebond stats
-//    --- bluetooth classic functionality ---
 //    - Get the classic BT bonding manager database statistics.
+//
+// -----------------------------------------------------------------------------
+// blebond getinfo #INTindex#
+//    - Retrieves the MAC address and other information from the trusted device database via an index. 
+//
+// -----------------------------------------------------------------------------
+// blebond persist #HEXaddr14Bytes#
+//    - Make the bonding for device #HEXaddr14Bytes# persistent
+//
+// -----------------------------------------------------------------------------
+// blebond erase #HEXaddr14Bytes#
+//    - Erase a bonding from the database for the address #HEXaddr14Bytes#
+//
+// -----------------------------------------------------------------------------
+// blebond erase all
+//    - This function is used to erase all bondings in the database 
 //
 // -----------------------------------------------------------------------------
 // scan abort
@@ -1539,44 +1561,99 @@ endfunc 5
 
 //-------------------------------------------------------------------------
 //#CMD#//  blepair  #INTconnHandle# #INTenablebonding#
+//#CMD#//  blepair accept #INTaccept#
 //-------------------------------------------------------------------------
 function _BlePair()  
-    //extract 2 (#INTconnHandle# #INTenablebonding#) and store starting at i[1]
-    rc = ExtractIntTokens(urtcmd$,1,2)
-    if rc != 0 then
-        exitfunc rc
+    tlen = ExtractStrToken(urtcmd$,tkn$)
+    if tlen == 0 then
+        exitfunc 5
     endif
-    '//Temporary workaround until BlePair is implemented for BL620
-    // exitfunc BlePair(hc[i[1]], i[2])   
-    exitfunc BLE_PAIR       //see #define in sblib file
+    
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"accept")==0 then
+        //extract 1 (#INTaccept#) and store starting at i[1]
+        rc = ExtractIntTokens(urtcmd$,1,1)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        exitfunc BleAcceptPairing(i[1])
+        
+    else
+        // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        //store the connection handle
+        i[1] = StrValDec(tkn$)
+        
+        //extract 1 (#INTenablebonding#) and store starting at i[1]
+        rc = ExtractIntTokens(urtcmd$,1,2)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        
+        '//Temporary workaround until BlePair is implemented for BL620
+        // exitfunc BlePair(hc[i[1]], i[2])   
+        exitfunc BLE_PAIR       //see #define in sblib file
+    endif
 endfunc 5
 
 
 // -------------------------------------------------------------------------
 // #CMD#//  blebond stats
+// #CMD#//  blebond getinfo #INTindex#
+// #CMD#//  blebond persist #HEXaddr14Bytes#
+// #CMD#//  blebond erase all
+// #CMD#//  blebond erase #HEXaddr14Bytes#
 // -------------------------------------------------------------------------
-// function _BleBond() 
-    // tlen = ExtractStrToken(urtcmd$,tkn$)
-    // if tlen == 0 then
-        // exitfunc 5
-    // endif
+function _BleBond() 
+    tlen = ExtractStrToken(urtcmd$,tkn$)
+    if tlen == 0 then
+        exitfunc 5
+    endif
     
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    // if strcmp(tkn$,"stats")==0 then
-        // i[0]=BleBondingStats(i[1],i[2])
-        // print "\n Capacity=";i[0];" Rolling=";i[1];" Persistent=";i[2];"\r"
-        // exitfunc 0
+    if strcmp(tkn$,"stats")==0 then
+        i[0]=BleBondingStats(i[1],i[2])
+        print "\n Capacity=";i[0];" Rolling=";i[1];" Persistent=";i[2];"\r"
+        exitfunc 0
         
-    // elseif
-    // extract 2 (#INTconnHandle# #INTenablebonding#) and store starting at i[1]
-    // rc = ExtractIntTokens(urtcmd$,1,2)
-    // if rc != 0 then
-        // exitfunc rc
-    // endif
-    // '//Temporary workaround until BlePair is implemented for BL620
-    // exitfunc BlePair(hc[i[1]], i[2])   
-    // exitfunc BLE_PAIR       //see #define in sblib file
-// endfunc 5
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    elseif strcmp(tkn$,"persist")==0 then
+        //extract 1 : (#HEXaddr14Bytes#) and store at i[1])
+        rc = ExtractStrTokens(urtcmd$,1,1)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        s$[1] = StrDehexize$(s$[1])
+        exitfunc BleBondingPersist(s$[1])
+    
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    elseif strcmp(tkn$,"getinfo")==0 then
+        //extract 1 : (#INTindex#) and store at i[1])
+        rc = ExtractIntTokens(urtcmd$,1,1)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        exitfunc BleBondMngrGetInfo(i[1])
+    
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
+    elseif strcmp(tkn$,"erase")==0 then
+        tlen = ExtractStrToken(urtcmd$,tkn$)
+        if tlen == 0 then
+            exitfunc 5
+        endif
+        
+        // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        if strcmp(tkn$,"all")==0 then
+            exitfunc BleBondingEraseAll()
+        else
+            //the current token has to be a mac address
+            s$[1]=StrDehexize$(tkn$)
+            if strlen(s$[1]) != 7 then
+                exitfunc 5
+            endif
+            exitfunc BleBondingErase(s$[1])
+        endif
+    endif
+endfunc 5
 
 
 //-------------------------------------------------------------------------
