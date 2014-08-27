@@ -5,8 +5,6 @@
 function _inquiry()  
 	DIM inqLen, numRsp, si$
 	
-	print "Inquiring...\n"
-	
 	//Initialise the default values for inquiry length and number of responses
 	inqLen = 10
 	numRsp = 50
@@ -20,18 +18,24 @@ function _inquiry()
     //    //cancel the inquiry
     //    exitfunc BtcInquiryCancel()
     //endif
-	
 		
 	//Extract all parameters to understand function before processing
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 	si$ = Left$(tkn$,10)
 		if strcmp(tkn$,"help")==0 then
-			//print the inquiry help menu
-			print "Usage:\n"
-			print "	inq	[--length=N] maximum inquiry duration in 1.28 s units\n"
-			print "		[--numrsp=N] specify maximum number of inquiry responses\n"
-			//print "		[--iac=lap]  specify the inquiry access code\n"
-			//print "		[--flush]    flush the inquiry cache\n"
+			if command == BLUEZ_COMMAND_HCITOOL_INQ then
+				//print the inquiry help menu
+				print "Usage:\n"
+				print "	inq	[--length=N] maximum inquiry duration in 1.28 s units\n"
+				print "		[--numrsp=N] specify maximum number of inquiry responses\n"
+				//print "		[--iac=lap]  specify the inquiry access code\n"
+				//print "		[--flush]    flush the inquiry cache\n"
+			elseif command == BLUEZ_COMMAND_HCITOOL_SCAN then
+				//print the scan help menu
+				print "Usage:\n"
+				print "		scan [--length=N] [--numrsp=N]\n" // [--iac=lap] [--flush] [--class] [--info] [--oui] [--refresh]"
+
+			endif
 			exitfunc 1
 		elseif strcmp(tkn$,"length")==0 then
 			strshiftleft(urtcmd$, 1)					//discard the = sign
@@ -220,7 +224,6 @@ endfunc 5
 // rfcomm connect <MAC Address> 
 //-------------------------------------------------------------------------
 function _rfcommConnect()
-	print "Reached rfcomm Connect \n"
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 			//print the gatttool help menu
@@ -228,11 +231,11 @@ function _rfcommConnect()
 			print "		rfcomm connect <MAC Address>\n"
 			exitfunc 1
 			
-		elseif strcmp(tkn$,"connect")==0 then
-			rc = extractStrToken(urtcmd$, tkn$)
+		else
 			if strcmp(tkn$,"")==0 then
 				print "A valid Bluetooth address is required\n"
 			else
+				tkn$ = strdehexize$(tkn$)
 				rc = BtcSppConnect(tkn$)
 			endif
 		endif
@@ -250,7 +253,7 @@ function _rfcommWrite()
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 			print "Usage:\n"
-			print "		rfcomm write <MAC Address>\n"
+			print "		rfcomm write --handle=0000 --data=abc123\n"
 			exitfunc 1
 		
 		elseif strcmp(tkn$,"handle")==0 then

@@ -215,7 +215,7 @@ sub InitBtDevice()
 	name$ = "bluez-" + name$
 	rc = BTCSETFRIENDLYNAME (name$)			
 	
-	rc = BtcModeSet(0x0B)							//Connectable, pairable, and general discoverability
+	rc = BtcModeSet(11)							//Connectable, pairable, and general discoverability
 													//This should be added to hciconfig later
 												
 
@@ -229,12 +229,12 @@ function _Help()
 
 	print "\nAvailable Commands: \n"
 	print "\n"
-	print "		help\n"
-	print "		hcitool\n"
-	print "		rfcomm\n"
-	print "		gatttool\n"
-	print "		hciconfig\n"
-	print "		quit/exit\n"
+	print "	help\n"
+	print "	hcitool\n"
+	print "	rfcomm\n"
+	print "	gatttool\n"
+	print "	hciconfig\n"
+	print "	quit/exit\n"
 	print "\n"
 	print "For more information on the usage of each command use:\n"
 	print "<command> --help\n\n"
@@ -434,10 +434,12 @@ function _Hci()
 	
 	if strcmp(tkn$,"inq")==0 then				
 		command = BLUEZ_COMMAND_HCITOOL_INQ
+		print "Inquiring...\n"
 		rc = _inquiry()							//This function only needs to show the address of remote devices
 	endif
 	
 	if strcmp(tkn$,"scan")==0 then
+		print "Scanning...\n"
 		command = BLUEZ_COMMAND_HCITOOL_SCAN
 		rc = _inquiry()							//This function must show the address and name of remote devices
 	endif
@@ -535,7 +537,7 @@ function _HciCfg()
 		tlen = ExtractStrToken(urtcmd$,tkn$)
 		if tlen == 0 then
 			rc = BtcGetFriendlyName(s$)
-			print "\n";s$
+			print "\n";s$;"\n"
 		else
 			rc = BtcSetFriendlyName(tkn$)
 		endif
@@ -646,7 +648,7 @@ function HandlerInqResp(respType) as integer
 			endif
 			
 		else
-			print "  - \n"
+			print "  n/a"
 		endif
 	endif
 	
@@ -658,21 +660,13 @@ endfunc 1
 function HandlerSppCon(hConn, res) as integer
     dim hz
 
-    print "\n --- SPP Connect: (";integer.h' res;")"
+    //print "\n --- SPP Connect: (";integer.h' res;")"
     //if connected successfully
-    if res == 0 then
-        //try and acquire a connection handle
-        hz = AcqConnHandle(hConn)
-        
-        //disconnect if failed
-        if hz==0 then
-            rc=BtcSppDisconnect(hConn)
-            print " DROPPED"
-        else
-            hcSpp = hc[hz]     //always assume most recent connection for SPP
-            conns = conns + 1
-            print " handle = ";hz;pr$
-        endif
+    print "rfcomm connecting...\n"
+	if res == 0 then
+		print "rfcomm connected. Connection handle=";hConn;"\n"
+	else
+		print "rfcomm connection failed: ";res;"\n"
     endif        
 endfunc 1
 
@@ -706,11 +700,12 @@ endfunc 1
 //==============================================================================
 function HandlerSppData()
     dim hPort, data$, rLen
-    
+    print "Reached handler Spp Data\n"
     '//read and print data while there is data available to read
     while BtcSppRead(hPort, data$, rLen) == 0    
         if rLen>0 then
-            print"\nPort Handle: ";hPort; " Length: ";rLen;"\nData: ";data$;pr$
+            //print"\nPort Handle: ";hPort; " Length: ";rLen;"\nData: ";data$;pr$
+			print "rfcomm data: ";data$;"\n"
         endif
     endwhile
 endfunc 1
@@ -721,7 +716,7 @@ function HandlerPairReq()
 	dim s$
     rc=BtcGetPAIRRequestBDAddr(s$)
     prAddr$ = s$
-    print "\nPair Req: "; StrHexize$(s$);pr$
+    print "\nPair Req: "; StrHexize$(s$);" \n"
 	rc = BtcSendPAIRResp(1)
 endfunc 1
 
@@ -733,7 +728,7 @@ function HandlerPINReq()
 	dim mac$
     rc=BtcGetPinRequestBDAddr(mac$)
     if rc==0 then
-        print "\nPIN Req: "; StrHexize$(mac$);pr$
+        print "PIN Req: "; StrHexize$(mac$);pr$;"\n"
     else
         //AssertResCode(rc,2273)
 		print "Handler PIN Req is a problem\n"
@@ -745,7 +740,7 @@ endfunc 1
 //==============================================================================
 function HandlerPairRes(res)
     //print "Received the pin result\n"
-	print "\nPair Result: ";res; " "; StrHexize$(prAddr$);pr$
+	print "Pair Result: ";res; " "; StrHexize$(prAddr$);"\n"
 endfunc 1
 
 //==============================================================================
@@ -994,7 +989,7 @@ OnEvent  EVATTRNOTIFY             	call HandlerAttrNtfyCmd
 sub Initialise()
 	InitBtDevice()
 	print "\n-----------------------\n"
-	print " BLUEZ EXPLORTER v0.4\n"
+	print " BLUEZ EXPLORER v0.4\n"
 	print "-----------------------\n"
 	print "\nType \22help\22 or \22<command> help\22\n"
 	
