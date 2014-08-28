@@ -26,7 +26,7 @@ function _inquiry()
 			if command == BLUEZ_COMMAND_HCITOOL_INQ then
 				//print the inquiry help menu
 				print "Usage:\n"
-				print "	inq	[--length=N] maximum inquiry duration in 1.28 s units\n"
+				print "	inq	[--length=N] maximum inquiry duration in seconds\n"
 				print "		[--numrsp=N] specify maximum number of inquiry responses\n"
 				//print "		[--iac=lap]  specify the inquiry access code\n"
 				//print "		[--flush]    flush the inquiry cache\n"
@@ -37,18 +37,27 @@ function _inquiry()
 
 			endif
 			exitfunc 1
+			
 		elseif strcmp(tkn$,"length")==0 then
 			strshiftleft(urtcmd$, 1)					//discard the = sign
 			rc = extractStrToken(urtcmd$, tkn$)			//take the next string from the command
 			rc = extractInttoken(tkn$,inqLen)			//extract the integer value of the string	
+		
 		elseif strcmp(tkn$,"numrsp")==0 then
 			strshiftleft(urtcmd$, 1)					//discard the = sign
 			rc = extractStrToken(urtcmd$, tkn$)			//take the next string from the command
 			rc = extractInttoken(tkn$,numRsp)			//extract the integer value of the string
+		
 		endif
 	endwhile
 
 	//Now begin inquiry
+	if command == BLUEZ_COMMAND_HCITOOL_INQ then
+		print "Inquiring...\n"
+	else
+		print "Scanning...\n"
+	endif
+	
 	rc = btcInquiryConfig(4, numRsp)
 	exitfunc btcinquirystart(inqLen)					//Must check for rc here
 		

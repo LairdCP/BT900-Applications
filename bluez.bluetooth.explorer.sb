@@ -134,6 +134,7 @@ dim hcSpp                   // handle of connection to use for VSP service
 
 dim command
 dim testhndl
+dim nConPair				//This is the nConnDiscPairType used in BtcModeSet
 //******************************************************************************
 // Initialise Global Variable
 //******************************************************************************
@@ -247,7 +248,7 @@ endfunc 1
 function _HciHelp()
 
 	print "Usage:\n"
-	print "	hcitool [options] <command> [command parameters]\n"
+	print "	hcitool <command> [command parameters]\n"
 	print "\n"
 	print "Commands:\n"
 	print "	dev 		Display local devices\n"
@@ -258,7 +259,7 @@ function _HciHelp()
 //	print "	spinq		Start periodic inquiry\n"
 //	print "	epinq		Exit periodic inquiry\n"
 //	print "	cmd 		Submit arbitrary HCI commands\n"
-	print "	con 		Display active connections\n"
+//	print "	con 		Display active connections\n"
 	print "	cc  		Create connection to remote device\n"
 	print "	dc  		Disconnect from remote device\n"
 //	print "	sr  		Switch master/slave role\n"
@@ -273,8 +274,8 @@ function _HciHelp()
 	print "	enc 		Set connection encryption\n"
 	print "	key         Change connection link key\n"
 	print "	clkoff      Read clock offset\n"
-	print "	clock       Read local or remote clock\n"
-	print "	lescan      Start LE scan\n"
+//	print "	clock       Read local or remote clock\n"
+//	print "	lescan      Start LE scan\n"
 //	print "	lewladd     Add device to LE White List\n"
 //	print "	lewlrm      Remove device from LE White List\n"
 //	print "	lewlsz      Read size of LE White List\n"
@@ -329,14 +330,14 @@ endfunc 1
 function _HciCfgHelp() as integer
 	
 	print "Commands:\n"
-	print "	up                 	Open and initialize HCI device\n"
-	print "	down               	Close HCI device\n"
-	print "	reset              	Reset HCI device\n"
-	print "	rstat              	Reset statistic counters\n"
-	print "	auth               	Enable Authentication\n"
-	print "	noauth             	Disable Authentication\n"
-	print "	encrypt            	Enable Encryption\n"
-	print "	noencrypt          	Disable Encryption\n"
+	//print "	up                 	Open and initialize HCI device\n"
+	//print "	down               	Close HCI device\n"
+	//print "	reset              	Reset HCI device\n"
+	//print "	rstat              	Reset statistic counters\n"
+	//print "	auth               	Enable Authentication\n"
+	//print "	noauth             	Disable Authentication\n"
+	//print "	encrypt            	Enable Encryption\n"
+	//print "	noencrypt          	Disable Encryption\n"
 	print "	piscan             	Enable Page and Inquiry scan\n"
 	print "	noscan             	Disable scan\n"
 	print "	iscan              	Enable Inquiry scan\n"
@@ -393,11 +394,11 @@ function _rfcommHelp()
 	print " 	-a                    Show all devices (default)\n"
 	print "\n Commands:\n"
 	//print " 	bind     <dev> <bdaddr> [channel]	Bind device\n"
-	print " 	release  <dev>                   	Release device\n"
-	print " 	show     <dev>                   	Show device\n"
+	//print " 	release  <dev>                   	Release device\n"
+	//print " 	show     <dev>                   	Show device\n"
 	print " 	connect  <bdaddr> 					Connect device\n"
-	print " 	listen   <dev> [channel [cmd]]   	Listen\n"
-	print " 	watch    <dev> [channel [cmd]]   	Watch\n"
+	//print " 	listen   <dev> [channel [cmd]]   	Listen\n"
+	//print " 	watch    <dev> [channel [cmd]]   	Watch\n"
 	print " 	write    --handle=0000 -data=abc123 Write\n\n"
 
 endfunc 1
@@ -434,12 +435,10 @@ function _Hci()
 	
 	if strcmp(tkn$,"inq")==0 then				
 		command = BLUEZ_COMMAND_HCITOOL_INQ
-		print "Inquiring...\n"
 		rc = _inquiry()							//This function only needs to show the address of remote devices
 	endif
 	
 	if strcmp(tkn$,"scan")==0 then
-		print "Scanning...\n"
 		command = BLUEZ_COMMAND_HCITOOL_SCAN
 		rc = _inquiry()							//This function must show the address and name of remote devices
 	endif
@@ -465,6 +464,7 @@ function _Hci()
 	endif
 	
 	if strcmp(tkn$, "ledc")==0 then
+		print "Disconnecting...\n"
 		rc = _leDisconnect()
 	endif
 	
@@ -473,38 +473,47 @@ endfunc 1
 // Extract the gatttool command
 //==============================================================================
 function _Gatt()
-	tlen = ExtractStrToken(urtcmd$,tkn$)
-	if tlen == 0 then
-		print "\nInsufficient parameters. For more information use"
-		print "\ngatttool help\n"
-		exitfunc 5		//Youssif: Here must display message need mroe parameters
-	endif
-	//=================================================
-	if strcmp(tkn$,"help")==0 then
-		rc = _GattHelp()
-	endif
 
-	if strcmp(tkn$,"primary")==0 then
-		command = BLUEZ_COMMAND_GATTTOOL_PRIMARY
-		rc = _GattPrimary()
-	endif	
+	dim s$
+	s$ = urtcmd$
+	while ExtractStrToken(s$, tkn$)!= 0
+		//tlen = ExtractStrToken(urtcmd$,tkn$)
+		//if tlen == 0 then
+			//print "\nInsufficient parameters. For more information use"
+			//print "\ngatttool help\n"
+			//exitfunc 5		//Youssif: Here must display message need mroe parameters
+		//endif
+		//=================================================
+		if strcmp(tkn$,"help")==0 then
+			rc = _GattHelp()
+			exitfunc 1
+		endif
 
-	if strcmp(tkn$,"characteristics")==0 then
-		command = BLUEZ_COMMAND_GATTTOOL_CHARACTERISTICS
-		rc = _GattChar()
-	endif
-	
-	if strcmp(tkn$, "char")==0 then 
-		strshiftleft(urtcmd$, 1)
-		rc = ExtractStrToken(urtcmd$, tkn$)
-		if strcmp(tkn$, "read")==0 then
-			rc = _GattCharRead()
-		elseif strcmp(tkn$, "write")==0 then
-			rc = _GattCharWrite()
+		if strcmp(tkn$,"primary")==0 then
+			command = BLUEZ_COMMAND_GATTTOOL_PRIMARY
+			rc = _GattPrimary()
+			exitfunc 1
+		endif	
+
+		if strcmp(tkn$,"characteristics")==0 then
+			command = BLUEZ_COMMAND_GATTTOOL_CHARACTERISTICS
+			rc = _GattChar()
+			exitfunc 1
 		endif
 	
-	endif
+		if strcmp(tkn$, "char")==0 then 
+			strshiftleft(s$, 1)
+			rc = ExtractStrToken(s$, tkn$)
+			if strcmp(tkn$, "read")==0 then
+				rc = _GattCharRead()
+			elseif strcmp(tkn$, "write")==0 then
+				rc = _GattCharWrite()
+			endif
+			exitfunc 1 
 	
+		endif
+	endwhile
+
 endfunc 1
 //==============================================================================
 // Extract the hciconfig command
@@ -512,52 +521,62 @@ endfunc 1
 function _HciCfg()
 	
 	dim s$
-	tlen = ExtractStrToken(urtcmd$,tkn$)
+	s$ = urtcmd$
+	while ExtractStrToken(s$, tkn$)!= 0
+		//tlen = ExtractStrToken(urtcmd$,tkn$)
 	
-	if tlen == 0 then
-		print "\nInsufficient parameters. For more information use"
-		print "\nhciconfig help"
-		exitfunc 5		//Youssif: Here must display message need mroe parameters
-	endif
+		//if tlen == 0 then
+		//print "\nInsufficient parameters. For more information use"
+		//print "\nhciconfig help"
+		//exitfunc 5		//Youssif: Here must display message need mroe parameters
+		//endif
 	
-	if strcmp(tkn$,"help")==0 then
-		rc = _HciCfgHelp()
-	endif
-	
-	if strcmp(tkn$,"reset")==0 then
-		reset(0)
-	endif
-	
-	if strcmp(tkn$,"auth")==0 then 
-		print "Set the device to be pairable\n" 
-		rc = BtcModeSet(0x0B)
-	endif
-	
-	if strcmp(tkn$,"name")==0 then 
-		tlen = ExtractStrToken(urtcmd$,tkn$)
-		if tlen == 0 then
-			rc = BtcGetFriendlyName(s$)
-			print "\n";s$;"\n"
-		else
-			rc = BtcSetFriendlyName(tkn$)
+		if strcmp(tkn$,"help")==0 then
+			rc = _HciCfgHelp()
+			exitfunc 1
 		endif
-	endif
 	
-	if strcmp(tkn$,"piscan")==0 then 
-		//Enable inquiry scan and page scan (default)
-	endif
 	
-	if strcmp(tkn$,"pscan")==0 then 
-		//Enable page scan
-	endif
+		if strcmp(tkn$,"auth")==0 then 
+			print "Set the device to be pairable\n" 
+			rc = BtcModeSet(0x0B)
+		endif
 	
-	if strcmp(tkn$,"iscan")==0 then 
-		//Enable inquiry scan
-	endif
+		if strcmp(tkn$,"name")==0 then 
+			tlen = ExtractStrToken(urtcmd$,tkn$)
+			if tlen == 0 then
+				rc = BtcGetFriendlyName(s$)
+				print "\n";s$;"\n"
+			else
+				rc = BtcSetFriendlyName(tkn$)
+			endif
+		endif
 	
-	if strcmp(tkn$,"noscan")==0 then 
-		//The adapter in not detectable by other devices and will not accept any incoming connections
-	endif
+		if strcmp(tkn$,"piscan")==0 then 
+			//Enable inquiry scan and page scan (default)
+			nConPair = nConPair | 0x0B
+			rc = BtcModeSet(nConPair)
+		endif
+	
+		if strcmp(tkn$,"pscan")==0 then 
+			//Enable page scan
+			nConPair = nConPair | 0x03
+			rc = BtcModeSet(nConPair)
+		endif
+	
+		if strcmp(tkn$,"iscan")==0 then 
+			//Enable inquiry scan
+			nConPair = nConPair | 0x8
+			rc = BtcModeSet(nConPair)
+		endif
+	
+		if strcmp(tkn$,"noscan")==0 then 
+			//The adapter in not detectable by other devices and will not accept any incoming connections
+			nConPair = nConPair & 0x4
+			rc = BtcModeSet(nConPair)
+		endif
+	
+	endwhile
 	
 endfunc 1
 //==============================================================================
@@ -752,7 +771,7 @@ function HandlerAdvRpt() as integer
   rc = BleScanGetAdvReport(ad$,dta$,ndisc,rsi)
   while rc==0
 	ad$ = right$(ad$,8)
-    print "\n ";strhexize$(ad$)
+    print "\n		";strhexize$(ad$)
 	//;" ";strhexize$(dta$);" ";ndisc;" ";rsi
     rc = BleScanGetAdvReport(ad$,dta$,ndisc,rsi)
   endwhile
@@ -772,11 +791,9 @@ function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as intege
   
   select nMsgId
   case BLE_EVBLEMSGID_CONNECT
-    //hz = AcqConnHandle(nCtx)
     hz = nCtx
-	//conns = conns + 1
-    print "\nConnected\n" 
-	//(";integer.h' nCtx;") handle=";hz
+    print "\nConnected\n";pr$
+	
     if hz == 0 then
       //Could not store the handle so drop the connection
       rc = BleDisconnect(nCtx)
@@ -789,9 +806,7 @@ function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as intege
     endif
     
   case BLE_EVBLEMSGID_DISCONNECT
-    //hz = RelConnHandle(nCtx)
-    conns = conns - 1
-    print "\n --- Disconnect: (";integer.h' nCtx;") handle=";hz;pr$
+    print "\nDisconnected\n";pr$
 
   case BLE_EVBLEMSGID_DISPLAY_PASSKEY
     DbgMsgVal("Display Pairing Passkey ",nCtx)
@@ -843,14 +858,13 @@ function HandlerPrimSvc(hConn,hUuid,hStart,hEnd) as integer
 		print ", uuid = ";integer.h' hUuid
 		rc = BleDiscServiceNext(hz)
 		if rc != 0 then 
-			print "\n"
+			print "\n";pr$
 			BleGattcClose()
 			exitfunc 1 
 		endif
 	
 	elseif command == BLUEZ_COMMAND_GATTTOOL_CHARACTERISTICS then
 		rc = BleDiscCharFirst(hz,0,sAttr,eAttr)
-	
 	endif
 	
 	
@@ -872,10 +886,10 @@ function HandlerCharDisc(hConn,hUuid,cProp,hVal,hiUuid) as integer
 	rc = BleDiscCharNext(hz)
 	if rc != 0 then
 		rc = BleDiscServiceNext(hz)
-			if rc !=0 then
-				BleGattcClose()
-			endif
-		exitfunc 1
+		if rc !=0 then
+			print "\n";pr$
+			BleGattcClose()
+		endif
 	endif
 	
 endfunc 1
@@ -888,10 +902,9 @@ function HandlerAttrRead(hConn,hAttr,nSts) as integer
 	if nSts == 0 then
 		rc = BleGattcReadData(hConn,testhndl,ofst,a$)
 		if rc==0 then
-			print "Characteristic value/descriptor: "
+			print "\nCharacteristic value/descriptor: "
 			print "";StrHexize$(a$)
-			print " (";StrEscape$(a$);") \n"
-			print "\n"
+			print " (";StrEscape$(a$);") \n";pr$
 		else	
 			print "At handleAttrRea,d rc returns ";rc;"\n"
 		endif
@@ -989,7 +1002,7 @@ OnEvent  EVATTRNOTIFY             	call HandlerAttrNtfyCmd
 sub Initialise()
 	InitBtDevice()
 	print "\n-----------------------\n"
-	print " BLUEZ EXPLORER v0.4\n"
+	print " BLUEZ EXPLORER v0.5\n"
 	print "-----------------------\n"
 	print "\nType \22help\22 or \22<command> help\22\n"
 	
