@@ -135,6 +135,9 @@ dim hcSpp                   // handle of connection to use for VSP service
 dim command
 dim testhndl
 dim nConPair				//This is the nConnDiscPairType used in BtcModeSet
+dim inqmode					// Inquiry Mode: 0 General, 1 with RSSI, 2 Extended
+dim inqtype					// Inquiry Type: 0 General, 1 Limited
+
 //******************************************************************************
 // Initialise Global Variable
 //******************************************************************************
@@ -145,7 +148,16 @@ pr$    = "------->"
 
 urts = 0					// not suspended
 command = 0					// no command being processed
+inqmode = 2
+inqtype = 0					//Inquiry Type: General
 
+//==============================================================================
+//==============================================================================
+sub AssertResCode(resCode)
+	if rc !=0 then
+		print "error: ";integer.h' rc;"\n"
+	endif
+endsub 
 //==============================================================================
 //==============================================================================
 sub DbgMsg(byval msg$ as string)
@@ -161,19 +173,6 @@ sub DbgMsgVal(byval msg$ as string, byval vl as integer)
     print "\n";msg$;" ";vl
   endif
 endsub
-
-//-------------------------------------------------------------------------
-//-------------------------------------------------------------------------
-function ExtractIntTokens(u$,stIdx,num)
-  while num>0
-    tlen = ExtractIntToken(u$,i[stIdx])
-    if tlen == 0 then
-      exitfunc 4
-    endif
-    num=num-1
-    stIdx = stIdx+1
-  endwhile
-endfunc 0
 
 //==============================================================================
 //==============================================================================
@@ -214,13 +213,21 @@ sub InitBtDevice()
 	name$ = right$(name$, 6)
 	name$ = StrHexize$(name$)
 	name$ = "bluez-" + name$
-	rc = BTCSETFRIENDLYNAME (name$)			
+	rc = BTCSETFRIENDLYNAME (name$)
+	AssertResCode(rc)
 	
 	rc = BtcModeSet(11)							//Connectable, pairable, and general discoverability
-													//This should be added to hciconfig later
+	AssertResCode(rc)							//This should be added to hciconfig later
 												
 
+	rc = BtcInquiryConfig(0, inqtype)			// Inquiry Type: General
+	AssertResCode(rc)
+	
+	rc = BtcInquiryConfig(1, inqmode)			// Inquiry mode: Extended
+	AssertResCode(rc)
+	
 	rc = btcSppOpen(nHandle)
+	AssertResCode(rc)
 	
 endsub											
 //==============================================================================
@@ -342,37 +349,37 @@ function _HciCfgHelp() as integer
 	print "	noscan             	Disable scan\n"
 	print "	iscan              	Enable Inquiry scan\n"
 	print "	pscan              	Enable Page scan\n"
-	print "	ptype      [type]  	Get/Set default packet type\n"
-	print "	lm         [mode]  	Get/Set default link mode\n"
-	print "	lp         [policy]	Get/Set default link policy\n"
+	//print "	ptype      [type]  	Get/Set default packet type\n"
+	//print "	lm         [mode]  	Get/Set default link mode\n"
+	//print "	lp         [policy]	Get/Set default link policy\n"
 	print "	name       [name]  	Get/Set local name\n"
-	print "	class      [class] 	Get/Set class of device\n"
-	print "	voice      [voice] 	Get/Set voice setting\n"
-	print "	iac        [iac]   	Get/Set inquiry access code\n"
-	print "	inqtpl     [level] 	Get/Set inquiry transmit power level\n"
+	//print "	class      [class] 	Get/Set class of device\n"
+	//print "	voice      [voice] 	Get/Set voice setting\n"
+	//print "	iac        [iac]   	Get/Set inquiry access code\n"
+	//print "	inqtpl     [level] 	Get/Set inquiry transmit power level\n"
 	print "	inqmode    [mode]  	Get/Set inquiry mode\n"
-	print "	inqdata    [data]  	Get/Set inquiry data\n"
+	//print "	inqdata    [data]  	Get/Set inquiry data\n"
 	print "	inqtype    [type]  	Get/Set inquiry scan type\n"
-	print "	inqparms   [win:int]	Get/Set inquiry scan window and interval\n"
-	print "	pageparms  [win:int]	Get/Set page scan window and interval\n"
-	print "	pageto     [to]    	Get/Set page timeout\n"
-	print "	afhmode    [mode]  	Get/Set AFH mode\n"
-	print "	sspmode    [mode]  	Get/Set Simple Pairing Mode\n"
-	print "	aclmtu     <mtu:pkt>	Set ACL MTU and number of packets\n"
-	print "	scomtu     <mtu:pkt>	Set SCO MTU and number of packets\n"
-	print "	putkey     <bdaddr>	Store link key on the device\n"
-	print "	delkey     <bdaddr>	Delete link key from the device\n"
-	print "	oobdata            	Display local OOB data\n"
-	print "	commands           	Display supported commands\n"
-	print "	features           	Display device features\n"
+	//print "		inqparms   [win:int]	Get/Set inquiry scan window and interval\n"
+	//print "		pageparms  [win:int]	Get/Set page scan window and interval\n"
+	//print "		pageto     [to]    	Get/Set page timeout\n"
+	//print "		afhmode    [mode]  	Get/Set AFH mode\n"
+	//print "		sspmode    [mode]  	Get/Set Simple Pairing Mode\n"
+	//print "		aclmtu     <mtu:pkt>	Set ACL MTU and number of packets\n"
+	//print "		scomtu     <mtu:pkt>	Set SCO MTU and number of packets\n"
+	//print "		putkey     <bdaddr>	Store link key on the device\n"
+	//print "		delkey     <bdaddr>	Delete link key from the device\n"
+	//print "		oobdata            	Display local OOB data\n"
+	//print "		commands           	Display supported commands\n"
+	//print "		features           	Display device features\n"
 	print "	version            	Display version information\n"
-	print "	revision           	Display revision information\n"
-	print "	block      <bdaddr>	Add a device to the blacklist\n"
-	print "	unblock    <bdaddr>	Remove a device from the blacklist\n"
-	print "	lerandaddr <bdaddr>	Set LE Random Address\n"
-	print "	leadv              	Enable LE advertising\n"
-	print "	noleadv            	Disable LE advertising\n"
-	print "	lestates           	Display the supported LE states\n\n"
+	//print "		revision           	Display revision information\n"
+	//print "		block      <bdaddr>	Add a device to the blacklist\n"
+	//print "		unblock    <bdaddr>	Remove a device from the blacklist\n"
+	//print "		lerandaddr <bdaddr>	Set LE Random Address\n"
+	//print "		leadv              	Enable LE advertising\n"
+	//print "		noleadv            	Disable LE advertising\n"
+	//print "		lestates           	Display the supported LE states\n\n"
 
 endfunc 1
 //==============================================================================
@@ -464,7 +471,6 @@ function _Hci()
 	endif
 	
 	if strcmp(tkn$, "ledc")==0 then
-		print "Disconnecting...\n"
 		rc = _leDisconnect()
 	endif
 	
@@ -540,15 +546,19 @@ function _HciCfg()
 		if strcmp(tkn$,"auth")==0 then 
 			print "Set the device to be pairable\n" 
 			rc = BtcModeSet(0x0B)
+			AssertResCode(rc)
 		endif
 	
 		if strcmp(tkn$,"name")==0 then 
-			tlen = ExtractStrToken(urtcmd$,tkn$)
+			tlen = ExtractStrToken(s$,tkn$)
 			if tlen == 0 then
 				rc = BtcGetFriendlyName(s$)
+				AssertResCode(rc)
 				print "\n";s$;"\n"
 			else
-				rc = BtcSetFriendlyName(tkn$)
+				name$ = tkn$
+				rc = BtcSetFriendlyName(name$)
+				AssertResCode(rc)
 			endif
 		endif
 	
@@ -574,8 +584,60 @@ function _HciCfg()
 			//The adapter in not detectable by other devices and will not accept any incoming connections
 			nConPair = nConPair & 0x4
 			rc = BtcModeSet(nConPair)
+			AssertResCode(rc)
 		endif
-	
+		
+		if strcmp(tkn$,"inqmode")==0 then 
+			//Get/Set Inquiry mode
+			if ExtractStrToken(s$, tkn$) == 0  then
+				// Get inquiry mode
+				if inqmode == 0 then
+					print "Inquiry mode: Standard Inquiry\n"
+				elseif inqmode == 1 then
+					print "Inquiry mode: Inquiry with RSSI\n"
+				elseif inqmode == 2 then
+					print "Inquiry mode: Inquiry with RSSI or Extended Inquiry\n"
+				else
+					print "Invalid inquiry mode detected. Please set inquiry mode to 0, 1, or 2\n"
+				endif
+			else
+				inqmode = StrValDec(tkn$)
+				print "the decimal value is ";inqmode;"\n"
+				if inqmode >= 0 && inqmode < 3 then
+					rc = BtcInquiryConfig(1, inqmode)
+					AssertResCode(rc)
+				endif
+			endif
+		endif
+		
+		if strcmp(tkn$,"inqtype")==0 then 
+			//Get/Set Inquiry type
+			if ExtractStrToken(s$, tkn$) == 0  then
+				// Get inquiry type
+				if inqtype == 0 then
+					print "Inquiry scan type: General Inquiry Scan\n"
+				elseif inqtype == 1 then
+					print "Inquiry scan type: Limited Inquiry Scan\n"
+				else
+					print "Invalid inquiry type detected. Please set inquiry type to 0, or 1\n"
+				endif
+			else
+				inqmode = StrValDec(tkn$)
+				print "the decimal value is ";inqmode;"\n"
+				if inqtype >= 0 && inqtype < 2 then
+					rc = BtcInquiryConfig(0, inqtype)
+					AssertResCode(rc)
+				endif
+			endif
+		endif
+		
+		if strcmp(tkn$, "version")==0 then
+			print "App Version: BlueZ Version 5.0\n"
+			print "Device Name: BT900\n"
+			print "Firmware: 1.1.X.1\n"						//Must get correct version number
+			print "Manufacturer: Laird Technologies\n"
+		endif
+		
 	endwhile
 	
 endfunc 1
@@ -650,6 +712,7 @@ function HandlerInqResp(respType) as integer
 	dim ad$,dta$,ndx,rsi,tag, name$
 	
 	rc = BtcInquiryGetReport(ad$,dta$,ndx,rsi)
+	AssertResCode(rc)
 	print "\n		"; StrHexize$(ad$)
 	if command == BLUEZ_COMMAND_HCITOOL_INQ then
 		//print "\n"
@@ -658,9 +721,11 @@ function HandlerInqResp(respType) as integer
 			//Get local name
 			tag = 0x09
 			rc=BtcGetEIRbyTag(dta$, tag, name$)
+			AssertResCode(rc)
 			if rc == 0x5703 then
 				tag = 0x08
 				rc=BtcGetEIRbyTag(dta$, tag, name$)
+				AssertResCode(rc)
 			endif
 				
 			if rc == 0 then
@@ -684,7 +749,7 @@ function HandlerSppCon(hConn, res) as integer
     //if connected successfully
     print "rfcomm connecting...\n"
 	if res == 0 then
-		print "rfcomm connected. Connection handle=";hConn;"\n"
+		print "rfcomm connected. Connection handle: ";hConn;"\n";pr$
 	else
 		print "rfcomm connection failed: ";res;"\n"
     endif        
@@ -705,7 +770,7 @@ function HandlerSppDiscon(hConn)
     
     //hz = RelConnHandle(hConn)
     conns = conns - 1
-    print "\n --- Spp Disconnect: handle=";hz
+    print "\nDisconnected\n";pr$ 
 endfunc 1
 //==============================================================================
 // This handler is called when there is an inquiry timeout
@@ -721,7 +786,6 @@ endfunc 1
 //==============================================================================
 function HandlerSppData()
     dim hPort, data$, rLen
-    print "Reached handler Spp Data\n"
     '//read and print data while there is data available to read
     while BtcSppRead(hPort, data$, rLen) == 0    
         if rLen>0 then
@@ -734,11 +798,14 @@ endfunc 1
 // Called when there is a pairing request from another device
 //==============================================================================
 function HandlerPairReq()
+	
 	dim s$
     rc=BtcGetPAIRRequestBDAddr(s$)
     prAddr$ = s$
     print "\nPair Req: "; StrHexize$(s$);" \n"
 	rc = BtcSendPAIRResp(1)
+	AssertResCode(rc)
+	
 endfunc 1
 
 //==============================================================================
@@ -748,6 +815,7 @@ function HandlerPINReq()
 
 	dim mac$
     rc=BtcGetPinRequestBDAddr(mac$)
+	AssertResCode(rc)
     if rc==0 then
         print "PIN Req: "; StrHexize$(mac$);pr$;"\n"
     else
@@ -771,6 +839,7 @@ endfunc 1
 function HandlerAdvRpt() as integer
 	dim ad$,dta$,ndisc,rsi,tag
 	rc = BleScanGetAdvReport(ad$,dta$,ndisc,rsi)
+	AssertResCode(rc)
 	while rc==0
 		ad$ = right$(ad$,8)
 		print "\n		";strhexize$(ad$)
@@ -778,9 +847,11 @@ function HandlerAdvRpt() as integer
 		//;" ";strhexize$(dta$);" ";ndisc;" ";rsi
 		tag = 0x09
 		rc = BLEGETADBYTAG(dta$, tag, name$)
+		AssertResCode(rc)
 		if rc == 0x5703 then
 			tag = 0x08
 			rc = BLEGETADBYTAG(dta$, tag, name$)
+			AssertResCode(rc)
 		endif
 				
 		if rc == 0 then
@@ -813,7 +884,7 @@ function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as intege
     if hz == 0 then
       //Could not store the handle so drop the connection
       rc = BleDisconnect(nCtx)
-      print " DROPPED"
+	  AssertResCode(rc)
     else
       //accepted so display connection parameters
       //ShowConnParms(nCtx)
@@ -881,6 +952,7 @@ function HandlerPrimSvc(hConn,hUuid,hStart,hEnd) as integer
 	
 	elseif command == BLUEZ_COMMAND_GATTTOOL_CHARACTERISTICS then
 		rc = BleDiscCharFirst(hz,0,sAttr,eAttr)
+		AssertResCode(rc)
 	endif
 	
 	
@@ -922,7 +994,7 @@ function HandlerAttrRead(hConn,hAttr,nSts) as integer
 			print "";StrHexize$(a$)
 			print " (";StrEscape$(a$);") \n";pr$
 		else	
-			print "At handleAttrRea,d rc returns ";rc;"\n"
+			AssertResCode(rc)
 		endif
 	
 	else 
@@ -1018,7 +1090,7 @@ OnEvent  EVATTRNOTIFY             	call HandlerAttrNtfyCmd
 sub Initialise()
 	InitBtDevice()
 	print "\n-----------------------\n"
-	print " BLUEZ EXPLORER v0.5\n"
+	print " BLUEZ EXPLORER v0.6\n"
 	print "-----------------------\n"
 	print "\nType \22help\22 or \22<command> help\22\n"
 	

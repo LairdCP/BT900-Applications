@@ -9,11 +9,6 @@ function _inquiry()
 	inqLen = 10
 	numRsp = 50
 	
-	//Configure Classic Inquiry
-	//Youssif: posssibly moved to hciconfig  inqmode in the future
-	rc = BtcInquiryConfig(0, 0)			//Inquiry type: General
-	rc = BtcInquiryConfig(1, 2)			//Inquiry mode: Extended
-	
     //if strcmp(tkn$,"cancel")==0 then
     //    //cancel the inquiry
     //    exitfunc BtcInquiryCancel()
@@ -59,6 +54,7 @@ function _inquiry()
 	endif
 	
 	rc = btcInquiryConfig(4, numRsp)
+	AssertResCode(rc)
 	exitfunc btcinquirystart(inqLen)					//Must check for rc here
 		
 endfunc 5
@@ -103,6 +99,10 @@ function _SppConnect()
 		else
 			tkn$ = strdehexize$(tkn$)
 			rc = BtcSppConnect(tkn$)
+			AssertResCode(rc)
+			if rc == 0 then 
+				print "Connecting...\n"
+			endif
 		endif
 	endwhile
 endfunc 5
@@ -124,7 +124,12 @@ function _SppDisconnect()
 		else
 			tkn$ = strdehexize$(tkn$)
 			rc = BtcGetHandleFromBDAddr(tkn$,hcSpp)
+			AssertResCode(rc)
 			rc = BtcSppDisconnect(hcSpp)
+			AssertResCode(rc)
+			if rc == 0 then 
+				print "Disconnecting...\n"
+			endif
 		endif
 	endwhile
 endfunc 5
@@ -146,6 +151,7 @@ function _auth()
 		else
 			tkn$ = strdehexize$(tkn$)
 			rc = BtcPair(tkn$, 0)						// Do not store bonding information 
+			AssertResCode(rc)
 		endif
 	endwhile
 endfunc 1
@@ -184,8 +190,11 @@ function _leScan()
 			endif
 		endwhile
 		
-		print "LE Scan ...\n"
-		exitfunc BleScanStart(scnLen, 0)						//Scan for 30 seconds. No filtering of adverts.	
+		rc = BleScanStart(scnLen, 0)							//Scan for 30 seconds. No filtering of adverts.	
+		if rc == 0 then 
+			print "LE Scan...\n"
+		endif
+		
 endfunc 5
 //-------------------------------------------------------------------------
 // hcitool lecc [--random] <bdaddr>							// [] denotes optional fields
@@ -204,10 +213,9 @@ function _leConnect() as integer
 		else
 			tkn$ = strdehexize$(tkn$)
 			rc = BleConnect(tkn$, 5000, 20000, 75000, 5000000)						// ConnectionTimeoutms, minConIntervalus, maxConIntervalus, nSupervisionTimeoutus
+			AssertResCode(rc)
 			if rc == 0 then
-				print "connecting... \n"
-			else
-				print "rc = ";integer.h' rc;"  not connectong, there is a problem \n"
+				print "Connecting... \n"
 			endif
 		endif
 	endwhile
@@ -227,6 +235,9 @@ function _leDisconnect() as integer
 		else
 			tkn$ = strdehexize$(tkn$)
 			rc = bledisconnect(hz)						// Do not store bonding information 
+			if rc == 0 then 
+				print "Disconnecting...\n"
+			endif
 		endif
 	endwhile
 endfunc 5
@@ -250,6 +261,7 @@ function _rfcommConnect()
 			else
 				tkn$ = strdehexize$(tkn$)
 				rc = BtcSppConnect(tkn$)
+				AssertResCode(rc)
 			endif
 		endif
 	endwhile
@@ -262,7 +274,6 @@ function _rfcommWrite()
 
 	dim hndl, dta$, len
 		
-	print "Reached rfcomm write\n"
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 			print "Usage:\n"
@@ -276,13 +287,15 @@ function _rfcommWrite()
 		
 		elseif strcmp(tkn$, "data")==0 then
 			strshiftleft(urtcmd$, 1)
-			rc = ExtractStrToken(urtcmd$, dta$)
+			dta$ = urtcmd$
+			break
 		endif
 		
 	
 	endwhile
 	
 	rc = BtcSppWrite(hndl, dta$, len)
+	AssertResCode(rc)
 	
 endfunc 1
 //-------------------------------------------------------------------------
@@ -308,7 +321,8 @@ function _rfcommLsn()
 	endwhile
 	
 	rc = BtcSppRead(hndl, dta$, len)
-	print "the data is  :: ";dta$;"\n"
+	AssertResCode(rc)
+	print "Incoming data: ";dta$;"\n"
 	
 endfunc 1
 //=========================================================================
@@ -341,7 +355,9 @@ function _GattPrimary() as integer
 	endwhile
 	
 	rc = BleGattcOpen(0,0)
+	AssertResCode(rc)
 	rc = BleDiscServiceFirst(hz,0,0)
+	AssertResCode(rc)
 	
 endfunc 1
 //-------------------------------------------------------------------------
@@ -368,7 +384,9 @@ function _GattChar() as integer
 	endwhile
 	
 	rc = BleGattcOpen(0,0)
+	AssertResCode(rc)
 	rc = BleDiscServiceFirst(hz,0,0)
+	AssertResCode(rc)
 	
 endfunc 1
 //-------------------------------------------------------------------------
@@ -401,10 +419,10 @@ function _GattCharRead() as integer
 	endwhile
 	
 	rc = BleGattcOpen(0,0)											//must check rc here
+	AssertResCode(rc)
 	rc = BleGattcRead(hz,hndl,0)
-	if rc !=0 then
-		print "verbose error message ";integer.h' rc;"\n"
-	endif
+	AssertResCode(rc)
+
 	
 endfunc 1
 //-------------------------------------------------------------------------
@@ -443,10 +461,9 @@ function _GattCharWrite() as integer
 	endif
 	
 	print "At this point, the input data token is : ";val$;" \n"
-	rc = BleGattcOpen(0,0)											//must check rc here
+	rc = BleGattcOpen(0,0)
+	AssertResCode(rc)
 	rc = BleGattcWrite(hz,hndl,val$)
-	if rc !=0 then
-		print "verbose error message ";integer.h' rc;"\n"
-	endif
+	AssertResCode(rc)
 	
 endfunc 1
