@@ -21,14 +21,16 @@ function _inquiry()
 			if command == BLUEZ_COMMAND_HCITOOL_INQ then
 				//print the inquiry help menu
 				print "Usage:\n"
-				print "	inq	[--length=N] maximum inquiry duration in seconds\n"
-				print "		[--numrsp=N] specify maximum number of inquiry responses\n"
+				print "		hcitool inq	[--length=N] maximum inquiry duration in seconds\n"
+				print " 				[--numrsp=N] specify maximum number of inquiry responses\n"
 				//print "		[--iac=lap]  specify the inquiry access code\n"
 				//print "		[--flush]    flush the inquiry cache\n"
 			elseif command == BLUEZ_COMMAND_HCITOOL_SCAN then
 				//print the scan help menu
 				print "Usage:\n"
-				print "		scan [--length=N] [--numrsp=N]\n" // [--iac=lap] [--flush] [--class] [--info] [--oui] [--refresh]"
+				print "		hcitool scan [--length=N] maximum inquiry duration in seconds\n"
+				print " 				 [--numrsp=N] specify maximum number of inquiry responses\n"
+				//print "		hcitool scan [--length=N] [--numrsp=N]\n" // [--iac=lap] [--flush] [--class] [--info] [--oui] [--refresh]"
 
 			endif
 			exitfunc 1
@@ -89,10 +91,10 @@ function _SppConnect()
 		if strcmp(tkn$,"help")==0 then
 		//print the  hcitool cc help menu
 		print "Usage:\n"
-		print "		cc [--role=m|s] [--ptype=pkt_types] <bdaddr>\n"
-		print "Example:\n"
-		print "		cc --ptype=dm1,dh3,dh5 01:02:03:04:05:06\n"
-		print "		cc --role=m 01:02:03:04:05:06\n"
+		print "		hcitool cc <bdaddr>\n"//[--role=m|s] [--ptype=pkt_types] <bdaddr>\n"
+		//print "Example:\n"
+		//print "		cc --ptype=dm1,dh3,dh5 01:02:03:04:05:06\n"
+		//print "		cc --role=m 01:02:03:04:05:06\n"
 		
 		exitfunc 1
 		
@@ -117,7 +119,7 @@ function _SppDisconnect()
 		if strcmp(tkn$,"help")==0 then
 		//print the hcitool dc help menu
 		print "Usage:\n"
-		print "		dc <bdaddr> [reason]\n"
+		print "		hcitool dc <bdaddr>\n"
 		
 		exitfunc 1
 		
@@ -144,7 +146,7 @@ function _auth()
 		if strcmp(tkn$,"help")==0 then
 			//print the hcitool auth help menu
 			print "Usage:\n"
-			print "		auth <bdaddr>\n"
+			print "		hcitool auth <bdaddr>\n"
 		
 			exitfunc 1
 		
@@ -173,7 +175,7 @@ function _leScan()
 				//print "		lescan [--passive] set scan type passive (default active)\n"
 				//print "		lescan [--discovery=g|l] enable general or limited discovery procedure\n"
 				//print "		lescan [--duplicates] don't filter duplicates\n"
-				print "		lescan	[--length=N] maximum scan duration in seconds\n"
+				print "		hcitool lescan [--length=N] maximum scan duration in seconds\n"
 				print ""
 				exitfunc 1
 			
@@ -205,7 +207,7 @@ function _leConnect() as integer
 		if strcmp(tkn$,"help")==0 then
 			//print the hcitool lecc help menu
 			print "Usage:\n"
-			print "		lecc [--random] <bdaddr>\n"
+			print "		hcitool lecc <bdaddr>\n"
 			//print "		lecc --whitelist\n"
 		
 			exitfunc 1
@@ -228,7 +230,7 @@ function _leDisconnect() as integer
 		if strcmp(tkn$,"help")==0 then
 			//print the hcitool ledc help menu
 			print "Usage:\n"
-			print "		ledc <bdaddr>\n"
+			print "		hcitool ledc <bdaddr>\n"
 		
 			exitfunc 1
 		
@@ -259,13 +261,15 @@ function _rfcommConnect()
 			if strcmp(tkn$,"")==0 then
 				print "A valid Bluetooth address is required\n"
 			else
-				tkn$ = strdehexize$(tkn$)
-				rc = BtcSppConnect(tkn$)
-				AssertResCode(rc)
+				break
 			endif
 		endif
 	endwhile
-				
+	
+	tkn$ = strdehexize$(tkn$)
+	rc = BtcSppConnect(tkn$)
+	AssertResCode(rc)
+	
 endfunc 1 
 //-------------------------------------------------------------------------
 // rfcomm write --handle=0000 --data=abc123
@@ -460,7 +464,6 @@ function _GattCharWrite() as integer
 		exitfunc 1
 	endif
 	
-	print "At this point, the input data token is : ";val$;" \n"
 	rc = BleGattcOpen(0,0)
 	AssertResCode(rc)
 	rc = BleGattcWrite(hz,hndl,val$)
