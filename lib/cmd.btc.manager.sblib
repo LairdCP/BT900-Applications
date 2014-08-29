@@ -40,9 +40,8 @@
 //     #INTcfgID# 
 //       0    Inquiry Type (0 for General Inquiry, 1 for Limited Inquiry)
 //       1    Inquiry Mode (0 for Standard, 1 for with RSSI, 2 for Extended)
-//       2    Min Period Length (Min length to perform inquiry if periodic is required in seconds)
-//       3    Max Period Length (Max length to perform inquiry if periodic is required in seconds)
-//       4    Max number of devices to receive inquiry responses from
+//       2    Max number of devices to receive inquiry responses from
+//       3    Inquiry Tx Power (Range is from -70 to 20 dBm)
 //
 // -----------------------------------------------------------------------------
 // inquiry start #INTinqTimeoutS#

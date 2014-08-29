@@ -390,6 +390,13 @@
 //    - #INTconnHandle# sepecifies the connection handle
 //
 // -----------------------------------------------------------------------------
+// pair bondreq  #INTbondreq#
+//    - Security Manager related
+//    - This will result in BleSecMngrBondReq() being called
+//    - Enable or disable bonding when pairing
+//    - #INTbondreq# sepecifies whether to bond or not when pairing
+//
+// -----------------------------------------------------------------------------
 // blebond stats
 //    - Get the classic BT bonding manager database statistics.
 //
@@ -1555,7 +1562,17 @@ function _Pair()
             exitfunc rc
         endif
         exitfunc BleSecMngrPassKey(hc[i[1]],i[2])
-    endif  
+    endif 
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"bondreq")==0 then
+        //extract 1 (#INTbondreq#) and store starting at i[1]
+        rc = ExtractIntTokens(urtcmd$,1,1)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        exitfunc BleSecMngrBondReq(i[1])
+    endif 
 endfunc 5
 
 

@@ -38,7 +38,7 @@
 //
 // -----------------------------------------------------------------------------
 // atd #HEXbdAddr14bytes# OR
-// connect #HEXbdAddr7bytes# OR
+// connect #HEXbdAddr14bytes# OR
 //    - connect to device with given BT address
 //
 //    -> if an invalid or null BT address is given, the default mac address 
@@ -50,27 +50,12 @@
 //       arriving at the UART is sent over the BLE connection.
 //
 // -----------------------------------------------------------------------------
-// ats #INTsReg# ?
-//    - get the value in the given s-register 
-//
-//    S-Registers:
-//      1: Peripheral BT Address
-//      2: Connection Timeout (ms)
-//      3: Min Connection interval (us)
-//      4: Max Connection interval (us)
-//      5: Link Supervision Timeout (us)
-//      6: Scan Timeout (ms)
-//
-// -----------------------------------------------------------------------------
-// ats #INTsReg# = #INTnewVal#
-//    - set the value in the given s-register 
-//
-// -----------------------------------------------------------------------------
 // ^^^
 //    - exit from bridge mode to command mode to accept the commands in this list.
+//    -> Note: Ensure Line Mode is disabled in UwTerminal
 //
 // -----------------------------------------------------------------------------
-// ato
+// ato OR bridge
 //    - enter bridge mode. Any data arriving at the UART is sent over the BLE 
 //      connection.
 //
@@ -121,6 +106,12 @@
         //Set this to 0 to disable all debugging messages
 #define ENABLE_DEBUG_PRINTS                  1
 
+        //if set to 1, on startup the module will connect to device PEER_BT_ADDR for VSP
+#define CONNECT_ON_STARTUP                   1
+
+        //Set this to the MAC address of the peripheral mode module you want to connect to by default
+#define PERIPH_MAC_ADDR                     "01F63627A60BEA"
+
         // size of i[]
 #define NUM_OF_I_PARAMS                     (10)
         // size of s$[] and must be at least 8 elements for BleSvcRegDevInfo()     
@@ -148,10 +139,6 @@
         //Otherwise every advert report will be printed
 #define CACHE_MAC_ADDRESSES                 1
 
-        //Set this to the MAC address of the peripheral mode module you want to connect to
-#define PERIPH_MAC_ADDR                     "01D8CFCF14498D"
-
-    
 
         //Connection timeout ms
 #define CONN_TMT                            10000
@@ -161,7 +148,7 @@
 #define MAX_CONN_INTVL                      40000
         //Link supervision timeout us
 #define LINK_SUP_TMT                        3000000
-        //Scan timeout
+        //Scan timeout (ms)
 #define SCAN_TMT                            10000
 
         //Scan Interval ms
@@ -173,14 +160,6 @@
         //Minimum Reports in Cache  
 #define SCAN_MIN_RPTS_IN_CACHE              4
 
-//S-Registers   
-#define NUM_SREGS                           6  //Number of S-registers used    
-#define S_PERIPH_MAC_ADDR                   1  //MAC Address S-reg number       
-#define S_CONN_TMT                          2  //Connection timeout S-reg number
-#define S_MIN_CONN_INTVL                    3  //Min Connection interval S-reg number
-#define S_MAX_CONN_INTVL                    4  //Max Connection interval S-reg number
-#define S_LINK_SUP_TMT                      5  //Link supervision timeout S-reg number
-#define S_SCAN_TMT                          6  //Scan timeout S-reg number
 
 
 //BLE EVENT MSG IDs
@@ -200,7 +179,6 @@
 #define CAR_PRESS_DELAY                     100 //ms to wait between registering entries of '^'
 #define GENERIC_ERR                         1
 #define NOCARR_ERR                          2
-#define SREG_ERR                            3
 #define MAX_DEV_SCAN_TABLE                  10  //max number of devices to store in table when scanning
 
 
@@ -291,7 +269,6 @@ dim vspRxH                  //handle of the RX char in the peripheral for VSP
 dim vspTxH                  //handle of the TX char in the peripheral for VSP
 dim vspCcH                  //handle of the TX CCCD in the peripheral for VSP
 
-dim dfSVals$[NUM_SREGS]     //default S-reg values except mac address
 dim hC                      //connection handle
 dim tb$                     //table for storing discovered MAC addresses - instantiated in _Scan()
 dim tbIDs                   //number of items in the table
@@ -396,72 +373,6 @@ function ExtractHexTokens(u$,stIdx,num)
 endfunc 0
 
 
-//------------------------------------------------------------------------------
-// Initialises dfSVals$[] with default data (See Definitions)
-//------------------------------------------------------------------------------
-Sub InitDefSvals()
-    dim i
-    
-    //peripheral mac address
-    dfSVals$[S_PERIPH_MAC_ADDR-1] = PERIPH_MAC_ADDR
-    
-    //connection timeout
-    rc=BleEncode32(dfSVals$[S_CONN_TMT-1],CONN_TMT,0)
-    AssertRC(rc,411)
-    
-    //Min Connection interval
-    rc=BleEncode24(dfSVals$[S_MIN_CONN_INTVL-1],MIN_CONN_INTVL,0)
-    AssertRC(rc,411)
-    
-    //Max Connection interval
-    rc=BleEncode24(dfSVals$[S_MAX_CONN_INTVL-1],MAX_CONN_INTVL,0)
-    AssertRC(rc,411)
-    
-    //Link supervision timeout
-    rc=BleEncode32(dfSVals$[S_LINK_SUP_TMT-1],LINK_SUP_TMT,0)
-    AssertRC(rc,411)
-    
-    //Scaning timeout
-    rc=BleEncode32(dfSVals$[S_SCAN_TMT-1],SCAN_TMT,0)
-    AssertRC(rc,411)
-EndSub
-
-
-//-------------------------------------------------------------------------
-// Get the value of an sReg converted to int 
-// - takes sReg to get value of
-// - updates sVal or sVal$ with the value
-// - returns result code
-//-------------------------------------------------------------------------
-Sub GetSreg(sReg) 
-    // dim sVal, sVal$
-    dim sVal
-    //try and load value in specified s reg. If none set, use defined value
-    //if invalid sreg given, print error message 
-    if NvRecordGetEx(sReg, s$[1], dfSVals$[sReg-1]) == -1 then
-        UartRsp(3)
-    else
-        rc=BleDecode32(s$[1],i[2],0)
-    endif
-    rc=0
-EndSub
-
-
-//------------------------------------------------------------------------------
-// Get the value of an sReg 
-// - takes sReg to get value of
-// - updates sVal or sVal$ with the value
-// - returns result code
-//------------------------------------------------------------------------------
-Sub GetSreg$(sReg) 
-    //try and load value in specified s reg. If none set, use defined value
-    //if invalid sreg given, print error message 
-    if NvRecordGetEx(sReg, s$[1], dfSVals$[sReg-1]) == -1 then
-        UartRsp(3)
-    endif
-    rc=0
-Endsub
-
 
 //-------------------------------------------------------------------------
 // Process a carrat character ^ do decide whether or not to switch to command mode
@@ -505,11 +416,8 @@ function _scan()
             AssertRC(rc,151)
         endif
         
-        '//set scan timeout and start scanning
-        rc=NvRecordGetEx(S_SCAN_TMT, s$[1], dfSVals$[S_SCAN_TMT-1])
-        rc=BleDecode32(s$[1], i[1], 0) 
-        
-        rc=BleScanStart(i[1], 0)
+        //start scanning
+        rc=BleScanStart(SCAN_TMT, 0)
         if rc==0 then
             exitfunc -1 //dont give response to user
         endif
@@ -529,7 +437,7 @@ function _connect()
     rc=ExtractStrTokens(urtcmd$,1,1)
     '//use #defined/stored mac address if none given
     if rc!=0 then
-        s$[1] = dfSVals$[S_PERIPH_MAC_ADDR-1]
+        s$[1] = PERIPH_MAC_ADDR
     endif
     
     s$[1] = StrDehexize$(s$[1])
@@ -540,15 +448,7 @@ function _connect()
         tb$=""
     endif
     
-    '//load connection parameters from s-registers (non-volatile memory)
-    for j=S_CONN_TMT to S_LINK_SUP_TMT
-        dim val
-        rc=NvRecordGetEx(j, s$[2], dfSVals$[j-1])
-        // rc=BleDecode32(s$, cParms[i-2], 0)
-        rc=BleDecode32(s$[2], i[j-1], 0)
-    next
-    
-    rc=BleConnect(s$[1], i[1], i[2], i[3], i[4])
+    rc=BleConnect(s$[1], CONN_TMT, MIN_CONN_INTVL, MAX_CONN_INTVL, LINK_SUP_TMT)
     if rc!=0 then
         exitfunc rc
     endif  
@@ -567,64 +467,6 @@ function _disconnect()
         AssertRC(rc,250)
     endif
 endfunc -1  //dont give response to user
-
-
-//------------------------------------------------------------------------------
-// #CMD#//  ats #INTsReg# ?
-// #CMD#//  ats #INTsReg# = #INTnewVal#
-//------------------------------------------------------------------------------
-Function _sreg() 
-    //get S-reg
-    rc = ExtractIntTokens(urtcmd$, 1, 1)
-    if rc!=0 then
-        exitfunc rc
-    endif
-        
-    //get sub-command ? or =
-    if ExtractStrToken(urtcmd$,tkn$)==0 then
-        exitfunc 5
-    endif
-    
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    if StrCmp(tkn$,"?")==0 then
-    
-        '//get value in sReg given. Gets #defined val if none present in memory
-        if i[1] == S_PERIPH_MAC_ADDR then
-            GetSreg$(i[1])          //value gets stored in s$[1]
-            s$[1] = StrHexize$(s$[1])
-            print "\n"; s$[1]
-        else
-            GetSreg(i[1])           //value gets stored in i[2]
-            print "\n"; i[2]
-        endif
-    
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    elseif StrCmp(tkn$,"=")==0 then
-        //if mac address written - will extend this as case statement if more than one sreg is a string
-        if i[1] == S_PERIPH_MAC_ADDR then
-            '//get entered mac address
-            rc = ExtractStrTokens(urtcmd$, 1, 1)
-            if rc != 0 then
-                exitfunc rc
-            endif     
-            // s$[1] = StrDehexize$(s$[1])
-        else  
-            //get the value entered
-            rc = ExtractIntTokens(urtcmd$,2,1)
-            if tlen == 0 then
-                exitfunc rc
-            else
-                //convert int to string     
-                rc=BleEncode32(s$[1],i[2],0)
-            endif
-        endif
-        
-        //write new value - error if invalid sreg given
-        if NvRecordSet(i[1], s$[1]) == -1 then
-            exitfunc 5
-        endif
-    endif  
-EndFunc 0
 
 
 //------------------------------------------------------------------------------
@@ -758,15 +600,12 @@ function OnUartCmd() as integer
             
         elseif strcmp(tkn$,"atd")==0 || strcmp(tkn$,"connect")==0 then    
             rc = _connect()
-        
-        elseif strcmp(tkn$,"ats")==0 then    
-            rc = _sreg()
             
-        elseif StrCmp(tkn$,"ato")==0 then
+        elseif StrCmp(tkn$,"ato")==0 || StrCmp(tkn$,"bridge")==0 then
             _bridge()
             rc=-1       //don't give response to user
             
-        elseif StrCmp(tkn$,"ath")==0 then
+        elseif StrCmp(tkn$,"ath")==0 || StrCmp(tkn$,"disconnect")==0  then
             rc = _disconnect()
     
         elseif strcmp(tkn$,"misc")==0 then
@@ -776,6 +615,10 @@ function OnUartCmd() as integer
             rc=_stop()
     
         elseif strcmp(tkn$,"quit")==0 || strcmp(tkn$,"exit")==0 then
+            '//Stop all radio activity
+            rc=BleDisconnect(hC)
+            rc=BleScanStop()
+            rc=BleConnectCancel()
             print "\nVersion ";APP_VERSION
             exitfunc 0
     
@@ -787,15 +630,25 @@ endfunc 1
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-sub Initialise()
-    InitDefSvals()  
-    AssertRC(rc,349)
-    
+sub Initialise()   
     '//Set configuration for subsequent scans  
     rc=BleScanConfig(0, SCAN_INTVL)
     rc=BleScanConfig(1, SCAN_WINDOW)
     rc=BleScanConfig(2, SCAN_TYPE)
     rc=BleScanConfig(3, SCAN_MIN_RPTS_IN_CACHE)
+    
+    //print device name
+    print "\n\r";BleGetDeviceName$();"\n\r"
+    
+    if CONNECT_ON_STARTUP == 1 then
+        rc=_connect()
+        if rc==-1 then
+            print "\nConnecting: ";StrHexize$(s$[1]);"\n"
+        endif
+    else
+        //Send user prompt for uart based command interface
+        UartRsp(0)
+    endif
 endsub
 
 
@@ -1064,11 +917,7 @@ OnEvent  EVMSGAPP            call SetMode
 //------------------------------------------------------------------------------
 // Initialise and then wait for events
 //------------------------------------------------------------------------------
-print "\n\r";BleGetDeviceName$();"\n\r"
 Initialise()
-
-//Send user prompt for uart based command interface
-UartRsp(0)
 
 
 //------------------------------------------------------------------------------
