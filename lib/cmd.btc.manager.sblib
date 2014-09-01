@@ -40,7 +40,7 @@
 //     #INTcfgID# 
 //       0    Inquiry Type (0 for General Inquiry, 1 for Limited Inquiry)
 //       1    Inquiry Mode (0 for Standard, 1 for with RSSI, 2 for Extended)
-//       2    Max number of devices to receive inquiry responses from
+//       2    Max number of devices to receive inquiry responses from (0-255)
 //       3    Inquiry Tx Power (Range is from -70 to 20 dBm)
 //
 // -----------------------------------------------------------------------------
@@ -89,15 +89,47 @@
 //    - calls BtcSetFriendlyName$() with the name #STRname#
 //
 // -----------------------------------------------------------------------------
-// btc modeset #INTconnDiscPairType# 
+// btc discoveryconfig #INTcfgID# #INTval# 
 //    --- bluetooth classic functionality ---
-//    - set connection pairing discoverability mode 
+//    - configre discoverability parameters 
 //
-//     #INTconnDiscPairType# (bit based) 
-//       bit 0	  Connectable
-//	     bit 1 	  Pairable
-//       bit 2	  Limited Discoverability
-//       bit 3	  General Discoverability 
+//     #INTcfgID# 
+//       0    Discoverability Type (0 for General, 1 for Limited)
+//       1    Inquiry Scan Interval 
+//              Units: baseband slots (0.625 msec)
+//              Range: 11.25 msec (0x0012) to 2560 msec (0x1000)
+//              Default: 640ms (0x0400)
+//       2    Inquiry Scan Window 
+//              Units: baseband slots (0.625 msec)
+//              Range: 11.25 msec (0x0012) to 2560 msec (0x1000)
+//              Default: 320ms (0x0200)
+//
+// -----------------------------------------------------------------------------
+// btc setdiscoverable #INTenable# #INTtimeout#
+//    --- bluetooth classic functionality ---
+//    - Set the module discoverable for time #INTtimeout# in seconds or not discoverable
+//
+//    #INTenable# 
+//      0 = Not Discoverable
+//      1 = Discoverable
+//
+// -----------------------------------------------------------------------------
+// btc setconnectable #INTenable#
+//    --- bluetooth classic functionality ---
+//    - Enable or disable connectivity
+//
+//    #INTenable# 
+//      0 = Not Connectable
+//      1 = Connectable
+//
+// -----------------------------------------------------------------------------
+// btc setpairable #INTenable#
+//    --- bluetooth classic functionality ---
+//    - Enable or disable pairability
+//
+//    #INTenable# 
+//      0 = Not Pairable
+//      1 = Pairable
 //
 // -----------------------------------------------------------------------------
 // btc bond stats
@@ -480,11 +512,14 @@ endfunc 5
 //-------------------------------------------------------------------------
 //#CMD#//  btc getfriendlyname
 //#CMD#//  btc setfriendlyname #STRname#
-//#CMD#//  btc modeset #INTconnDiscPairType# 
 //#CMD#//  btc sendpin #INTpin#
 //#CMD#//  btc savepairings #INTflag#
 //#CMD#//  btc pair #HEXaddr12Bytes# #INTflag#
 //#CMD#//  btc pairresp #INTpairResp#
+//#CMD#//  btc discoveryconfig #INTcfgID# #INTval#
+//#CMD#//  btc setdiscoverable #INTenable# #INTtimeout#
+//#CMD#//  btc setpairable #INTenable#
+//#CMD#//  btc setconnectable #INTenable#
 //-------------------------------------------------------------------------
 function _btc() 
     tlen = ExtractStrToken(urtcmd$,tkn$)
@@ -492,7 +527,7 @@ function _btc()
         exitfunc 5
     endif
       
-      
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
     if strcmp(tkn$,"getfriendlyname")==0 then       
         dim nme$
         rc=BtcGetFriendlyName(nme$)
@@ -502,43 +537,45 @@ function _btc()
         else
             exitfunc rc
         endif
-        
-    elseif strcmp(tkn$,"setfriendlyname")==0 then       
+    endif
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
+    if strcmp(tkn$,"setfriendlyname")==0 then       
         rc = ExtractStrTokens(urtcmd$,1,1)
         if rc != 0 then
             exitfunc rc
         endif
         
         exitfunc BtcSetFriendlyName(s$[1])
+    endif
     
-    elseif strcmp(tkn$,"modeset")==0 then
-        rc = ExtractIntTokens(urtcmd$,1,1)
-        if rc != 0 then
-            exitfunc rc
-        endif
-        
-        exitfunc BtcModeSet(i[1])
-    
-    elseif strcmp(tkn$,"sendpin")==0 then
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"sendpin")==0 then
         rc = ExtractStrTokens(urtcmd$,1,1)
         if rc != 0 then
             exitfunc rc
         endif
         
         exitfunc BtcSendPINResp(s$[1])
+    endif
     
-    elseif strcmp(tkn$,"bond")==0 then
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"bond")==0 then
         exitfunc _btcbond()
-        
-    elseif strcmp(tkn$,"savepairings")==0 then
+    endif
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
+    if strcmp(tkn$,"savepairings")==0 then
         rc = ExtractIntTokens(urtcmd$,1,1)
         if rc != 0 then
             exitfunc rc
         endif
         
         exitfunc BtcSavePairings(i[1])
-        
-    elseif strcmp(tkn$,"pair")==0 then
+    endif
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"pair")==0 then
         rc = ExtractStrTokens(urtcmd$,1,2)
         if rc != 0 then
             exitfunc rc
@@ -546,8 +583,10 @@ function _btc()
         
         s$[1] = StrDehexize$(s$[1])
         exitfunc BtcPair(s$[1], StrValDec(s$[2]))
-        
-    elseif strcmp(tkn$,"pairresp")==0 then
+    endif
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"pairresp")==0 then
         rc = ExtractIntTokens(urtcmd$,1,1)
         if rc != 0 then
             exitfunc rc
@@ -555,6 +594,51 @@ function _btc()
         
         exitfunc BtcSendPAIRResp(i[1])
     endif
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"discoveryconfig")==0 then
+        //extract 2 : (#INTcfgID# #INTval#) and store starting at i[1]
+        rc = ExtractIntTokens(urtcmd$,1,2)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        
+        exitfunc BtcDiscoveryConfig(i[1], i[2])
+    endif
+        
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"setdiscoverable")==0 then
+        //extract 2 : (#INTenable# #INTtimeout#) and store starting at i[1]
+        rc = ExtractIntTokens(urtcmd$,1,2)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        
+        exitfunc BtcSetDiscoverable(i[1], i[2])
+    endif
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"setpairable")==0 then
+        //extract 1 : (#INTenable#) and store starting at i[1]
+        rc = ExtractIntTokens(urtcmd$,1,1)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        
+        exitfunc BtcSetPairable(i[1])
+    endif
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"setconnectable")==0 then
+        //extract 1 : (#INTenable#) and store starting at i[1]
+        rc = ExtractIntTokens(urtcmd$,1,1)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        
+        exitfunc BtcSetConnectable(i[1])
+    endif
+    
 endfunc 5
 
 
@@ -612,6 +696,14 @@ function HandlerBtcInqTimOut() as integer
     UartRsp(0)
 endfunc 1
 
+
+//==============================================================================
+// This handler is called when there is an discoverability timeout
+//==============================================================================
+function HandlerBtcDiscTimOut() as integer
+    print "\n --- No longer discoverable"
+    UartRsp(0)
+endfunc 1
 
 
 //==============================================================================
@@ -774,6 +866,7 @@ endsub
 '//******************************************************************************
 OnEvent  EVINQRESP                call HandlerInqResp
 OnEvent  EVBTC_INQUIRY_TIMEOUT    call HandlerBtcInqTimOut
+OnEvent  EVBTC_DISCOV_TIMEOUT     call HandlerBtcDiscTimOut  
 
 OnEvent  EVBTC_PAIR_REQUEST       call HandlerPairReq
 OnEvent  EVBTC_PIN_REQUEST        call HandlerPinReq
