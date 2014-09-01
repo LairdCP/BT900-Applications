@@ -139,9 +139,8 @@ dim hcSpp                   // handle of connection to use for VSP service
 
 dim command
 dim testhndl
-dim nConPair				//This is the nConnDiscPairType used in BtcModeSet
-dim inqmode					// Inquiry Mode: 0 General, 1 with RSSI, 2 Extended
 dim inqtype					// Inquiry Type: 0 General, 1 Limited
+dim inqmode					// Inquiry Mode: 0 for Standard, 1 for with RSSI, 2 for Extended)
 
 //******************************************************************************
 // Initialise Global Variable
@@ -221,8 +220,14 @@ sub InitBtDevice()
 	rc = BTCSETFRIENDLYNAME (name$)
 	AssertResCode(rc)
 	
-	rc = BtcModeSet(11)							//Connectable, pairable, and general discoverability
-	AssertResCode(rc)							//This should be added to hciconfig later
+	rc = BtcSetDiscoverable(1, 300)				//Discoverable, timeout is 5 minutes
+	AssertResCode(rc)
+	
+	rc = BtcSetConnectable(1)					//Connectable
+	AssertResCode(rc)
+	
+	rc = BtcSetPairable(1)						//Pairable
+	AssertResCode(rc)				
 												
 
 	rc = BtcInquiryConfig(0, inqtype)			// Inquiry Type: General
@@ -525,6 +530,9 @@ function _Gatt()
 			elseif strcmp(tkn$, "write")==0 then
 				command = BLUEZ_COMMAND_GATTTOOL_CHAR_WRITE
 				rc = _GattCharWrite()
+			elseif strcmp(tkn$, "desc")==0 then
+				command = BLUEZ_COMMAND_GATTTOOL_CHAR_DESC
+				rc = _GattCharDesc()
 			endif
 			exitfunc 1 
 	
@@ -556,8 +564,11 @@ function _HciCfg()
 	
 		if strcmp(tkn$,"auth")==0 then 
 			print "Set the device to be pairable\n" 
-			rc = BtcModeSet(0x0B)
+			rc = BtcSetConnectable(1)
 			AssertResCode(rc)
+			rc = BtcSetPairable(1)
+			AssertResCode(rc)
+			
 		endif
 	
 		if strcmp(tkn$,"name")==0 then 
@@ -578,26 +589,31 @@ function _HciCfg()
 	
 		if strcmp(tkn$,"piscan")==0 then 
 			//Enable inquiry scan and page scan (default)
-			nConPair = nConPair | 0x0B
-			rc = BtcModeSet(nConPair)
+			rc = BtcSetDiscoverable(1, 300)
+			AssertResCode(rc)
+			rc = BtcSetConnectable(1)
+			AssertResCode(rc)
+			
 		endif
 	
 		if strcmp(tkn$,"pscan")==0 then 
 			//Enable page scan
-			nConPair = nConPair | 0x03
-			rc = BtcModeSet(nConPair)
+			rc = BtcSetConnectable(1)
+			AssertResCode(rc)
 		endif
 	
 		if strcmp(tkn$,"iscan")==0 then 
 			//Enable inquiry scan
-			nConPair = nConPair | 0x8
-			rc = BtcModeSet(nConPair)
+			rc = BtcSetDiscoverable(1, 300)
+			AssertResCode(rc)
+			
 		endif
 	
 		if strcmp(tkn$,"noscan")==0 then 
 			//The adapter in not detectable by other devices and will not accept any incoming connections
-			nConPair = nConPair & 0x4
-			rc = BtcModeSet(nConPair)
+			rc = BtcSetDiscoverable(0, 300)
+			AssertResCode(rc)
+			rc = BtcSetConnectable(0)
 			AssertResCode(rc)
 		endif
 		
@@ -619,6 +635,8 @@ function _HciCfg()
 				if inqmode >= 0 && inqmode < 3 then
 					rc = BtcInquiryConfig(1, inqmode)
 					AssertResCode(rc)
+				else 
+					print "Invalid inquiry mode. Valid values are 0, 1, and 2\n"
 				endif
 			endif
 		endif
@@ -640,6 +658,8 @@ function _HciCfg()
 				if inqtype >= 0 && inqtype < 2 then
 					rc = BtcInquiryConfig(0, inqtype)
 					AssertResCode(rc)
+				else 
+					print "Invalid inquiry type. Valid values are 0 and 1\n"
 				endif
 			endif
 		endif
@@ -1000,6 +1020,22 @@ function HandlerCharDisc(hConn,hUuid,cProp,hVal,hiUuid) as integer
 	
 endfunc 1
 //==============================================================================
+// This handler is called when a BLE descriptor is discovered
+//==============================================================================
+function HandlerDescDisc(hChar, hUuid, hDisc) as integer
+	print "\nEVDISC"
+	print "\nhChar ";integer.h' hChar
+	print "\nhUuid ";integer.h' hUuid
+	print "\nhDisc ";integer.h' hDisc
+	
+	rc = BleDiscDescNext(hChar)
+	if rc !=0 then
+		print "OVER\n";pr$
+		BleGattcClose()
+	endif
+	
+endfunc 1
+//==============================================================================
 // This handler is called when a BLE characteristic attribute has been read
 //==============================================================================
 function HandlerAttrRead(hConn,hAttr,nSts) as integer
@@ -1029,6 +1065,7 @@ function HandlerAttrWrite(hConn,aHndl,nSts) as integer
 	if nSts == 0 then
 		print "Characteristic value was written successfully\n"
 	else 
+		print "\nStatus  : ";integer.h' nSts
 		print "\nCharacteristic write failed: Attribute Can't be written\n";pr$		//Different error messages should be printed for different nSts
 	endif
 	
@@ -1098,6 +1135,7 @@ OnEvent  EVBLEMSG                 	call HandlerBleMsg
 
 OnEvent  EVDISCPRIMSVC            	call HandlerPrimSvc
 OnEvent  EVDISCCHAR               	call HandlerCharDisc
+OnEvent  EVDISCDESC               	call HandlerDescDisc
 OnEvent EVATTRREAD 					call HandlerAttrRead
 OnEvent  EVATTRWRITE              	call HandlerAttrWrite
 OnEvent  EVATTRNOTIFY             	call HandlerAttrNtfyCmd

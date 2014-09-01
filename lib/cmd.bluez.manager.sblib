@@ -464,9 +464,42 @@ function _GattCharWrite() as integer
 		exitfunc 1
 	endif
 	
+	val$="\02\00"
 	rc = BleGattcOpen(0,0)
 	AssertResCode(rc)
 	rc = BleGattcWrite(hz,hndl,val$)
+	AssertResCode(rc)
+	
+endfunc 1
+//-------------------------------------------------------------------------
+// gatttool -b <MAC Address> --char-desc
+//-------------------------------------------------------------------------
+function _GattCharDesc()
+	dim addr$, hndl
+	
+	while ExtractStrToken(urtcmd$, tkn$)!=0
+		if strcmp(tkn$,"help")==0 then
+			//print the gatttool help menu
+			print "Usage:\n"
+			print "		gatttool -b <MAC Address> --char-desc\n"
+			exitfunc 1
+		
+		elseif strcmp(tkn$,"b")==0 then
+			rc = ExtractStrToken(urtcmd$,addr$)
+			addr$ = strdehexize$(addr$)
+		
+		elseif strcmp(tkn$,"handle")==0 then
+			strshiftleft(urtcmd$, 1)
+			rc = ExtractStrToken(urtcmd$, tkn$)
+			rc = ExtractIntToken(tkn$, hndl)
+			
+		endif
+		
+	endwhile
+	
+	rc = BleGattcOpen(0,0)
+	AssertResCode(rc)
+	rc = BleDiscDescFirst(hz, 0, hndl)
 	AssertResCode(rc)
 	
 endfunc 1
