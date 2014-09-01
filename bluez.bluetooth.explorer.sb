@@ -110,6 +110,11 @@
 #define BLUEZ_COMMAND_GATTTOOL_CHAR_DESC				46
 #define BLUEZ_COMMAND_GATTTOOL_LISTEN					47
 
+//BLUEZ COMMAND IDs: RFCOMM
+#define BLUEZ_COMMAND_RFCOMM_CONNECT					60
+
+
+
 //******************************************************************************
 // Global Variable Declarations
 //******************************************************************************
@@ -239,8 +244,8 @@ function _Help()
 	print "\n"
 	print "	help\n"
 	print "	hcitool\n"
-	print "	rfcomm\n"
 	print "	gatttool\n"
+	print "	rfcomm\n"
 	print "	hciconfig\n"
 	print "	quit/exit\n"
 	print "\n"
@@ -277,12 +282,12 @@ function _HciHelp()
 //	print "	afh 		Display AFH channel map\n"
 //	print "	lp  		Set/display link policy settings\n"
 //	print "	lst 		Set/display link supervision timeout\n"
-	print "	auth		Request authentication\n"
-	print "	enc 		Set connection encryption\n"
-	print "	key         Change connection link key\n"
+//	print "	auth		Request authentication\n"
+//	print "	enc 		Set connection encryption\n"
+//	print "	key         Change connection link key\n"
 //	print "	clkoff      Read clock offset\n"
 //	print "	clock       Read local or remote clock\n"
-//	print "	lescan      Start LE scan\n"
+	print "	lescan      Start LE scan\n"
 //	print "	lewladd     Add device to LE White List\n"
 //	print "	lewlrm      Remove device from LE White List\n"
 //	print "	lewlsz      Read size of LE White List\n"
@@ -314,13 +319,13 @@ function _GattHelp()
 	print "	--primary                                 Primary Service Discovery\n"
 	print "	--characteristics                         Characteristics Discovery\n"
 	print "	--char-read                               Characteristics Value/Descriptor Read\n"
-	print "	--char-write                              Characteristics Value Write Without Response (Write Command) \n"
-	print "	--char-write-req                          Characteristics Value Write (Write Request)	\n"
+	print "	--char-write                              Characteristics Value Write Without Response\n"
+	print "	--char-write-req                          Characteristics Value Write \n"
 	print "	--char-desc                               Characteristics Descriptor Discovery\n"
 	print "	--listen                                  Listen for notifications and indications\n"
 	//print "	-I, --interactive                         Use interactive mode\n"
 	print "\n"
-	print "Application Options:\n"
+	print "Options:\n"
 	//print "	-i, --adapter=hciX                        Specify local adapter interface\n"
 	print "	-b, --device=MAC                          Specify remote Bluetooth address\n"
 	//print "	-t, --addr-type=[public | random]         Set LE address type. Default: public\n"
@@ -387,26 +392,28 @@ endfunc 1
 //==============================================================================
 function _rfcommHelp()
 
-	print " Usage:\n"
-	print " rfcomm [options] <command> <dev>\n"
-	print "\n Options:\n"
-	print " 	-i [hciX|bdaddr]      Local HCI device or BD Address\n"
-	print " 	-h, --help            Display help\n"
-	print " 	-r, --raw             Switch TTY into raw mode\n"
-	print " 	-A, --auth            Enable authentication\n"
-	print " 	-E, --encrypt         Enable encryption\n"
-	print " 	-S, --secure          Secure connection\n"
-	print " 	-M, --master          Become the master of a piconet\n"
-	print " 	-f, --config [file]   Specify alternate config file\n"
-	print " 	-a                    Show all devices (default)\n"
-	print "\n Commands:\n"
+	print "Usage:\n"
+	print "      rfcomm [options] <command> <dev>\n"
+	print "\nCommands:\n"
 	//print " 	bind     <dev> <bdaddr> [channel]	Bind device\n"
 	//print " 	release  <dev>                   	Release device\n"
 	//print " 	show     <dev>                   	Show device\n"
-	print " 	connect  <bdaddr> 					Connect device\n"
+	print "      connect     Connect device\n"
 	//print " 	listen   <dev> [channel [cmd]]   	Listen\n"
 	//print " 	watch    <dev> [channel [cmd]]   	Watch\n"
-	print " 	write    --handle=0000 -data=abc123 Write\n\n"
+	print "      write       Write\n\n"
+	print "\nOptions:\n"
+	//print " 	-i [hciX|bdaddr]      Local HCI device or BD Address\n"
+	print "      --help      Display help\n"
+	//print " 	-r, --raw             Switch TTY into raw mode\n"
+	//print " 	-A, --auth            Enable authentication\n"
+	//print " 	-E, --encrypt         Enable encryption\n"
+	//print " 	-S, --secure          Secure connection\n"
+	//print " 	-M, --master          Become the master of a piconet\n"
+	//print " 	-f, --config [file]   Specify alternate config file\n"
+	//print " 	-a                    Show all devices (default)\n"
+	print "      --handle    Connection Handle\n"
+	print "      --data      Data to write\n"
 
 endfunc 1
 //==============================================================================
@@ -451,10 +458,12 @@ function _Hci()
 	endif
 	
 	if strcmp(tkn$, "cc")==0 then
+		command = BLUEZ_COMMAND_HCITOOL_CC
 		rc = _sppConnect()						//This function should connect to an SPP device
 	endif
 	
 	if strcmp(tkn$, "dc")==0 then
+		command = BLUEZ_COMMAND_HCITOOL_DC
 		rc = _sppDisconnect()
 	endif
 	
@@ -511,8 +520,10 @@ function _Gatt()
 			strshiftleft(s$, 1)
 			rc = ExtractStrToken(s$, tkn$)
 			if strcmp(tkn$, "read")==0 then
+				command = BLUEZ_COMMAND_GATTTOOL_CHAR_READ
 				rc = _GattCharRead()
 			elseif strcmp(tkn$, "write")==0 then
+				command = BLUEZ_COMMAND_GATTTOOL_CHAR_WRITE
 				rc = _GattCharWrite()
 			endif
 			exitfunc 1 
@@ -556,9 +567,12 @@ function _HciCfg()
 				AssertResCode(rc)
 				print "\n";s$;"\n"
 			else
-				name$ = tkn$
+				//print "At there tkn$ is : ";tkn$;"\n"
+				//print "and s$ is : ";s$;"\n"
+				name$ = tkn$ + s$
 				rc = BtcSetFriendlyName(name$)
 				AssertResCode(rc)
+				exitfunc 1
 			endif
 		endif
 	
@@ -602,7 +616,6 @@ function _HciCfg()
 				endif
 			else
 				inqmode = StrValDec(tkn$)
-				print "the decimal value is ";inqmode;"\n"
 				if inqmode >= 0 && inqmode < 3 then
 					rc = BtcInquiryConfig(1, inqmode)
 					AssertResCode(rc)
@@ -632,9 +645,12 @@ function _HciCfg()
 		endif
 		
 		if strcmp(tkn$, "version")==0 then
-			print "App Version: BlueZ Version 5.0\n"
+			
+			dim fw, W, X, Y, Z
+			fw = SYSINFO(3)
+			print "\nApp Version: BlueZ Version 0.8\n"
 			print "Device Name: BT900\n"
-			print "Firmware: 1.1.X.1\n"						//Must get correct version number
+			print "Firmware: ";W;".";X;".";Y;".";Z;"\n"
 			print "Manufacturer: Laird Technologies\n"
 		endif
 		
@@ -653,6 +669,7 @@ function _rfcomm()
 	endif
 	
 	if strcmp(tkn$, "connect")==0 then
+		command = BLUEZ_COMMAND_RFCOMM_CONNECT
 		rc = _rfcommConnect()
 	endif
 	
@@ -721,11 +738,11 @@ function HandlerInqResp(respType) as integer
 			//Get local name
 			tag = 0x09
 			rc=BtcGetEIRbyTag(dta$, tag, name$)
-			AssertResCode(rc)
+			//AssertResCode(rc)
 			if rc == 0x5703 then
 				tag = 0x08
 				rc=BtcGetEIRbyTag(dta$, tag, name$)
-				AssertResCode(rc)
+				//AssertResCode(rc)
 			endif
 				
 			if rc == 0 then
@@ -745,13 +762,15 @@ endfunc 1
 function HandlerSppCon(hConn, res) as integer
     dim hz
 
-    //print "\n --- SPP Connect: (";integer.h' res;")"
     //if connected successfully
-    print "rfcomm connecting...\n"
 	if res == 0 then
-		print "rfcomm connected. Connection handle: ";hConn;"\n";pr$
+		if command == BLUEZ_COMMAND_RFCOMM_CONNECT then
+			print "\nrfcomm connected. Connection handle: ";hConn;"\n";pr$
+		else 
+			print "\nConnected\n";pr$
+		endif
 	else
-		print "rfcomm connection failed: ";res;"\n"
+		print "\nrfcomm connection failed: ";res;"\n";pr$
     endif        
 endfunc 1
 
@@ -790,7 +809,7 @@ function HandlerSppData()
     while BtcSppRead(hPort, data$, rLen) == 0    
         if rLen>0 then
             //print"\nPort Handle: ";hPort; " Length: ";rLen;"\nData: ";data$;pr$
-			print "rfcomm data: ";data$;"\n"
+			print "\nrfcomm data: ";data$;"\n";pr$
         endif
     endwhile
 endfunc 1
@@ -802,7 +821,7 @@ function HandlerPairReq()
 	dim s$
     rc=BtcGetPAIRRequestBDAddr(s$)
     prAddr$ = s$
-    print "\nPair Req: "; StrHexize$(s$);" \n"
+    //print "\nPair Req: "; StrHexize$(s$);" \n"
 	rc = BtcSendPAIRResp(1)
 	AssertResCode(rc)
 	
@@ -829,7 +848,7 @@ endfunc 1
 //==============================================================================
 function HandlerPairRes(res)
     //print "Received the pin result\n"
-	print "Pair Result: ";res; " "; StrHexize$(prAddr$);"\n"
+	//print "Pair Result: ";res; " "; StrHexize$(prAddr$);"\n"
 endfunc 1
 
 //==============================================================================
@@ -847,8 +866,7 @@ function HandlerAdvRpt() as integer
 		//;" ";strhexize$(dta$);" ";ndisc;" ";rsi
 		tag = 0x09
 		rc = BLEGETADBYTAG(dta$, tag, name$)
-		AssertResCode(rc)
-		if rc == 0x5703 then
+		if rc == 0x6060 then
 			tag = 0x08
 			rc = BLEGETADBYTAG(dta$, tag, name$)
 			AssertResCode(rc)
@@ -1011,7 +1029,7 @@ function HandlerAttrWrite(hConn,aHndl,nSts) as integer
 	if nSts == 0 then
 		print "Characteristic value was written successfully\n"
 	else 
-		print "Characteristic Write failed: Attribute Can't be written\n"		//Different error messages should be printed for different nSts
+		print "\nCharacteristic write failed: Attribute Can't be written\n";pr$		//Different error messages should be printed for different nSts
 	endif
 	
 	//"Characteristic value was written successfully" should be printed if sec level must be increased
@@ -1090,7 +1108,7 @@ OnEvent  EVATTRNOTIFY             	call HandlerAttrNtfyCmd
 sub Initialise()
 	InitBtDevice()
 	print "\n-----------------------\n"
-	print " BLUEZ EXPLORER v0.6\n"
+	print " BLUEZ EXPLORER v0.7\n"
 	print "-----------------------\n"
 	print "\nType \22help\22 or \22<command> help\22\n"
 	
