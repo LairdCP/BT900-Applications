@@ -1523,6 +1523,7 @@ function _Gatts()
   endif
 endfunc 5
 
+
 //-------------------------------------------------------------------------
 //#CMD#//  pair keysize  #INTminsize# #INTmaxsize#
 //#CMD#//  pair iocap    #INTiocap#
@@ -1790,8 +1791,8 @@ function OnUartCmd() as integer
     elseif strcmp(tkn$,"pair")==0 then
       rc = _Pair()
       
-    elseif strcmp(tkn$,"ble")==0 then
-      rc = _Ble()
+    // elseif strcmp(tkn$,"ble")==0 then
+      // rc = _Ble()
       
     elseif strcmp(tkn$,"blepair")==0 then
       rc = _BlePair()
