@@ -8,8 +8,12 @@
 // +++++                                                                      ++
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
-// This app provides for a command interface over the uart and the protocol is
-// as follows:-
+// spp.atcmd.sblib
+//
+// This application is for smartBASIC modules with Bluetooth Classic
+//
+// This app provides for a command interface over the uart for testing SPP and 
+// the protocol is as follows:-
 //
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Convention : (1) Case sensitive, and commands are presented in alphabetic order
@@ -28,31 +32,57 @@
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
 // -----------------------------------------------------------------------------
-// at+bls OR scan
-//    - scan for BLE devices. Returns BT address, RSSI and complete local name.
+// setdiscoverable #INTenable# #INTtimeout#
+//    - Set the module discoverable for time #INTtimeout# in seconds or not discoverable
 //
-//    -> if CACHE_MAC_ADDRESSES is 1, each device found is stored in a table
-//       so that adverts for that device are stored only once. The max number of 
-//       devices allowed in that table is configurable via #define
-//       MAX_DEV_SCAN_TABLE.
+//    #INTenable# 
+//      0 = Not Discoverable
+//      1 = Discoverable
 //
 // -----------------------------------------------------------------------------
-// atd #HEXbdAddr14bytes# OR
-// connect #HEXbdAddr14bytes# OR
+// setpairable #INTenable#
+//    - Enable or disable pairability
+//
+//    #INTenable# 
+//      0 = Not Pairable
+//      1 = Pairable
+//
+// -----------------------------------------------------------------------------
+// at+bti OR inquiry
+//   - Start an inquiry using the timeout #INTinqTimeoutS#
+//
+// -----------------------------------------------------------------------------
+// spp open 
+//   - Open the serial port service and listen for SPP connections. Service handle is returned
+//
+// -----------------------------------------------------------------------------
+// spp close
+//   - Close the Serial Port with handle #INThSpp# being expedited by SPP Service.
+//
+// -----------------------------------------------------------------------------
+// at+btw OR pair #HEXbdAddr12bytes#
+//    - Initiate pairing with device with BT address #HEXbdAddr12bytes#
+//
+//    -> User will be promted to accept or decline pairing requests, and to provide
+//       PIN if requeted.
+//
+// -----------------------------------------------------------------------------
+// atd #HEXbdAddr6bytes# OR
+// connect #HEXbdAddr6bytes# OR
 //    - connect to device with given BT address
 //
 //    -> if an invalid or null BT address is given, the default mac address 
 //      (see #define PERIPH_MAC_ADDR) will be used.
 //
-//    -> Upon successful connection the remote GATT table is searched for the rx
-//       and tx characteristic, and the CCCD of the tx characteristic. When these 
-//       are found, the application enters bridge mode. Any data 
-//       arriving at the UART is sent over the BLE connection.
+//    -> Upon successful connection the application enters bridge mode. Any data 
+//       arriving at the UART is sent over the SPP connection.
+//
+//    -> Note: The SPP port must be open on the device you are connecting to
+//             ptherwise the two devices will not connect to eachother. 
 //
 // -----------------------------------------------------------------------------
 // ^^^
 //    - exit from bridge mode to command mode to accept the commands in this list.
-//    -> Note: Ensure Line Mode is disabled in UwTerminal
 //
 // -----------------------------------------------------------------------------
 // ato OR bridge
@@ -63,9 +93,14 @@
 // ath OR disconnect
 //    - disconnect from peer device.
 //
+
+// -----------------------------------------------------------------------------
+// bdaddr
+//    - Prints the module's 6 byte BT address
+//
 // -----------------------------------------------------------------------------
 // stop
-//    - Stop scanning or connecting, whichever is being done
+//    - Stop inquiries
 //   
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -99,93 +134,24 @@
 
 //******************************************************************************
 // Definitions
-//******************************************************************************
-
+//******************************************************************************        
 #define APP_VERSION                          "1.0"
-
-        //Set this to 0 to disable all debugging messages
-#define ENABLE_DEBUG_PRINTS                  1
-
-        //if set to 1, on startup the module will connect to device PEER_BT_ADDR for VSP
-#define CONNECT_ON_STARTUP                   1
-
-        //Set this to the MAC address of the peripheral mode module you want to connect to by default
-#define PERIPH_MAC_ADDR                     "01F63627A60BEA"
-
         // size of i[]
-#define NUM_OF_I_PARAMS                     (10)
-        // size of s$[] and must be at least 8 elements for BleSvcRegDevInfo()     
-#define NUM_OF_S_PARAMS                     (10)
-
-
-        '// Laird Technologies 128 bit Base UUID
-#define LT_BASE_UUID                        "\56\9a\00\00\b8\7f\49\0c\92\cb\11\ba\5e\a5\16\7c\"
-
-        '// LT VSP Service TX char UUID 
-#define LT_VSP_TX_UUID                      0x2000
-        '// LT VSP Service TX char properties - notify
-#define LT_VSP_TX_PROPS                     0x10
-        '// LT VSP Service RX char UUID 
-#define LT_VSP_RX_UUID                      0x2001
-        '// LT VSP Service RX char properties - write, write no response
-#define LT_VSP_RX_PROPS                     0x0C
-
-        '//LT VSP Service UUID
-#define LT_VSP_SVC_UUID                     0x1101
-        '// CCCD UUID
-#define CCCD_UUID                           0x2902
-
-        //Set to 1 to cache mac addresses on a scan so you don't see repeated advert reports from same device
-        //Otherwise every advert report will be printed
-#define CACHE_MAC_ADDRESSES                 1
-
-
-        //Connection timeout ms
-#define CONN_TMT                            10000
-        //Min Connection interval us
-#define MIN_CONN_INTVL                      7500
-        //Max Connection interval us
-#define MAX_CONN_INTVL                      40000
-        //Link supervision timeout us
-#define LINK_SUP_TMT                        3000000
-        //Scan timeout (ms)
-#define SCAN_TMT                            10000
-
-        //Scan Interval ms
-#define SCAN_INTVL                          80
-        //Scan Window ms
-#define SCAN_WINDOW                         40
-        //Scan type (0 = passive, 1 - active)
-#define SCAN_TYPE                           1
-        //Minimum Reports in Cache  
-#define SCAN_MIN_RPTS_IN_CACHE              4
-
-
-
-//BLE EVENT MSG IDs
-#define BLE_EVBLEMSGID_CONNECT              0 // msgCtx = connection handle
-#define BLE_EVBLEMSGID_DISCONNECT           1 // msgCtx = connection handle
-
-#define VSP_MAX_CHARDATA_LEN                (20)
-
-
-//BLE STATUS
-#define BLE_CONNECTED_M                     0x10   //connected as master
-#define BLE_INITIATING                      0x04   //intiating a connection
-#define BLE_SCANNING                        0x08   //scanning for adverts
-    
-
+#define NUM_OF_I_PARAMS                     (5)
+        // size of s$[]     
+#define NUM_OF_S_PARAMS                     (5)
+  
 //Misc
 #define CAR_PRESS_DELAY                     100 //ms to wait between registering entries of '^'
-#define GENERIC_ERR                         1
-#define NOCARR_ERR                          2
-#define MAX_DEV_SCAN_TABLE                  10  //max number of devices to store in table when scanning
-
 
 
 //APP RUN MODES
 #define CMD_MODE                            0
-#define BRIDGE_VSP_MODE                     1
+#define BRIDGE_SPP_MODE                     1
+
+
+#define AUTH_FAILURE                        0x05
+
 
 //******************************************************************************
 // Register Error Handler as early as possible
@@ -196,6 +162,9 @@ sub HandlerOnErr()
   endif
 endsub
 onerror next HandlerOnErr
+
+
+
 
 //******************************************************************************
 // Debugging resource as early as possible
@@ -249,37 +218,23 @@ endsub
 //******************************************************************************
 // Global Variable Declarations
 //******************************************************************************
-
 dim rc
 dim stRsp$ as string        //Uart rx data is stored here
 
-dim ok$,er$,pr$, nc$
+dim ok$,er$,pr$, nc$, t$, e$, p$
 
 dim i[NUM_OF_I_PARAMS]      // index 0 used for return values
 dim s$[NUM_OF_S_PARAMS]     // must be at least 8 elements
 
 dim urtcmd$                 //cmd line from uart
 dim tkn$,tlen               //used by command parser
-dim urts                    //will be <0 if uart parser suspended
 
-
-dim vdta$                   //data to send over virtual serial port
-dim vsplen                  //0 implies can send data. >0 waiting for notify event
-dim vspRxH                  //handle of the RX char in the peripheral for VSP
-dim vspTxH                  //handle of the TX char in the peripheral for VSP
-dim vspCcH                  //handle of the TX CCCD in the peripheral for VSP
-
-dim hC                      //connection handle
-dim tb$                     //table for storing discovered MAC addresses - instantiated in _Scan()
-dim tbIDs                   //number of items in the table
+dim hC                      //SPP connection handle
 dim carCnt                  //count variable for number of times '^' entered
-dim notf$                   //data to write to Tx CCCD 
-dim bseUuid$                //LT Base UUID
+dim hSppPort                //handle of spp port that a peer will connect to
 
-dim hBseUUID                //handle of Laird Technologies base UUID
-dim hVspTxUUID              //handle of LT VSP Service TX char UUID
-dim hVspRxUUID              //handle of LT VSP Service RX char UUID
-dim hVspSvcUUID             //handle of LT VSP Service UUID
+
+
 
 //******************************************************************************
 // Initialisse Global Variable
@@ -288,14 +243,11 @@ dim hVspSvcUUID             //handle of LT VSP Service UUID
 ok$    = "\nOK"
 er$    = "\nERROR "
 pr$    = "\r\n>"
-nc$      = "\nNO CARRIER"
-bseUuid$ = LT_BASE_UUID
+nc$    = "\nNO CARRIER"
+t$ = "\nType 'y' to pair and 'n' to decline - and press Enter\n"
+e$ = "\nEnter Pin and press Enter: "
+p$ = "\nEnter 'pair #HEX12bytes#' followed by Enter to pair\nExample 'pair 943g0aa92a3c'"
 
-
-hBseUUID = BleHandleUuid128(bseUuid$)
-hVspTxUUID = BleHandleUuidSibling(hBseUuid, LT_VSP_TX_UUID)
-hVspRxUUID = BleHandleUuidSibling(hBseUuid, LT_VSP_RX_UUID)
-hVspSvcUUID = BleHandleUuidSibling(hBseUuid, LT_VSP_SVC_UUID)
 
 
 //******************************************************************************
@@ -327,6 +279,8 @@ sub UartRsp(rsp as integer)
         print ok$;pr$
     elseif rsp == -2 then
         print pr$
+    elseif rsp == -3 then
+        print ok$
     elseif rsp > 0 then 
         print er$;integer.h' rsp;pr$
     endif
@@ -373,6 +327,24 @@ function ExtractHexTokens(u$,stIdx,num)
 endfunc 0
 
 
+//------------------------------------------------------------------------------
+// Find out whether in a connection or not = think of it like a boolean
+//------------------------------------------------------------------------------
+function InConnection()
+    dim bdAddr$
+    
+    '//will fail if invalid handle - no connection
+    if BtcGetBDAddrFromHandle(hC,bdAddr$)!=0 then
+        exitfunc 0
+    endif
+    
+    '//length of 'bdAddr$' will be zero if no connection
+    if StrLen(bdAddr$)==0 then
+        exitfunc 0
+    endif
+endfunc 1
+
+
 
 //-------------------------------------------------------------------------
 // Process a carrat character ^ do decide whether or not to switch to command mode
@@ -397,76 +369,138 @@ endfunc 0  //dont give response to user
 
 
 //-------------------------------------------------------------------------
-// Switch to bridge vsp mode
+//#CMD#//  ato OR bridge
 //-------------------------------------------------------------------------
 sub _bridge() 
-    notf$ = "\01\00"        //value to write to enable notifications
-    rc=BleGattcWrite(hC, vspCcH, notf$)
-    AssertRC(rc,263)
+    rc=SendMsgApp(0,BRIDGE_SPP_MODE)
 endsub
 
 
 //-------------------------------------------------------------------------
-// Scan for devices
+//#CMD#//  at+bti OR inquiry
 //-------------------------------------------------------------------------
-function _scan()
-    if SysInfo(2016) != BLE_CONNECTED_M then        
-        if CACHE_MAC_ADDRESSES == 1 then
-            rc=TableInit(tb$)       //table is used to store peer BT addresses
-            AssertRC(rc,151)
+function _inquiry()            
+    rc=BtcInquiryStart(INQR_TMT)
+    if rc!=0 then
+        exitfunc rc
+    endif
+endfunc -1      //dont give response to user
+
+
+//-------------------------------------------------------------------------
+//#CMD#//  spp open 
+//#CMD#//  spp close
+//-------------------------------------------------------------------------
+function _spp()  
+    tlen = ExtractStrToken(urtcmd$,tkn$)
+    if tlen == 0 then
+        exitfunc 5
+    endif
+    
+    if strcmp(tkn$,"open")==0 then       
+        '//don't open another SPP port if one is already open
+        if hSppPort!=0 then
+            exitfunc -2
         endif
         
-        //start scanning
-        rc=BleScanStart(SCAN_TMT, 0)
+        rc=BtcSppOpen(hSppPort)   
         if rc==0 then
-            exitfunc -1 //dont give response to user
+            print "\nSPP Port open : (";integer.h'hSppPort;")"
+            rc=BtcSetDiscoverable(1,DISCOV_TIMEOUT)
+            exitfunc 0
+        else
+            exitfunc rc
+        endif
+    
+    elseif strcmp(tkn$,"close")==0 then       
+        if InConnection()==1 then
+            exitfunc -2
+        endif
+        
+        rc=BtcSppClose(hSppPort)              //open the spp port. Store handle in the array at acquired index
+        if rc==0 then
+            print "\nSPP Port closed : (";integer.h'hSppPort;")"
+            hSppPort=0
+            rc=BtcSetDiscoverable(0,0)
+            exitfunc 0
+        else
+            exitfunc rc
         endif
     endif
+endfunc -2
+
+
+//-------------------------------------------------------------------------
+//#CMD#//  at+btw #HEXbdAddr6bytes# OR pair #HEXbdAddr6bytes#
+//-------------------------------------------------------------------------
+function _pair() 
+    rc = ExtractStrTokens(urtcmd$,1,1)
+    if rc != 0 then
+        exitfunc rc
+    endif
+    
+    s$[1] = StrDehexize$(s$[1])
+    
+    rc=BtcPair(s$[1], 2)
+    
+    //if incorrect mode
+    if rc==0x571A then
+        rc=BtcSetPairable(1)
+        AssertRC(rc,430)
+        rc=BtcSetConnectable(1)
+        AssertRC(rc,432)
+        
+        //try pairing again
+        rc=BtcPair(s$[1], 2)
+        AssertRC(rc,436)
+    endif
+        
 endfunc rc
 
 
 //-------------------------------------------------------------------------
-// Connect to either specified or default device
+//#CMD#//  atd #HEXbdAddr6bytes# OR connect #HEXbdAddr6bytes#
 //-------------------------------------------------------------------------
 function _connect() 
-    '//only opening gatt client when we need it to save memory
-    rc=BleGattcOpen(0,0)
-    AssertRC(rc,452)
-
-    dim a$, cParms[4], j
+    if InConnection() == 1 then
+        exitfunc -2
+    endif
+    
     rc=ExtractStrTokens(urtcmd$,1,1)
+    
     '//use #defined/stored mac address if none given
     if rc!=0 then
-        s$[1] = PERIPH_MAC_ADDR
+        s$[1] = PEER_BT_ADDR
     endif
     
     s$[1] = StrDehexize$(s$[1])
 
-    '//Stop scanning before connecting
-    if SysInfo(2016)==8 then
-        rc=BleScanStop()     
-        tb$=""
-    endif
+    //Stop inquiring in case
+    rc=BtcInquiryCancel()   
     
-    rc=BleConnect(s$[1], CONN_TMT, MIN_CONN_INTVL, MAX_CONN_INTVL, LINK_SUP_TMT)
-    if rc!=0 then
+    rc=BtcSppConnect(s$[1])
+    if rc!=0 then  
         exitfunc rc
-    endif  
+    endif
 endfunc -1
 
 
 //-------------------------------------------------------------------------
-// Disconnect
+//#CMD#//  ath OR disconnect
 //-------------------------------------------------------------------------
 function _disconnect() 
-    //if not connected as a master
-    if SysInfo(2016)!= 0x10 then
-        UartRsp(NOCARR_ERR)  //give NO CARRIER response to user
-    else
-        rc = BleDisconnect(hC)
-        AssertRC(rc,250)
+    rc =  BtcSppDisconnect(hC)
+    if rc!=0 then
+        exitfunc rc
     endif
-endfunc -1  //dont give response to user
+endfunc -3  //dont give response to user
+
+
+//-------------------------------------------------------------------------
+//#CMD#//  stop (inquiries)
+//-------------------------------------------------------------------------
+function _stop()
+endfunc BtcInquiryCancel()
 
 
 //------------------------------------------------------------------------------
@@ -478,25 +512,15 @@ Function _at()
     if tlen > 0 then  
     
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        if strcmp(tkn$,"bls")==0 then    
-            exitfunc _scan()
+        if strcmp(tkn$,"bti")==0 then    
+            exitfunc _inquiry()
+        
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        elseif strcmp(tkn$,"btw")==0 then    
+            exitfunc _pair()
         endif
     endif
 endfunc -2  //just print '>' if incorrect command
-
-
-//-------------------------------------------------------------------------
-// Stop - Scanning or Initiating a connection
-//-------------------------------------------------------------------------
-function _stop()
-    select SysInfo(2016)   
-        case BLE_SCANNING
-            exitfunc BleScanStop()
-        case BLE_INITIATING
-            exitfunc BleConnectCancel()
-        case else
-    endselect
-endfunc 0
 
 
 //------------------------------------------------------------------------------
@@ -597,48 +621,109 @@ function OnUartCmd() as integer
     
         if strcmp(tkn$,"at")==0 then    
             rc = _at()
+
+        elseif strcmp(tkn$,"spp")==0 then
+            rc = _spp()
             
         elseif strcmp(tkn$,"atd")==0 || strcmp(tkn$,"connect")==0 then    
             rc = _connect()
             
+        elseif strcmp(tkn$,"inquiry")==0 then    
+            rc = _inquiry()
+            
+        elseif strcmp(tkn$,"pair")==0 then    
+            rc = _pair()
+            
         elseif StrCmp(tkn$,"ato")==0 || StrCmp(tkn$,"bridge")==0 then
-            _bridge()
+            rc=SendMsgApp(0,BRIDGE_SPP_MODE)
             rc=-1       //don't give response to user
             
-        elseif StrCmp(tkn$,"ath")==0 || StrCmp(tkn$,"disconnect")==0  then
+        elseif StrCmp(tkn$,"ath")==0 || StrCmp(tkn$,"disconnect")==0 then
             rc = _disconnect()
     
         elseif strcmp(tkn$,"misc")==0 then
             rc = _misc()
             
         elseif strcmp(tkn$,"stop")==0 then
-            rc=_stop()
+            rc=BtcInquiryCancel()
     
         elseif strcmp(tkn$,"quit")==0 || strcmp(tkn$,"exit")==0 then
-            '//Stop all radio activity
-            rc=BleDisconnect(hC)
-            rc=BleScanStop()
-            rc=BleConnectCancel()
+            rc=BtcSppDisconnect(hC)
+            rc=BtcSppClose(hSppPort)
             print "\nVersion ";APP_VERSION
             exitfunc 0
-    
-        endif
+            
+        elseif strcmp(tkn$,"setdiscoverable")==0 then
+            //extract 2 : (#INTenable# #INTtimeout#) and store starting at i[1]
+            rc = ExtractIntTokens(urtcmd$,1,2)
+            if rc != 0 then
+                exitfunc rc
+            endif        
+            rc=BtcSetDiscoverable(i[1], i[2])
+        
+        elseif strcmp(tkn$,"setpairable")==0 then
+            //extract 1 : (#INTenable#) and store starting at i[1]
+            rc = ExtractIntTokens(urtcmd$,1,1)
+            if rc != 0 then
+                exitfunc rc
+            endif            
+            exitfunc BtcSetPairable(i[1])
+            
+        elseif strcmp(tkn$,"bdaddr")==0 then
+            s$[1] = SysInfo$(4)
+            StrShiftLeft(s$[1],1)
+            print "\n";StrHexize$(s$[1])
+
+        endif  
     endif
-    // send a response back to the user
+    // sednd a response back to the user
     UartRsp(rc)
 endfunc 1
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 sub Initialise()   
-    '//Set configuration for subsequent scans  
-    rc=BleScanConfig(0, SCAN_INTVL)
-    rc=BleScanConfig(1, SCAN_WINDOW)
-    rc=BleScanConfig(2, SCAN_TYPE)
-    rc=BleScanConfig(3, SCAN_MIN_RPTS_IN_CACHE)
+    '//set friendly name
+    s$[1] = FRIENDLY_NAME
+    rc=BtcSetFriendlyName(s$[1])
+    AssertRC(rc,739)
     
-    //print device name
-    print "\n\r";BleGetDeviceName$();"\n\r"
+    '//Configure inquiries from #defined configuration values
+    rc=BtcInquiryConfig(0,INQR_TYPE)
+    AssertRC(rc,741)
+    rc=BtcInquiryConfig(1,INQR_MODE)
+    AssertRC(rc,743)
+    rc=BtcInquiryConfig(2,MAX_DEVS_REC_RESP)
+    AssertRC(rc,749)
+    
+    //configure discoverability mode
+    rc=BtcDiscoveryConfig(0,DISCOV_MODE)
+    AssertRC(rc,679)
+    
+    //save subsequent pairings -bond
+    rc=BtcSavePairings(SAVE_PAIRINGS)
+    AssertRC(rc,615)
+    
+    rc=BtcSetPairable(PAIRABLE_ON_STARTUP)
+    
+    //set connectable so other devices can connect to this device
+    rc=BtcSetConnectable(1)
+    AssertRC(rc,682)
+   
+ 
+    if OPEN_SPP_ON_STARTUP == 1 then
+        //Open SPP port and listen for SPP connections, enable discoverability
+        rc=BtcSppOpen(hSppPort)
+        AssertRC(rc,651)
+    endif
+    
+    //set discoverable if DISCOVERABLE_ON_STARTUP ==1 OR OPEN_SPP_ON_STARTUP==1
+    rc=BtcSetDiscoverable(DISCOVERABLE_ON_STARTUP || OPEN_SPP_ON_STARTUP, DISCOV_TIMEOUT)
+    
+    '//Set and print friendly name
+    s$[1] = FRIENDLY_NAME
+    rc=BtcSetFriendlyName(s$[1])
+    print "\n\r";s$[1];"\n\r"
     
     if CONNECT_ON_STARTUP == 1 then
         rc=_connect()
@@ -673,102 +758,51 @@ endfunc 1
 
 
 //------------------------------------------------------------------------------
-// This handler is called when data has arrived at the serial port (transparent)
+// Called when data is received via UART when bridged to SPP
 //------------------------------------------------------------------------------
-function HandlerUartRxVsp() as integer
-    if vsplen==0 then
-        vsplen  = UartReadN(vdta$, VSP_MAX_CHARDATA_LEN ) 
-        //print vdta$
-        if vsplen > 0 then
-            //process '^' if sent
-            if StrCmp(vdta$,"^")==0 then
-                vsplen=0
-                vdta$=""
-                
-                '//parse the ^ entry
-                if SwitchToCmd() == 1 then
-                    print "\n"
-                    rc=SendMsgApp(0,CMD_MODE)
-                endif
-            
-            else
-                //can send to the VSP service in the peripheral
-                rc=BleGattcWriteCmd(hC,vspRxH,vdta$)
-                vdta$=""
-            endif
+function HandlerUartRxSpp()
+    dim uLen, u$, wLen
+    
+    //read data that has arrived through dia the UART
+    uLen  = UartRead(u$) 
+    
+    if uLen > 0 then
+        if StrCmp(u$,"^")==0 then
+            '//parse the ^ entry
+            if SwitchToCmd() == 1 then
+                print "\n"
+                rc=SendMsgApp(0,CMD_MODE)
+            endif           
+        else
+            //write data to most recent spp connection
+            rc=BtcSppWrite(hC, u$, wLen)
+            u$=""
         endif
     endif
 endfunc 1
 
 
 //------------------------------------------------------------------------------
-// This handler is called when there is an advert report waiting to be read
+// This handler is called when there at least one inquiry response waiting to be read
 //------------------------------------------------------------------------------
-function HandlerAdvRpt() as integer
-    dim ad$,dta$,ndisc,rsi,nme$
+function HandlerInqResp(respType) as integer
+    dim ad$,dta$,rsi,nme$,ndx
     
-    while BleScanGetAdvReport(ad$,dta$,ndisc,rsi)==0
-
-        if CACHE_MAC_ADDRESSES == 1 then   
-            '//add device to table if not in there
-            if TableLookup(tb$,ad$)<0 then
-                rc=TableAdd(tb$, ad$, tbIDs)
-                tbIDs = tbIDs + 1
-            else
-                break
-            endif
-        endif
-                
+    while BtcInquiryGetReport(ad$,dta$,ndx,rsi)==0     
         '//get and print name of device
-        rc=BleGetADByTag(dta$,0x09,nme$)
-        print "\nAddress: "; StrHexize$(ad$), rsi, nme$
-                
-        '// if there are MAX_DEV_SCAN_TABLE mac addresses in the table
-        if tbIDs == MAX_DEV_SCAN_TABLE then
-            rc=BleScanStop()
-            tb$=""
-            UartRsp(0)
-            print "\n";pr$
-            break       
-        endif
-        
-    endwhile   
+        rc=BtcGetEIRByTag(dta$,0x09,nme$)
+        print "\nINQ: "; StrHexize$(ad$), rsi, nme$        
+    endwhile 
 endfunc 1
 
 
 //------------------------------------------------------------------------------
-// This handler is called when there is a BLE message
+// This handler is called when there is an inquiry timeout
 //------------------------------------------------------------------------------
-function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as integer
-    hC = nCtx
-  
-    select nMsgId  
-        case BLE_EVBLEMSGID_CONNECT
-            print "\n\nCONNECT"
-            
-            // get handle of the rx characteristic
-            rc=BleGattcFindChar(hC, hVspSvcUUID , 0, hVspRxUUID, 0)
-            AssertRC(rc,659)
-
-        case BLE_EVBLEMSGID_DISCONNECT
-            print "\nNO CARRIER";pr$
-         
-        case else      
-    endselect    
-endfunc 1
-
-
-//------------------------------------------------------------------------------
-// This handler is called when there is a scan attempt timeout
-//------------------------------------------------------------------------------
-function HandlerBleScanTO() as integer
-    //erase the table where the mac addresses are being stored
-    tb$=""
-    UartRsp(0)
-    
-    '//force release heap memory used by scan
-    rc=BleScanStart(10,0)
-    rc=BleScanStop()
+function HandlerInqTO() as integer
+    '//service any waiting inquiry responses
+    rc=HandlerInqResp(2)
+    UartRsp(0)   
 endfunc 1
 
 
@@ -776,102 +810,35 @@ endfunc 1
 // This handler is called when there is a connection attempt timeout
 //------------------------------------------------------------------------------
 function HandlerBlrConnTO() as integer
-
-  print"\nConnection attempt stopped via timeout";pr$
-
+    print"\nConnection attempt stopped via timeout";pr$
 endfunc 1
 
 
 //------------------------------------------------------------------------------
-// Called after searching for a specific characteristic
+// Called when data is received via SPP - BRIDGE mode
 //------------------------------------------------------------------------------
-function HandlerFindChar(hConn, chProps, hChar, hIncSvc)
-    '//identify which char was found by its properties
-    if chProps == LT_VSP_RX_PROPS then
-        vspRxH = hChar
-        //get handle of the tx characteristic
-        rc=BleGattcFindChar(hC, hVspSvcUUID , 0, hVspTxUUID, 0)
-        AssertRC(rc,862)
-        
-    elseif chProps == LT_VSP_TX_PROPS then
-        vspTxH = hChar
-        //get the handle of the VSP TX char CCCD - will be returned in EvFindDesc handler
-        rc=BleGattcFindDesc(hC, hVspSvcUUID , 0, hVspTxUUID, 0, BleHandleUuid16(CCCD_UUID), 0)
-        AssertRC(rc,868)
-        
-    else
-        print "\nVSP Service not found. Disconnecting..."
-        rc=_Disconnect()
-    endif
-endfunc 1
-
-
-//------------------------------------------------------------------------------
-// Called after searching for a specific descriptor
-//------------------------------------------------------------------------------
-function HandlerFindDesc(hConn, hDesc)
-    if hDesc!=0 then
-        vspCcH=hDesc
-        _Bridge()             
-    else
-        print "\nVSP Service not found. Disconnecting..."
-        rc=_Disconnect()
-    endif
-endfunc 1
-
-
-//------------------------------------------------------------------------------
-// When Attribute Write has been confirmed at GATT level
-//------------------------------------------------------------------------------
-function HandlerAttrWrite(hConn, hAttr, nSts)      
-    if nSts!=0 then
-        UartRsp(nSts)
-    else
-        rc=SendMsgApp(0, StrGetChr(notf$,0))    //either a 1 (vsp mode) or 0 (command mode)
-    endif
-endfunc 1
-
-
-//------------------------------------------------------------------------------
-// When WriteCmd or a Notify has been sent and baseband confirmed
-//------------------------------------------------------------------------------
-function HandlerNotifyBuf() as integer
-  vsplen=0
-endfunc HandlerUartRxVsp()
-
-
-//------------------------------------------------------------------------------
-// Called when notification received
-//------------------------------------------------------------------------------
-function HandlerAttrNotify() 
-    dim hConn,hAttr,att$,dscd
-    //print "\nEVATTRNOTIFY(vsp)"
-    do
-        rc=BleGattcNotifyRead(hConn,hAttr,att$,dscd)
-        if rc==0 then
-            if vspTxH == hAttr then
-                print att$
-            else
-                print "hConn=";integer.h' hConn;",handle=";hAttr;",Dumped=";dscd
-                print ",data=";StrHexize$(att$);")"
-            endif
+function HandlerSppData()
+    dim hPort, data$, rLen
+    
+    '//read and print data while there is data available to read
+    while BtcSppRead(hPort, data$, rLen) == 0    
+        if rLen>0 then
+            print data$
         endif
-    dowhile rc==0
+    endwhile
 endfunc 1
+
+
 
 
 //------------------------------------------------------------------------------
 // Called after SendMsgApp is called. Used to switch between command and bridge mode
 //------------------------------------------------------------------------------
 function SetMode(msgID, cmd) as integer
-    if cmd==BRIDGE_VSP_MODE then
-        if SysInfo(2016) == BLE_CONNECTED_M then
-            OnEvent  EVUARTRX       call HandlerUartRxVsp    
-            Onevent  EVNOTIFYBUF    call HandlerNotifyBuf
-            OnEvent  EVATTRNOTIFY   call HandlerAttrNotify
-            print ok$;"\n"  
-        endif
-        
+    if cmd==BRIDGE_SPP_MODE then
+        OnEvent  EVUARTRX                call HandlerUartRxSpp    
+        OnEvent  EVBTC_SPP_DATA_RECEIVED call HandlerSppData
+        print ok$;"\n"
     elseif cmd==CMD_MODE then
         OnEvent  EVUARTRX       call HandlerUartRx   
         carCnt=0
@@ -881,17 +848,154 @@ endfunc 1
 
 
 //------------------------------------------------------------------------------
-// When disconnected
+// Called when an SPP disconnection occurs
 //------------------------------------------------------------------------------
-function HandlerDiscon(hConn, nRsn)
-    if nRsn!= 0x16 then     //if disconnection wasn't initiated by module
-        print "\nNO CARRIER","(";integer.h'nRsn;")";pr$
+function HandlerSppDiscon(hConn)    
+    print "\n --- Spp Disconnect"
+    //set connectable
+    rc=BtcSetConnectable(1)
+    
+    '//set discoverable if spp port open
+    if hSppPort!=0 then
+        rc=BtcSetDiscoverable(1, DISCOV_TIMEOUT)
     endif
-    rc=HandlerAttrWrite(0, 0, 0)
-    BleGattcClose()
+    
+    //switch back to command mode so module can accept commands
+    rc=SendMsgApp(0,CMD_MODE)
 endfunc 1
 
 
+//------------------------------------------------------------------------------
+// Called after an SPP connection attempt
+//------------------------------------------------------------------------------
+function HandlerSppConn(hConn, res) as integer
+    print "\n --- SPP Connect: (";integer.h' res;")"
+    //if connected successfully
+    if res == 0 then
+        hC = hConn
+        rc=SendMsgApp(0,BRIDGE_SPP_MODE)
+        
+        '//set not discoverable or connectable to prevent multiple connections
+        rc=BtcSetDiscoverable(0,DISCOV_TIMEOUT)
+        rc=BtcSetConnectable(0)
+        AssertRC(rc,804)
+    endif     
+
+    '//set pairable and attempt to pair if an authentication failure was the reason connect attempt failed
+    if res == AUTH_FAILURE then
+        rc=BtcSetPairable(1)
+        AssertRC(rc,863)
+        
+        rc=BtcPair(s$[1],2) //attempt to pair, using default setting for bonding
+        AssertRC(rc,866)        
+    endif     
+endfunc 1
+
+
+//------------------------------------------------------------------------------
+// Called when a connection attempt to an SPP device times out
+//------------------------------------------------------------------------------
+function HandlerSppConnTimOut() as integer
+    print  "\n --- SPP Conn Attempt Timeout" 
+endfunc 1
+
+
+//------------------------------------------------------------------------------
+// This handler is called when there is an discoverability timeout
+//------------------------------------------------------------------------------
+function HandlerBtcDiscTimOut() as integer
+    print "\n --- No longer discoverable"
+    UartRsp(0)
+endfunc 1
+
+
+//------------------------------------------------------------------------------
+// Called when data arrives through the UART - Pair response
+//------------------------------------------------------------------------------
+function HandlerUartRxPair()
+    i[2] = UartReadMatch(s$[2],13)
+    if i[2] !=0 then                            //if any data was read
+        s$[2] = StrSplitLeft$(s$[2],i[2]-1)     //split string to include everything up to the carriage return
+        if strcmp(s$[2],"quit")==0 || strcmp(s$[2],"exit")==0 then
+            rc=BtcSppDisconnect(hC)
+            rc=BtcSppClose(hSppPort)
+            print "\nVersion ";APP_VERSION
+            exitfunc 0
+    
+        elseif StrCmp(s$[2],"y")==0 then
+            rc=BtcSendPairResp(1)
+            print "\n\nPairing...";pr$         
+            OnEvent  EVUARTRX            call HandlerUartRx
+            
+        elseif StrCmp(s$[2],"n")==0 then
+            rc=BtcSendPairResp(0)
+            print "\nDeclined"   
+            UartRsp(0)
+            
+        else
+            print t$
+        endif
+        
+    endif
+endfunc 1
+
+
+//------------------------------------------------------------------------------
+// Called when data arrives through the UART - PIN
+//------------------------------------------------------------------------------
+function HandlerUartRxPIN()
+    i[2] = UartReadMatch(s$[2],13)
+    if i[2] !=0 then
+        s$[2] = StrSplitLeft$(s$[2],i[2]-1)     //split string to include everything up to the carriage return
+        
+        if strcmp(s$[2],"quit")==0 || strcmp(s$[2],"exit")==0 then
+            rc=BtcSppDisconnect(hC)
+            rc=BtcSppClose(hSppPort)
+            print "\nVersion ";APP_VERSION
+            exitfunc 0
+    
+        elseif BtcSendPINResp(s$[2])==0 then
+            print "\nPairing..."             
+            OnEvent  EVUARTRX            call HandlerUartRx
+        else
+            print e$
+        endif  
+        s$[2] = ""
+    endif
+    
+endfunc 1
+
+
+//------------------------------------------------------------------------------
+// Called when there is a pairing request from another device
+//------------------------------------------------------------------------------
+function HandlerPairReq()
+    rc=BtcGetPAIRRequestBDAddr(s$[3])       //setting it to s$[3] so it doesn't get mixed up with any other strings (command params etc) that may be stored in s$[1]
+    print "\nPair Req: "; StrHexize$(s$[3]);pr$
+    print t$
+    UartFlush(1)    //flush the uart rx buffer
+    onevent evuartrx call HandlerUartRxPair
+endfunc 1
+
+
+//------------------------------------------------------------------------------
+// Called on a PIN request from another device
+//------------------------------------------------------------------------------
+function HandlerPINReq() 
+    rc=BtcGetPinRequestBDAddr(s$[3])
+    print "\nPIN Req: "; StrHexize$(s$[3])
+    print e$
+    UartFlush(1)    //flush the uart rx buffer
+    onevent evuartrx call HandlerUartRxPIN
+endfunc 1
+
+
+//------------------------------------------------------------------------------
+// Called after a pairing attempt
+//------------------------------------------------------------------------------
+function HandlerPairRes(res)
+    print "\n --- Pair: (";integer.h'res; ") "; StrHexize$(s$[3]);pr$
+endfunc 1
 
 
 
@@ -903,16 +1007,17 @@ endfunc 1
 //------------------------------------------------------------------------------
 // Enable synchronous event handlers
 //------------------------------------------------------------------------------
-OnEvent  EVUARTRX            call HandlerUartRx
-OnEvent  EVBLE_ADV_REPORT    call HandlerAdvRpt
-OnEvent  EVBLEMSG            call HandlerBleMsg
-OnEvent  EvDiscon            call HandlerDiscon
-OnEvent  EVBLE_SCAN_TIMEOUT  call HandlerBleScanTO
-OnEvent  EVBLE_CONN_TIMEOUT  call HandlerBlrConnTO
-OnEvent  EVFINDCHAR          call HandlerFindChar
-OnEvent  EVFINDDESC          call HandlerFindDesc
-OnEvent  EvAttrWrite         call HandlerAttrWrite
-OnEvent  EVMSGAPP            call SetMode
+OnEvent  EVUARTRX               call HandlerUartRx
+OnEvent  EVINQRESP              call HandlerInqResp
+OnEvent  EVBTC_INQUIRY_TIMEOUT  call HandlerInqTO
+OnEvent  EVSPPCONN              call HandlerSppConn
+OnEvent  EVSPPDISCON            call HandlerSppDiscon
+OnEvent  EVMSGAPP               call SetMode
+OnEvent  EVBTC_PAIR_RESULT      call HandlerPairRes
+OnEvent  EVBTC_PAIR_REQUEST     call HandlerPairReq
+onevent  EVBTC_PIN_REQUEST      call HandlerPINReq
+OnEvent  EVBTC_SPP_CONN_TIMEOUT call HandlerSppConnTimOut
+OnEvent  EVBTC_DISCOV_TIMEOUT   call HandlerBtcDiscTimOut 
 
 //------------------------------------------------------------------------------
 // Initialise and then wait for events

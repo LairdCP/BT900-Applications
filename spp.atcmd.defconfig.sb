@@ -8,7 +8,7 @@
 // +++++                                                                      ++
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
-// atcmd.btc.spp.defconfig.sb
+// spp.atcmd.defconfig
 //
 //
 // This smartBASIC application provides a command line interface for testing SPP.
@@ -20,20 +20,26 @@
 // *Instructions*
 //      1. Set FRIENDLY_NAME to the name you want other devices to identify your module as
 //      2. Set PEER_BT_ADDR to the BT Address of the peer device you want to connect to by default
-//      3. Set DEV_DEFAULT_MODE, OPEN_SPP_ON_STARTUP and CONNECT_ON_STARTUP
+//      3. Set PAIRABLE_ON_STARTUP, DISCOVERABLE_ON_STARTUP, OPEN_SPP_ON_STARTUP and CONNECT_ON_STARTUP
 //
 //
 // *Example* - 2 BT900 modules. BT900-A is an SPP client and connects to BT900-B, an SPP server
 //      ::BT900-A config::
 //          #define CONNECT_ON_STARTUP       1
-//          #define DEV_DEFAULT_MODE         0x01               //connectable, discoverable (general)  
 //          #define PEER_BT_ADDR             "11233AABBCC"     //BT address of BT900-B
 //
 //      ::BT900-B config::
-//          #define OPEN_SPP_ON_STARTUP      1                  //connect to BT900-A on startup
+//          #define OPEN_SPP_ON_STARTUP      1                 //connect to BT900-A on startup
 //          #define CONNECT_ON_STARTUP       0
-//          #define DEV_DEFAULT_MODE         0x09               //connectable, discoverable (general)      
+//          #define DISCOVERABLE_ON_STARTUP  1
 //
+//
+// ::Note::
+//      - Whenever SPP port is opened, module will be discoverable for time DISCOV_TIMEOUT
+//      - On a disconnection event, if SPP port is open, module will be discoverable
+//      - Module will be connectable on a disconnection
+//      - On a connection event, module will not be connectable or discoverable
+//      - If SPP port is closed, the device will not be discoverable unless enabled manually
 //******************************************************************************
 
 //******************************************************************************
@@ -41,19 +47,23 @@
 //******************************************************************************
 
         //if set to 1, on startup an SPP port will be opened for peer devices to connect to
-#define OPEN_SPP_ON_STARTUP                  0
+#define OPEN_SPP_ON_STARTUP                 0
 
         //if set to 1, on startup the module will connect to device PEER_BT_ADDR for SPP
-#define CONNECT_ON_STARTUP                   0
+#define CONNECT_ON_STARTUP                  0
 
 
-       '//Default mode to put the module in on startup
-        // Bit	Description
-        // 0	Connectable
-        // 1 	Pairable (Bit 0 must be set if you set Bit 1)
-        // 2	Limited Discoverability
-        // 3	General Discoverability 
-#define DEV_DEFAULT_MODE                     0x09   //connectable, discoverable (general)  
+#define PAIRABLE_ON_STARTUP                 0
+
+#define DISCOVERABLE_ON_STARTUP             1       //if OPEN_SPP_ON_STARTUP==1, discoverablilty will be enabled for DISCOV_TIMEOUT specified
+
+        //0 - General, 1 - Limited
+#define DISCOV_MODE                         0
+
+        //time module will be discoverable for in seconds if discoverabilty enabled
+#define DISCOV_TIMEOUT                     60
+
+ 
 
         //Default BT Friendly Name - name of device seen by other devices
 #define FRIENDLY_NAME                    "Laird BT900"
@@ -79,7 +89,7 @@
 //******************************************************************************
 // Library Import
 //******************************************************************************
-#include "lib\atcmd.btc.spp.sblib"
+#include "lib\spp.atcmd.sblib"
 
 
 
