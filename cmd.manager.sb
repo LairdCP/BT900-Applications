@@ -352,21 +352,21 @@
 //    - #INTidx# will be checked for valid index 
 //
 // -----------------------------------------------------------------------------
-// blepair #INTconnHandle# #INTenablebonding#
+// ble pair #INTconnHandle# #INTenablebonding#
 //    - Security Manager related
 //    - This will result in BlePair() being called and is used to
 //      initiate a pairing and if #INTenablebonding# is nonzero then a bonding
 //      will be performed which means the trusted device database will be updated
 //
 // -----------------------------------------------------------------------------
-// blepair accept #INTconnHandle# #INTaccept#
+// ble pair accept #INTconnHandle# #INTaccept#
 //    - Accept or reject a just works pairing request
 //    - #INTaccept#
 //          0 - Reject
 //          1 - Accept
 //
 // -----------------------------------------------------------------------------
-// pair iocap #INTiocap#
+// ble pair iocap #INTiocap#
 //    - Security Manager related
 //    - This will result in BleSecMngrIoCap() being called
 //    - valid values for #INTiocap# are
@@ -377,43 +377,43 @@
 //         4     Keyboard only (authenticated pairing)
 //
 // -----------------------------------------------------------------------------
-// pair keysize  #INTminsize# #INTmaxsize#
+// ble pair keysize  #INTminsize# #INTmaxsize#
 //    - Security Manager related
 //    - This will result in BleSecMngrKeySizes() being called
 //    - Specifiy the minimum and maximum key lengths
 //
 // -----------------------------------------------------------------------------
-// pair passkey  #INTconnHandle# #INTpasscode#
+// ble pair passkey  #INTconnHandle# #INTpasscode#
 //    - Security Manager related
 //    - This will result in BleSecMngrPasskey() being called
 //    - Valid value is 0 to 999999 for #INTpasscode# and 
 //    - #INTconnHandle# sepecifies the connection handle
 //
 // -----------------------------------------------------------------------------
-// pair bondreq  #INTbondreq#
+// ble pair bondreq  #INTbondreq#
 //    - Security Manager related
 //    - This will result in BleSecMngrBondReq() being called
 //    - Enable or disable bonding when pairing
 //    - #INTbondreq# sepecifies whether to bond or not when pairing
 //
 // -----------------------------------------------------------------------------
-// blebond stats
+// ble bond stats
 //    - Get the classic BT bonding manager database statistics.
 //
 // -----------------------------------------------------------------------------
-// blebond getinfo #INTindex# 
+// ble bond getinfo #INTindex# 
 //    - Retrieves the MAC address and other information from the trusted device database via an index. 
 //
 // -----------------------------------------------------------------------------
-// blebond persistkey #HEXaddr7Bytes#
+// ble bond persistkey #HEXaddr7Bytes#
 //    - Make the bonding for device #HEXaddr7Bytes# persistent
 //
 // -----------------------------------------------------------------------------
-// blebond erasekey #HEXaddr7Bytes#
+// ble bond erasekey #HEXaddr7Bytes#
 //    - Erase a bonding from the database for the address #HEXaddr7Bytes#
 //
 // -----------------------------------------------------------------------------
-// blebond erase all
+// ble bond erase all
 //    - This function is used to erase all bondings in the database 
 //
 // -----------------------------------------------------------------------------
@@ -1525,16 +1525,20 @@ endfunc 5
 
 
 //-------------------------------------------------------------------------
-//#CMD#//  pair keysize  #INTminsize# #INTmaxsize#
-//#CMD#//  pair iocap    #INTiocap#
-//#CMD#//  pair passkey  #INTconnHandle# #INTpasscode#
+
+//#CMD#//  ble pair keysize  #INTminsize# #INTmaxsize#
+//#CMD#//  ble pair iocap    #INTiocap#
+//#CMD#//  ble pair passkey  #INTconnHandle# #INTpasscode#
+//#CMD#//  ble pair bondreq  #INTbondreq#
+//#CMD#/   ble pair accept   #INTconnHandle# #INTaccept#
+//#CMD#//  ble pair          #INTconnHandle# #INTenablebonding#
 //-------------------------------------------------------------------------
-function _Pair()  
+function _BlePair()  
     tlen = ExtractStrToken(urtcmd$,tkn$)
     if tlen == 0 then
         exitfunc 5
     endif
-    
+        
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if strcmp(tkn$,"keysize")==0 then
         //extract 2 (#INTminsize# #INTmaxsize#) and store starting at i[1]
@@ -1574,18 +1578,6 @@ function _Pair()
         endif
         exitfunc BleSecMngrBondReq(i[1])
     endif 
-endfunc 5
-
-
-//-------------------------------------------------------------------------
-//#CMD#//  blepair  #INTconnHandle# #INTenablebonding#
-//#CMD#//  blepair accept #INTconnHandle# #INTaccept#
-//-------------------------------------------------------------------------
-function _BlePair()  
-    tlen = ExtractStrToken(urtcmd$,tkn$)
-    if tlen == 0 then
-        exitfunc 5
-    endif
     
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if strcmp(tkn$,"accept")==0 then
@@ -1595,31 +1587,30 @@ function _BlePair()
             exitfunc rc
         endif
         exitfunc BleAcceptPairing(i[1],i[2])
-        
-    else
-        // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        //store the connection handle
-        i[1] = StrValDec(tkn$)
-        
-        //extract 1 (#INTenablebonding#) and store starting at i[1]
-        rc = ExtractIntTokens(urtcmd$,1,2)
-        if rc != 0 then
-            exitfunc rc
-        endif
-        
-        '//Temporary workaround until BlePair is implemented for BL620
-        // exitfunc BlePair(hc[i[1]], i[2])   
-        exitfunc BLE_PAIR       //see #define in sblib file
     endif
+    
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    //store the connection handle
+    i[1] = StrValDec(tkn$)
+        
+    // extract 1 (#INTenablebonding#) and store starting at i[2]
+    rc = ExtractIntTokens(urtcmd$,2,1)
+    if rc != 0 then
+        exitfunc rc
+    endif
+    
+    '//Temporary workaround until BlePair is implemented for BL620
+    // exitfunc BlePair(hc[i[1]], i[2])   
+    exitfunc BLE_PAIR       //see #define in sblib file
 endfunc 5
 
 
 // -------------------------------------------------------------------------
-// #CMD#//  blebond stats
-// #CMD#//  blebond getinfo #INTindex#
-// #CMD#//  blebond persistkey #HEXaddr7Bytes#
-// #CMD#//  blebond erase all
-// #CMD#//  blebond erasekey #HEXaddr7Bytes#
+// #CMD#//  ble bond stats
+// #CMD#//  ble bond persistkey #HEXaddr7Bytes#
+// #CMD#//  ble bond getinfo #INTindex#
+// #CMD#//  ble bond erasekey #HEXaddr7Bytes#
+// #CMD#//  ble bond erase all
 // -------------------------------------------------------------------------
 function _BleBond() 
     tlen = ExtractStrToken(urtcmd$,tkn$)
@@ -1651,7 +1642,7 @@ function _BleBond()
             exitfunc rc
         endif
         rc=BleBondMngrGetInfo(i[1], s$[1], i[2])
-        print "\n(0): ";StrHexize$(s$[1]);" : ";integer.h'i[2]
+        print "\n(";i[2];"): ";StrHexize$(s$[1]);" : ";integer.h'i[2]
         exitfunc 0
             
     
@@ -1674,6 +1665,28 @@ function _BleBond()
     endif
 endfunc 5
 
+
+//-------------------------------------------------------------------------
+//#CMD#//  ble bond
+//#CMD#//  ble pair
+//-------------------------------------------------------------------------
+function _Ble()  
+    tlen = ExtractStrToken(urtcmd$,tkn$)
+    if tlen == 0 then
+        exitfunc 5
+    endif
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"bond")==0 then
+        exitfunc _BleBond()
+    endif
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"pair")==0 then
+        exitfunc _BlePair()
+    endif
+endfunc 5
+    
 
 //-------------------------------------------------------------------------
 //#CMD#//  misc s$ clearall
@@ -1788,17 +1801,8 @@ function OnUartCmd() as integer
     elseif strcmp(tkn$,"disconnect")==0 then
       rc = _Disconnect()
       
-    elseif strcmp(tkn$,"pair")==0 then
-      rc = _Pair()
-      
-    // elseif strcmp(tkn$,"ble")==0 then
-      // rc = _Ble()
-      
-    elseif strcmp(tkn$,"blepair")==0 then
-      rc = _BlePair()
-      
-    elseif strcmp(tkn$,"blebond")==0 then
-      rc = _BleBond()
+    elseif strcmp(tkn$,"ble")==0 then
+      rc = _Ble()
     
     elseif strcmp(tkn$,"txpower")==0 then
       rc = _TxPower()
