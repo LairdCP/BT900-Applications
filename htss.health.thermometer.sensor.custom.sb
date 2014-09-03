@@ -88,7 +88,7 @@
 #define TEMPERATURE_POLL_MS                  (1000)
 
         '//Whether to require bonding or not
-#define REQUIRE_BONDING                      0
+#define REQUIRE_BONDING                      1
 
 
         '//smartBASIC module device IDs
@@ -123,8 +123,8 @@ dim rc
 //------------------------------------------------------------------------------
 //** #include the correct GPIO library file for the smartBASIC module being used 
 //------------------------------------------------------------------------------
-// #include "lib\gpio.bl6xx.sblib"
-#include "lib\gpio.bt9xx.sblib"
+#include "lib\gpio.bl6xx.sblib"
+// #include "lib\gpio.bt9xx.sblib"
 
 
 '//******************************************************************************
