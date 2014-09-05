@@ -1642,6 +1642,9 @@ function _BleBond()
             exitfunc rc
         endif
         rc=BleBondMngrGetInfo(i[1], s$[1], i[2])
+        if rc != 0 then
+            exitfunc rc
+        endif
         print "\n(";i[2];"): ";StrHexize$(s$[1]);" : ";integer.h'i[2]
         exitfunc 0            
     
