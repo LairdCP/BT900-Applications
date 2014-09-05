@@ -413,7 +413,7 @@
 //    - Erase a bonding from the database for the address #HEXaddr7Bytes#
 //
 // -----------------------------------------------------------------------------
-// ble bond erase all
+// ble bond eraseall
 //    - This function is used to erase all bondings in the database 
 //
 // -----------------------------------------------------------------------------
@@ -1610,7 +1610,7 @@ endfunc 5
 // #CMD#//  ble bond persistkey #HEXaddr7Bytes#
 // #CMD#//  ble bond getinfo #INTindex#
 // #CMD#//  ble bond erasekey #HEXaddr7Bytes#
-// #CMD#//  ble bond erase all
+// #CMD#//  ble bond eraseall
 // -------------------------------------------------------------------------
 function _BleBond() 
     tlen = ExtractStrToken(urtcmd$,tkn$)
@@ -1643,8 +1643,7 @@ function _BleBond()
         endif
         rc=BleBondMngrGetInfo(i[1], s$[1], i[2])
         print "\n(";i[2];"): ";StrHexize$(s$[1]);" : ";integer.h'i[2]
-        exitfunc 0
-            
+        exitfunc 0            
     
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
     elseif strcmp(tkn$,"erasekey")==0 then      
@@ -1652,8 +1651,8 @@ function _BleBond()
         rc = ExtractStrTokens(urtcmd$,1,1)
         if rc != 0 then
             exitfunc rc
-        endif   
-        s$[1]=StrDehexize$(tkn$)
+        endif
+        s$[1]=StrDehexize$(s$[1])
         if strlen(s$[1]) != 7 then
             exitfunc 5
         endif
