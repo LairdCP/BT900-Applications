@@ -1623,7 +1623,7 @@ function _BleEncrypt()
     if rc != 0 then
         exitfunc rc
     endif
-    exitfunc BleEncryptConnection(i[1], i[2], i[3])
+    exitfunc BleEncryptConnection(hc[i[1]], i[2], i[3])
 endfunc 5
 
 // ble encrypt #INTconnHandle# #INTminLtkSize# #INTmitmRequired#
