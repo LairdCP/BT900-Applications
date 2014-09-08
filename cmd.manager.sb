@@ -338,7 +338,7 @@
 //    - make all elements of the entire i[] array equal to 0
 //
 // -----------------------------------------------------------------------------
-// misc i  set #INTidx# #INTval#
+// misc i set #INTidx# #INTval#
 //    - i[#INTidx#] = #INTval#
 //    - #INTidx# will be checked for valid index 
 //
@@ -377,20 +377,20 @@
 //         4     Keyboard only (authenticated pairing)
 //
 // -----------------------------------------------------------------------------
-// ble pair keysize  #INTminsize# #INTmaxsize#
+// ble pair keysize #INTminsize# #INTmaxsize#
 //    - Security Manager related
 //    - This will result in BleSecMngrKeySizes() being called
 //    - Specifiy the minimum and maximum key lengths
 //
 // -----------------------------------------------------------------------------
-// ble pair passkey  #INTconnHandle# #INTpasscode#
+// ble pair passkey #INTconnHandle# #INTpasscode#
 //    - Security Manager related
 //    - This will result in BleSecMngrPasskey() being called
 //    - Valid value is 0 to 999999 for #INTpasscode# and 
 //    - #INTconnHandle# sepecifies the connection handle
 //
 // -----------------------------------------------------------------------------
-// ble pair bondreq  #INTbondreq#
+// ble pair bondreq #INTbondreq#
 //    - Security Manager related
 //    - This will result in BleSecMngrBondReq() being called
 //    - Enable or disable bonding when pairing
@@ -415,6 +415,16 @@
 // -----------------------------------------------------------------------------
 // ble bond eraseall
 //    - This function is used to erase all bondings in the database 
+//
+// -----------------------------------------------------------------------------
+// ble encrypt #INTconnHandle# #INTminLtkSize# #INTmitmRequired#
+//    - This function is used to encrypt a connection for which a bond exists
+//    - Security Manager related
+//    - This will result in BleSecMngrPasskey() being called
+//    - Valid value is 0 to 999999 for #INTpasscode# and 
+//    - #INTconnHandle# sepecifies the connection handle
+//    - #minLtkSize# sepecifies the minimum long term key size (7-16)
+//    - #mitmRequired# set to 1 to enable Man In The Middle Protection
 //
 // -----------------------------------------------------------------------------
 // scan abort
@@ -1525,7 +1535,6 @@ endfunc 5
 
 
 //-------------------------------------------------------------------------
-
 //#CMD#//  ble pair keysize  #INTminsize# #INTmaxsize#
 //#CMD#//  ble pair iocap    #INTiocap#
 //#CMD#//  ble pair passkey  #INTconnHandle# #INTpasscode#
@@ -1533,7 +1542,7 @@ endfunc 5
 //#CMD#/   ble pair accept   #INTconnHandle# #INTaccept#
 //#CMD#//  ble pair          #INTconnHandle# #INTenablebonding#
 //-------------------------------------------------------------------------
-function _BlePair()  
+function _BlePair()
     tlen = ExtractStrToken(urtcmd$,tkn$)
     if tlen == 0 then
         exitfunc 5
@@ -1604,6 +1613,22 @@ function _BlePair()
     exitfunc BLE_PAIR       //see #define in sblib file
 endfunc 5
 
+//------------------------------------------------------------------------------
+//#CMD#//  ble encrypt       #INTconnHandle# #INTminLtkSize# #INTmitmRequired#
+//------------------------------------------------------------------------------
+function _BleEncrypt()
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    //extract 3 (#INTconnHandle# #INTminLtkSize# #INTmitmRequired#) and store starting at i[1]
+    rc = ExtractIntTokens(urtcmd$,1,3)
+    if rc != 0 then
+        exitfunc rc
+    endif
+    exitfunc BleEncryptConnection(i[1], i[2], i[3])
+endfunc 5
+
+// ble encrypt #INTconnHandle# #INTminLtkSize# #INTmitmRequired#
+//minLtkSize = minimum long term key size (7-16)
+//mitmRequired = set to 1 to enable MITM protection
 
 // -------------------------------------------------------------------------
 // #CMD#//  ble bond stats
@@ -1634,7 +1659,7 @@ function _BleBond()
         s$[1] = StrDehexize$(s$[1])
         exitfunc BleBondingPersistKey(s$[1])
     
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     elseif strcmp(tkn$,"getinfo")==0 then
         //extract 1 : (#INTindex#) and store at i[1])
         rc = ExtractIntTokens(urtcmd$,1,1)
@@ -1648,8 +1673,8 @@ function _BleBond()
         print "\n(";i[2];"): ";StrHexize$(s$[1]);" : ";integer.h'i[2]
         exitfunc 0            
     
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
-    elseif strcmp(tkn$,"erasekey")==0 then      
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif strcmp(tkn$,"erasekey")==0 then
         //extract 1 : (#HEXaddr7Bytes#) and store at i[1])
         rc = ExtractStrTokens(urtcmd$,1,1)
         if rc != 0 then
@@ -1671,6 +1696,7 @@ endfunc 5
 //-------------------------------------------------------------------------
 //#CMD#//  ble bond
 //#CMD#//  ble pair
+//#CMD#//  ble encrypt
 //-------------------------------------------------------------------------
 function _Ble()  
     tlen = ExtractStrToken(urtcmd$,tkn$)
@@ -1687,8 +1713,12 @@ function _Ble()
     if strcmp(tkn$,"pair")==0 then
         exitfunc _BlePair()
     endif
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"encrypt")==0 then
+        exitfunc _BleEncrypt()
+    endif
 endfunc 5
-    
+
 
 //-------------------------------------------------------------------------
 //#CMD#//  misc s$ clearall
@@ -1891,22 +1921,22 @@ function HandlerUartRxVsp() as integer
     //print "\nuart vsp: "
     //just write to the VSP service
     if vsplen==0 then
-        vsplen  = UartReadN(vdta$, VSP_MAX_CHARDATA_LEN ) 
+        vsplen  = UartReadN(vdta$, VSP_MAX_CHARDATA_LEN )
         //print vdta$
         if vsplen > 0 then
             //process '^' if sent
             if StrCmp(vdta$,"^")==0 then
                 vsplen=0
                 vdta$=""
-                             
+
                 if TimerRunning(0)==0 then
                     carCnt = carCnt + 1
                     if carCnt<3 then
-                        TimerStart(0,CAR_PRESS_DELAY,0)                       
+                        TimerStart(0,CAR_PRESS_DELAY,0)
                     else
                         rc=SendMsgApp(0,CMD_MODE)    //* Using this for switching between bridge and cmd mode
                     endif
-                else    //invalid press                    
+                else    //invalid press
                     TimerCancel(0)
                     carCnt = 0
                 endif
@@ -1914,7 +1944,7 @@ function HandlerUartRxVsp() as integer
             else
                 //can send to the VSP service in the peripheral
                 rc=BleGattcWriteCmd(hcVsp,vspRxH,vdta$)
-                //print vdta$      
+                //print vdta$
                 vdta$=""
             endif
         endif
@@ -1943,7 +1973,7 @@ function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as intege
       //always assume most recent connection for VSP
       hcVsp = hc[hz]
     endif
-    
+
   case BLE_EVBLEMSGID_DISCONNECT
     hz = RelConnHandle(nCtx)
     conns = conns - 1
@@ -2081,7 +2111,7 @@ function HandlerCharDisc(hConn,hUuid,cProp,hVal,hiUuid) as integer
         TerminateTableMap(rc)
       endif
     endif
-    
+
   case else
   endselect
 endfunc 1
@@ -2248,13 +2278,13 @@ function HandlerSio28() as integer
   if GpioRead(28) then
     //DTR Deasserted so NOT command mode
     if conns>0 then
-      OnEvent  EVUARTRX       call HandlerUartRxVsp    
+      OnEvent  EVUARTRX       call HandlerUartRxVsp
       Onevent  EVNOTIFYBUF    call HandlerNotifyBufVsp
       OnEvent  EVATTRNOTIFY   call HandlerAttrNtfyVsp
     endif
   else
     //DTR Deasserted so command mode
-    OnEvent  EVUARTRX       call HandlerUartRxCmd    
+    OnEvent  EVUARTRX       call HandlerUartRxCmd
     Onevent  EVNOTIFYBUF    call HandlerNotifyBufCmd
     OnEvent  EVATTRNOTIFY   call HandlerAttrNtfyCmd
   endif
@@ -2268,27 +2298,27 @@ function SetMode(msgID, cmd) as integer
     if cmd==BRIDGE_VSP_MODE then
         //DTR Deasserted so NOT command mode
         if conns>0 then
-            OnEvent  EVUARTRX       call HandlerUartRxVsp    
+            OnEvent  EVUARTRX       call HandlerUartRxVsp
             Onevent  EVNOTIFYBUF    call HandlerNotifyBufVsp
             OnEvent  EVATTRNOTIFY   call HandlerAttrNtfyVsp
-            print ok$             
+            print ok$
         endif
         
     elseif cmd==CMD_MODE then
         OnSetModeCmd()      //let sblib handle it first
         //DTR Deasserted so command mode
-        OnEvent  EVUARTRX       call HandlerUartRxCmd    
+        OnEvent  EVUARTRX       call HandlerUartRxCmd
         Onevent  EVNOTIFYBUF    call HandlerNotifyBufCmd
         OnEvent  EVATTRNOTIFY   call HandlerAttrNtfyCmd
         carCnt=0
         UartRsp(0)
-        
+
     elseif cmd==BRIDGE_SPP_MODE then
         if conns>0 then
             OnSetModeSpp()      //let sblib handle it first
-            OnEvent  EVUARTRX                call HandlerUartRxSpp    
+            OnEvent  EVUARTRX                call HandlerUartRxSpp
             Onevent  EVNOTIFYBUF             call HandlerNotifyBufCmd
-            OnEvent  EVATTRNOTIFY            call HandlerAttrNtfyCmd           
+            OnEvent  EVATTRNOTIFY            call HandlerAttrNtfyCmd
             print ok$
         endif
     endif
@@ -2354,7 +2384,7 @@ endsub
     // elseif StrCmp(devNme$, "Laird BL600") || StrCmp(devNme$, "Laird BL620") then
         // rc=GpioBindEvent(0,28,2)        //DTR -> SIO 28 on BL6XX
         // AssertResCode(rc,2410)
-    // endif       
+    // endif
 // endsub
 
 
