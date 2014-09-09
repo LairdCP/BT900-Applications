@@ -59,9 +59,9 @@
 //   - Open the serial port service and listen for SPP connections. Service handle is returned
 //
 // -----------------------------------------------------------------------------
-// spp connect #HEXaddr14Bytes#
+// spp connect #HEXaddr6Bytes#
 //    --- bluetooth classic functionality ---
-//   - Connect to an SPP device defined by mac address #HEXaddr14Bytes#. Handle is returned
+//   - Connect to an SPP device defined by mac address #HEXaddr6Bytes#. Handle is returned
 //
 // -----------------------------------------------------------------------------
 // spp disconnect #INThConnSpp#
@@ -137,17 +137,17 @@
 //    - Get the classic BT bonding manager database statistics.
 //
 // -----------------------------------------------------------------------------
-// btc bond addkey #HEXaddr12Bytes# #HEXkey32Bytes# #INTkeyType#
+// btc bond addkey #HEXaddr6Bytes# #HEXkey32Bytes# #INTkeyType#
 //    --- bluetooth classic functionality ---
 //    - Add a link key to the rolling database
 //
 // -----------------------------------------------------------------------------
-// btc bond getkey #HEXaddr12Bytes#
+// btc bond getkey #HEXaddr6Bytes#
 //    --- bluetooth classic functionality ---
 //    - Get a link key from the database for the BT address specified
 //
 // -----------------------------------------------------------------------------
-// btc bond delkey #HEXaddr12Bytes#
+// btc bond delkey #HEXaddr6Bytes#
 //    --- bluetooth classic functionality ---
 //    - Erase a link key from the database for the BT address specified.
 //
@@ -157,7 +157,7 @@
 //    - Erase all link keys in the database (rolling and persistent)
 //
 // -----------------------------------------------------------------------------
-// btc bond persistkey #HEXaddr12Bytes#
+// btc bond persistkey #HEXaddr6Bytes#
 //    --- bluetooth classic functionality ---
 //    - Make a link key persistent by transferring it from the rolling database 
 //      to the persistent database
@@ -182,9 +182,9 @@
 //                  1 : Store pairing information (Bond)
 //
 // -----------------------------------------------------------------------------
-// btc pair #HEXaddr12Bytes# #INTflag#
+// btc pair #HEXaddr6Bytes# #INTflag#
 //    --- bluetooth classic functionality ---
-//    - Pair with device with address #HEXaddr12Bytes# and specify whether to bond
+//    - Pair with device with address #HEXaddr6Bytes# and specify whether to bond
 //      with #INTflag# - 0 : Do not store pairing information (Don’t bond)
 //                       1 : Store pairing information (Bond)
 //                       2 : Use default as specified by 'btc savepairings'
@@ -323,7 +323,7 @@ endfunc 5
 
 //-------------------------------------------------------------------------
 //#CMD#//  spp open 
-//#CMD#//  spp connect #HEXaddr14Bytes#
+//#CMD#//  spp connect #HEXaddr6Bytes#
 //#CMD#//  spp disconnect #INThConnSpp#
 //#CMD#//  spp close #INThSpp# 
 //#CMD#//  spp write #INThConnSpp# #STRdata#
@@ -397,13 +397,13 @@ endfunc 5
 
 //-------------------------------------------------------------------------
 //#CMD#//  btc bond stats
-//#CMD#//  btc bond addkey #HEXaddr12Bytes# #HEXkey32Bytes# #INTkeyType#
-//#CMD#//  btc bond getkey #HEXaddr12Bytes#
-//#CMD#//  btc bond delkey #HEXaddr12Bytes#
+//#CMD#//  btc bond addkey #HEXaddr6Bytes# #HEXkey32Bytes# #INTkeyType#
+//#CMD#//  btc bond getkey #HEXaddr6Bytes#
+//#CMD#//  btc bond delkey #HEXaddr6Bytes#
 //#CMD#//  btc bond delall
 //#CMD#//  btc bond getfirst
 //#CMD#//  btc bond getnext
-//#CMD#//  btc bond persistkey #HEXaddr12Bytes#
+//#CMD#//  btc bond persistkey #HEXaddr6Bytes#
 //-------------------------------------------------------------------------
 function _btcbond()  
   tlen = ExtractStrToken(urtcmd$,tkn$)
@@ -416,7 +416,7 @@ function _btcbond()
     endif
     //=================================================
     if strcmp(tkn$,"addkey")==0 then
-      //#HEXaddr12Bytes#
+      //#HEXaddr6Bytes#
       tlen = ExtractStrToken(urtcmd$,tkn$)
       if tlen > 0 then
         s$[1]=StrDehexize$(tkn$)
@@ -441,7 +441,7 @@ function _btcbond()
     endif
     //=================================================
     if strcmp(tkn$,"getkey")==0 then
-      //#HEXaddr12Bytes#
+      //#HEXaddr6Bytes#
       tlen = ExtractStrToken(urtcmd$,tkn$)
       if tlen > 0 then
         s$[1]=StrDehexize$(tkn$)
@@ -459,7 +459,7 @@ function _btcbond()
     endif
     //=================================================
     if strcmp(tkn$,"delkey")==0 then
-      //#HEXaddr12Bytes#
+      //#HEXaddr6Bytes#
       tlen = ExtractStrToken(urtcmd$,tkn$)
       if tlen > 0 then
         s$[1]=StrDehexize$(tkn$)
@@ -495,7 +495,7 @@ function _btcbond()
     endif
     //=================================================
     if strcmp(tkn$,"persistkey")==0 then
-      //#HEXaddr12Bytes#
+      //#HEXaddr6Bytes#
       tlen = ExtractStrToken(urtcmd$,tkn$)
       if tlen > 0 then
         s$[1]=StrDehexize$(tkn$)
@@ -514,7 +514,7 @@ endfunc 5
 //#CMD#//  btc setfriendlyname #STRname#
 //#CMD#//  btc sendpin #INTpin#
 //#CMD#//  btc savepairings #INTflag#
-//#CMD#//  btc pair #HEXaddr12Bytes# #INTflag#
+//#CMD#//  btc pair #HEXaddr6Bytes# #INTflag#
 //#CMD#//  btc pairresp #INTpairResp#
 //#CMD#//  btc discoveryconfig #INTcfgID# #INTval#
 //#CMD#//  btc setdiscoverable #INTenable# #INTtimeout#

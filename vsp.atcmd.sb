@@ -42,8 +42,8 @@
 //       MAX_DEV_SCAN_TABLE.
 //
 // -----------------------------------------------------------------------------
-// atd #HEXbdAddr14bytes# OR
-// connect #HEXbdAddr14bytes# OR
+// atd #HEXbdAddr7bytes# OR
+// connect #HEXbdAddr7bytes# OR
 //    - connect to device with given BT address
 //
 //    -> if an invalid or null BT address is given, the default mac address 
