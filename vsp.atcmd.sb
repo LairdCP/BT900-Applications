@@ -788,7 +788,7 @@ endfunc 1
 //------------------------------------------------------------------------------
 // This handler is called when there is a connection attempt timeout
 //------------------------------------------------------------------------------
-function HandlerBlrConnTO() as integer
+function HandlerBleConnTO() as integer
 
   print"\nConnection attempt stopped via timeout";pr$
 
@@ -894,6 +894,14 @@ endfunc 1
 
 
 //------------------------------------------------------------------------------
+// Called after a GATT Client operation timeout
+//------------------------------------------------------------------------------
+function HandlerGattcTout()
+    rc=BleDisconnect(hC)
+endfunc 1
+
+
+//------------------------------------------------------------------------------
 // When disconnected
 //------------------------------------------------------------------------------
 function HandlerDiscon(hConn, nRsn)
@@ -921,10 +929,11 @@ OnEvent  EVBLE_ADV_REPORT    call HandlerAdvRpt
 OnEvent  EVBLEMSG            call HandlerBleMsg
 OnEvent  EvDiscon            call HandlerDiscon
 OnEvent  EVBLE_SCAN_TIMEOUT  call HandlerBleScanTO
-OnEvent  EVBLE_CONN_TIMEOUT  call HandlerBlrConnTO
+OnEvent  EVBLE_CONN_TIMEOUT  call HandlerBleConnTO
 OnEvent  EVFINDCHAR          call HandlerFindChar
 OnEvent  EVFINDDESC          call HandlerFindDesc
 OnEvent  EvAttrWrite         call HandlerAttrWrite
+OnEvent  EvGattcTout         call HandlerGattcTout
 OnEvent  EVMSGAPP            call SetMode
 
 //------------------------------------------------------------------------------
