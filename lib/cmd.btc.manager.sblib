@@ -1,4 +1,4 @@
-//******************************************************************************
+﻿//******************************************************************************
 // Laird Technologies (c) 2014
 //
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -755,31 +755,40 @@ endfunc 1
 // Called when data is received via UART when bridged to SPP
 //==============================================================================
 function HandlerUartRxSpp()
-    dim uLen, u$, wLen
+    dim uLen, u$, nLen, nLen2 : uLen = 1
+    WHILE uLen != 0
+        //read data that has arrived through via the UART
+        uLen = UartRead(u$) 
     
-    //read data that has arrived through dia the UART
-    uLen  = UartRead(u$) 
-    
-    if uLen > 0 then
-        if StrCmp(u$,"^")==0 then
-            // print "\nBefore: ";carCnt                 
-            if TimerRunning(0)==0 then
-                carCnt = carCnt + 1
-                if carCnt<3 then
-                    TimerStart(0,CAR_PRESS_DELAY,0) 
-                else
-                    rc=SendMsgApp(0,CMD_MODE)    //* Using this for switching between bridge and cmd mode
+        if uLen > 0 then
+            if StrCmp(u$,"^")==0 then
+                // print "\nBefore: ";carCnt                 
+                if TimerRunning(0)==0 then
+                    carCnt = carCnt + 1
+                    if carCnt<3 then
+                        TimerStart(0,CAR_PRESS_DELAY,0) 
+                    else
+                        rc=SendMsgApp(0,CMD_MODE)    //* Using this for switching between bridge and cmd mode
+                    endif
+                else    //invalid press                    
+                    TimerCancel(0)
+                    carCnt = 0
                 endif
-            else    //invalid press                    
-                TimerCancel(0)
-                carCnt = 0
+            else
+                //write data to most recent spp connection
+                nLen2 = 0
+                WHILE nLen2 != uLen
+                    rc = BtcSPPWrite(hcSpp, u$, nLen)
+                    IF rc != 0 THEN
+                        //Assume problem with the SPP connection
+                        exitfunc rc
+                    ENDIF
+                    STRSHIFTLEFT(u$, nLen)
+                    nLen2 = nLen2 + nLen
+                ENDWHILE
             endif
-            
-        else
-            //write data to most recent spp connection
-            rc=BtcSppWrite(hcSpp, u$, wLen)
         endif
-    endif
+    ENDWHILE
 endfunc 1
 
 
