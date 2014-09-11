@@ -667,7 +667,7 @@ function OnUartCmd() as integer
             if rc != 0 then
                 exitfunc rc
             endif            
-            exitfunc BtcSetPairable(i[1])
+            rc=BtcSetPairable(i[1])
             
         elseif strcmp(tkn$,"bdaddr")==0 then
             s$[1] = SysInfo$(4)
