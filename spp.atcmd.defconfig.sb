@@ -46,12 +46,17 @@
 // Definitions
 //******************************************************************************
 
+        //Default BT Friendly Name - name of device seen by other devices
+#define FRIENDLY_NAME                    "Laird BT900"
+
+        //Set this to the BT address of the BT classic device you want to connect to by default
+#define PEER_BT_ADDR                     "0016A4093A5F"
+
         //if set to 1, on startup an SPP port will be opened for peer devices to connect to
 #define OPEN_SPP_ON_STARTUP                 0
 
         //if set to 1, on startup the module will connect to device PEER_BT_ADDR for SPP
 #define CONNECT_ON_STARTUP                  0
-
 
 #define PAIRABLE_ON_STARTUP                 0
 
@@ -63,13 +68,6 @@
         //time module will be discoverable for in seconds if discoverabilty enabled
 #define DISCOV_TIMEOUT                     60
 
- 
-
-        //Default BT Friendly Name - name of device seen by other devices
-#define FRIENDLY_NAME                    "Laird BT900"
-
-        //Set this to the BT address of the BT classic device you want to connect to by default
-#define PEER_BT_ADDR                     "0016A4093A5F"
 
 
 //Inquiry config parameters (See description for BtcInquiryConfig() in BT900 Extention user manual)
