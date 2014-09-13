@@ -1,0 +1,167 @@
+'//******************************************************************************
+'// Laird Technologies (c) 2013
+'//
+'// bcv.broadcast.characteristic.val
+'//
+'// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+'// +++++                                                                      ++
+'// +++++  When UwTerminal downloads the app it will store it as a filenname   ++
+'// +++++  which consists of all characters up to the first . and excluding it ++
+'// +++++                                                                      ++
+'// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+'//
+'// This sample app will encode the temperature data in the first 3 #defines 
+'// below and broadcast it in an advert report. GATT Client can then read this
+'// temperature data without connecting to the module.
+'//
+'//******************************************************************************
+
+'//******************************************************************************
+'// Definitions
+'//******************************************************************************
+#define TEMP_MANTISSA                        2711
+#define TEMP_EXPONENT                        -2
+#define UUID_HEALTH_THERMOMETER_SERVICE      0x1809
+
+#define ENABLE_DEBUG_PRINTS                  1
+#define BLE_DISCOVERABILITY_GENERAL          2
+#define BLE_APPEARANCE                       0    
+#define MAX_DEVNAME_CHRS                     20
+#define BLE_CHARVAL_AD_TAG                   0x16 
+
+#define ADV_SCAN_IND                         2
+#define ADV_FILTERPOLICY_ANY                 0
+                                     
+        '//Advertise interval
+#define ADV_INTERVAL_MS                      250
+        '//Advertise timeout
+#define ADV_TIMEOUT_MS                       0
+        '//Whitelist Policy in Adverts
+#define ADV_WHITELIST_FILTER_POLICY          ADV_FILTERPOLICY_ANY
+
+
+'//******************************************************************************
+'// Library Import
+'//******************************************************************************
+
+'//******************************************************************************
+'// Global Variable Declarations
+'//******************************************************************************
+dim rc         '//result code
+dim devName$   '//Device name
+dim hChar      '//characteristic handle
+dim hSvc       '//service handle
+
+'//******************************************************************************
+'// Function and Subroutine definitions
+'//******************************************************************************
+
+'//------------------------------------------------------------------------------
+'// For debugging
+'// --- rc = result code
+'// --- ln = line number         
+'//------------------------------------------------------------------------------
+Sub AssertRC(rc,ln)   
+    if rc!=0 then
+        print "\nFail :";integer.h' rc;" at tag ";ln
+    endif
+EndSub
+
+
+'//------------------------------------------------------------------------------
+'// Register Error Handler as early as possible
+'//------------------------------------------------------------------------------
+sub HandlerOnErr()
+  if (ENABLE_DEBUG_PRINTS!=0) then
+    print "\n OnErr - ";GetLastError();"\n"
+  endif
+endsub
+
+onerror next HandlerOnErr
+
+
+'//------------------------------------------------------------------------------
+'// Initialise advert report and add characteristic value to it
+'//------------------------------------------------------------------------------
+sub MakeAdvertRpts()
+    dim tempVal$ '//characteristic value
+    dim advRpt$  '//advert report
+    dim scnRpt$  '//empty scan report
+    
+    rc=BleAdvRptInit(advRpt$, BLE_DISCOVERABILITY_GENERAL, BLE_APPEARANCE, MAX_DEVNAME_CHRS)
+    AssertRC(rc,100)
+    
+    '//Encode temperature advert data
+    rc=BleEncode16(tempVal$, UUID_HEALTH_THERMOMETER_SERVICE, 0)   //encode temperature svc UUID from index 0 in charVal$
+    AssertRC(rc,104)
+    rc=BleEncodeFloat(tempVal$, TEMP_MANTISSA, TEMP_EXPONENT, 2)   //encode temp (342 * 10^-1) as float from index 2 in charVal$
+    AssertRC(rc,106)
+        
+    '//Append temperature value to the advert report
+    rc=BleAdvRptAppendAD(advRpt$, BLE_CHARVAL_AD_TAG, tempVal$)
+    AssertRC(rc,110)
+    
+    //print "\nService Data: "; StrHexize$(tempVal$)
+    
+    rc=BleAdvRptsCommit(advRpt$,scnRpt$)
+    AssertRC(rc,115)
+endsub
+
+
+'//------------------------------------------------------------------------------
+'// This subroutine gets called first
+'//------------------------------------------------------------------------------
+sub OnStartup()
+    dim addr$    '//empty peer address 
+
+    MakeAdvertRpts()
+
+    '//Start advertising
+    rc=BleAdvertStart(ADV_SCAN_IND, addr$, ADV_INTERVAL_MS, ADV_TIMEOUT_MS, ADV_WHITELIST_FILTER_POLICY)
+    AssertRC(rc,129)
+    
+    TimerStart(0,5000,0)   
+endsub
+
+
+'//******************************************************************************
+'// Handler definitions
+'//******************************************************************************
+function h()        //incase you want to update the temperature periodically
+    dim tempVal$ '//characteristic value
+    dim advRpt$  '//advert report
+    dim scnRpt$  '//empty scan report
+    
+    rc=BleAdvRptInit(advRpt$, BLE_DISCOVERABILITY_GENERAL, BLE_APPEARANCE, MAX_DEVNAME_CHRS)
+    AssertRC(rc,100)
+    
+    '//Encode temperature advert data
+    rc=BleEncode16(tempVal$, UUID_HEALTH_THERMOMETER_SERVICE, 0)   //encode temperature svc UUID from index 0 in charVal$
+    AssertRC(rc,104)
+    rc=BleEncodeFloat(tempVal$, 1992, -2, 2)   //encode temp (342 * 10^-1) as float from index 2 in charVal$
+    AssertRC(rc,106)
+    
+    '//Append temperature value to the advert report
+    rc=BleAdvRptAppendAD(advRpt$, BLE_CHARVAL_AD_TAG, tempVal$)
+    AssertRC(rc,110)
+    
+    //print "\nService Data: "; StrHexize$(tempVal$)
+    
+    rc=BleAdvRptsCommit(advRpt$,scnRpt$)
+    AssertRC(rc,115)
+endfunc 1
+
+
+
+'//******************************************************************************
+'// Equivalent to main() in C
+'//******************************************************************************
+onevent evtmr0 call h
+
+OnStartup()              
+           
+'//------------------------------------------------------------------------------
+'// Wait for a synchronous event.
+'// An application can have multiple <WaitEvent> statements
+'//------------------------------------------------------------------------------
+waitevent
