@@ -1614,7 +1614,7 @@ function _BlePair()
         if rc != 0 then
             exitfunc rc
         endif
-        exitfunc BleAcceptPairing(i[1],i[2])
+        exitfunc BleAcceptPairing(hc[i[1]],i[2])
     endif
     
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
