@@ -367,10 +367,10 @@ function _spp()
             exitfunc rc
         endif
         
-        rc=BtcSppClose(i[1])              //open the spp port. Store handle in the array at acquired index
+        rc=BtcSppClose(hc[i[1]])              //open the spp port. Store handle in the array at acquired index
         if rc==0 then
             print "\nSPP Port closed. Handle = "; i[1]
-            RelPortHandle(i[1])           //release the port with the given handle
+            RelPortHandle(hc[i[1]])           //release the port with the given handle
             exitfunc 0
         else
             exitfunc rc
@@ -390,7 +390,7 @@ function _spp()
             // exitfunc rc
         // endif
         
-        exitfunc BtcSppWrite(i[1], urtcmd$, wLen)
+        exitfunc BtcSppWrite(hc[i[1]], urtcmd$, wLen)
     endif
 endfunc 5
 
