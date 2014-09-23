@@ -84,6 +84,18 @@ endfunc 5
 //-------------------------------------------------------------------------
 // hcitool cc [--role=m|s] [--ptype=pkt_types] <bdaddr>				//[] denotes optional fields
 //-------------------------------------------------------------------------
+
+function _dispCon()
+	
+	dim z
+	for z=1 to conns
+		print "    ";ac[z];"\n"
+	next
+	
+endfunc 1 
+//-------------------------------------------------------------------------
+// hcitool cc [--role=m|s] [--ptype=pkt_types] <bdaddr>				//[] denotes optional fields
+//-------------------------------------------------------------------------
 function _SppConnect()
 	DIM str$
 	
@@ -99,6 +111,7 @@ function _SppConnect()
 		exitfunc 1
 		
 		else
+			addr$ = tkn$					//if connection is successful, addr$ will be added to array
 			tkn$ = strdehexize$(tkn$)
 			rc = BtcSppConnect(tkn$)
 			AssertResCode(rc)
@@ -124,6 +137,7 @@ function _SppDisconnect()
 		exitfunc 1
 		
 		else
+			addr$ = tkn$
 			tkn$ = strdehexize$(tkn$)
 			rc = BtcGetHandleFromBDAddr(tkn$,hcSpp)
 			AssertResCode(rc)
@@ -213,6 +227,7 @@ function _leConnect() as integer
 			exitfunc 1
 		
 		else
+			addr$ = tkn$
 			tkn$ = strdehexize$(tkn$)
 			rc = BleConnect(tkn$, 5000, 20000, 75000, 5000000)						// ConnectionTimeoutms, minConIntervalus, maxConIntervalus, nSupervisionTimeoutus
 			AssertResCode(rc)
@@ -235,7 +250,9 @@ function _leDisconnect() as integer
 			exitfunc 1
 		
 		else
-			tkn$ = strdehexize$(tkn$)
+			addr$ = tkn$
+			//tkn$ = strdehexize$(tkn$)
+			rc = getHandleFromAddr(addr$)
 			rc = bledisconnect(hz)						// Do not store bonding information 
 			if rc == 0 then 
 				print "Disconnecting...\n"
@@ -266,6 +283,7 @@ function _rfcommConnect()
 		endif
 	endwhile
 	
+	//Here get handle from provided address
 	tkn$ = strdehexize$(tkn$)
 	rc = BtcSppConnect(tkn$)
 	AssertResCode(rc)
@@ -315,7 +333,8 @@ function _rfcommLsn()
 			print "Usage:\n"
 			print "		rfcomm listen --handle=0000\n"
 			exitfunc 1
-		
+			
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"handle")==0 then
 			strshiftleft(urtcmd$, 1)
 			rc = ExtractStrToken(urtcmd$, tkn$)
@@ -327,6 +346,36 @@ function _rfcommLsn()
 	rc = BtcSppRead(hndl, dta$, len)
 	AssertResCode(rc)
 	print "Incoming data: ";dta$;"\n"
+	
+endfunc 1
+
+//-------------------------------------------------------------------------
+// rfcomm listen --handle=0000
+//-------------------------------------------------------------------------
+
+function _rfcommBind()
+	
+	while ExtractStrToken(urtcmd$, tkn$)!=0
+		if strcmp(tkn$,"help")==0 then
+			//print the rfcomm bind help menu
+			print "Usage:\n"
+			print "		rfcomm bind --handle=0000\n"
+			exitfunc 1
+			
+		elseif strcmp(tkn$,"handle")==0 then
+			strshiftleft(urtcmd$, 1)
+			rc = ExtractStrToken(urtcmd$, tkn$)
+			rc = ExtractIntToken(tkn$, hcSpp)
+			
+		//else
+		//	print "bind: too few arguments\n"
+		//	exitfunc 1
+		endif
+	endwhile
+	
+	tkn$ = strdehexize$(tkn$)
+	rc=SendMsgApp(0,BRIDGE_SPP_MODE)
+	exitfunc -1
 	
 endfunc 1
 //=========================================================================

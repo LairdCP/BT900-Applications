@@ -113,34 +113,45 @@
 //BLUEZ COMMAND IDs: RFCOMM
 #define BLUEZ_COMMAND_RFCOMM_CONNECT					60
 
+//APP RUN MODES
+#define CMD_MODE                                 0
+#define BRIDGE_SPP_MODE                          2
 
 
+#define CAR_PRESS_DELAY                     100          //ms to wait between registering entries of '^'
 //******************************************************************************
 // Global Variable Declarations
 //******************************************************************************
 dim rc
-dim stRsp$ as string        //Uart rx data is stored here
+dim stRsp$ 			        //Uart rx data is stored here
 dim ok$,er$,pr$
 dim urtcmd$                 // cmd line from uart
 dim tkn$,tlen               // used by command parser
 dim urts                    // will be <0 if uart parser suspended
 dim i[NUM_OF_I_PARAMS]      // index 0 used for return values
 dim hc[NUM_OF_CONNS+1]      // contains connection handles
+dim ac[NUM_OF_CONNS+1] as String		// contains a list of connected devices' addresses
 dim conns                   // number of connections
-dim name$					// device name
+dim name$					// local device name
+dim addr$					// address of device being connected to
 
 dim hz						// this is the handle of the current connection (currently used by --primary)
+dim az						// this is the address of the current connected BT device
 dim gcState                 // gatt client state, 0=IDLE, 1=TableMapping
 dim sAttr
 dim eAttr
 
-dim prAddr$              	// BT address of last device pairing requested from or initiated with
-dim hcSpp                   // handle of connection to use for VSP service
+dim prAddr$              				// BT address of last device pairing requested from or initiated with
+dim hcSpp                   			// handle of connection to use for VSP service
 
-dim command
+dim command : command = 0				// Currently active BlueZ command
 dim testhndl
-dim inqtype					// Inquiry Type: 0 General, 1 Limited
-dim inqmode					// Inquiry Mode: 0 for Standard, 1 for with RSSI, 2 for Extended)
+dim inqtype	: inqtype = 0				// Inquiry Type: 0 General, 1 Limited
+dim inqmode	: inqmode = 2				// Inquiry Mode: 0 for Standard, 1 for with RSSI, 2 for Extended)
+
+dim inqtpl : inqtpl=4						// Inquiry transmit power level
+dim mjVersion : mjVersion=0				// Major version number
+dim mnVersion : mnVersion=7				// Minor version number
 
 //******************************************************************************
 // Initialise Global Variable
@@ -151,9 +162,6 @@ er$    = "\nERROR "
 pr$    = "------->"
 
 urts = 0					// not suspended
-command = 0					// no command being processed
-inqmode = 2
-inqtype = 0					//Inquiry Type: General
 
 //==============================================================================
 //==============================================================================
@@ -190,6 +198,105 @@ sub ShowConnParms(nCtx as integer)
     DbgMsgVal("Conn Slave Latency",slat)
   endif
 endsub
+//==============================================================================
+// Initialise all connection handles
+//==============================================================================
+sub InitConnHandles()
+  dim z
+  for z=0 to (NUM_OF_CONNS)
+    hc[z]=-1
+  next
+endsub
+//==============================================================================
+// Add the connection handle to the list of connection handles
+//==============================================================================
+function AcqConnHandle(hConn)
+  dim z
+  for z=1 to (NUM_OF_CONNS)
+    if hc[z] == -1 then
+	    hc[z]=hConn
+      exitfunc z
+    endif
+  next
+
+endfunc 0
+
+//==============================================================================
+// Release the connection handle from the array of conn handles
+//==============================================================================
+function RelConnHandle(hConn)
+  dim z
+  for z=1 to (NUM_OF_CONNS)
+    if hc[z] == hConn then 
+      hc[z]=-1
+      exitfunc z
+    endif
+  next
+endfunc 0
+//==============================================================================
+// Initialise all connected addresses
+//==============================================================================
+sub InitConnAddr()
+  dim z
+  for z=0 to (NUM_OF_CONNS)
+    ac[z]=""
+  next
+endsub
+//==============================================================================
+// Add the connected device address to the list of addresses
+//==============================================================================
+function AcqConnAddr()
+  dim z
+  for z=1 to (NUM_OF_CONNS)
+    if strcmp(ac[z],"")==0 then
+	    ac[z]=addr$
+      exitfunc z
+    endif
+  next
+
+endfunc 0
+
+//==============================================================================
+// Release the connection handle from the array of conn handles
+//==============================================================================
+function RelConnAddr()
+  dim z
+  for z=1 to (NUM_OF_CONNS)
+    if strcmp(ac[z],addr$)==0 then 
+		ac[z]=""
+		exitfunc z
+    endif
+  next
+endfunc 0
+//==============================================================================
+// Get the connection handle from the supplied address
+//==============================================================================
+function getHandleFromAddr(adr$) as integer
+	dim z
+	// first find position of address in array
+	for z=1 to (NUM_OF_CONNS)
+		if strcmp(adr$,ac[z]) then
+			break
+		endif
+	next
+	
+	hz = hc[z]
+	
+endfunc hz
+//==============================================================================
+// Get the connection handle from the supplied address
+//==============================================================================
+function GetAddrFromHandle(hConn) as integer
+	dim z
+	// first find position of handle in array
+	for z=1 to (NUM_OF_CONNS)
+		if hc[z] == hConn then
+			break
+		endif
+	next
+	
+	addr$ = ac[z]
+endfunc az
 //------------------------------------------------------------------------------
 //** #include the correct library file for the smartBASIC module being used 
 //------------------------------------------------------------------------------
@@ -208,6 +315,8 @@ endsub
 
 //==============================================================================
 // Initialise the Bluetooth device
+// Set the device to be disoverable, connectable, pairable, 
+// Set the inquiry type to be general
 //==============================================================================
 sub InitBtDevice()
 	
@@ -276,7 +385,7 @@ function _HciHelp()
 //	print "	spinq		Start periodic inquiry\n"
 //	print "	epinq		Exit periodic inquiry\n"
 //	print "	cmd 		Submit arbitrary HCI commands\n"
-//	print "	con 		Display active connections\n"
+	print "	con 		Display active connections\n"
 	print "	cc  		Create connection to remote device\n"
 	print "	dc  		Disconnect from remote device\n"
 //	print "	sr  		Switch master/slave role\n"
@@ -337,7 +446,8 @@ function _GattHelp()
 	//print "	-m, --mtu=MTU                             Specify the MTU size\n"
 	//print "	-p, --psm=PSM                             Specify the PSM for GATT/ATT over BR/EDR\n"
 	//print "	-l, --sec-level=[low | medium | high]     Set security level. Default: low\n"
-	//print "	-I, --interactive                         Use interactive mode\n\n"
+	//print "	-I, --interactive                         Use interactive mode\n"
+	print "\n"
 	
 endfunc 1
 
@@ -366,7 +476,7 @@ function _HciCfgHelp() as integer
 	//print "	class      [class] 	Get/Set class of device\n"
 	//print "	voice      [voice] 	Get/Set voice setting\n"
 	//print "	iac        [iac]   	Get/Set inquiry access code\n"
-	//print "	inqtpl     [level] 	Get/Set inquiry transmit power level\n"
+	print "	inqtpl     [level] 	Get/Set inquiry transmit power level\n"
 	print "	inqmode    [mode]  	Get/Set inquiry mode\n"
 	//print "	inqdata    [data]  	Get/Set inquiry data\n"
 	print "	inqtype    [type]  	Get/Set inquiry scan type\n"
@@ -390,6 +500,7 @@ function _HciCfgHelp() as integer
 	//print "		leadv              	Enable LE advertising\n"
 	//print "		noleadv            	Disable LE advertising\n"
 	//print "		lestates           	Display the supported LE states\n\n"
+	print "\n"
 
 endfunc 1
 //==============================================================================
@@ -400,13 +511,13 @@ function _rfcommHelp()
 	print "Usage:\n"
 	print "      rfcomm [options] <command> <dev>\n"
 	print "\nCommands:\n"
-	//print " 	bind     <dev> <bdaddr> [channel]	Bind device\n"
 	//print " 	release  <dev>                   	Release device\n"
 	//print " 	show     <dev>                   	Show device\n"
 	print "      connect     Connect device\n"
 	//print " 	listen   <dev> [channel [cmd]]   	Listen\n"
 	//print " 	watch    <dev> [channel [cmd]]   	Watch\n"
-	print "      write       Write\n\n"
+	print "      write       Write data to device\n\n"
+	print "      bind        Bind device\n"
 	print "\nOptions:\n"
 	//print " 	-i [hciX|bdaddr]      Local HCI device or BD Address\n"
 	print "      --help      Display help\n"
@@ -419,19 +530,9 @@ function _rfcommHelp()
 	//print " 	-a                    Show all devices (default)\n"
 	print "      --handle    Connection Handle\n"
 	print "      --data      Data to write\n"
+	print "\n"
 
 endfunc 1
-//==============================================================================
-//==============================================================================
-function AcqConnHandle(hConn)
-  dim z
-  for z=1 to (NUM_OF_CONNS)
-    if hc[z] == -1 then
-      hc[z]=hConn
-      exitfunc z
-    endif
-  next
-endfunc 0
 //==============================================================================
 // Extract the hcitool command
 //==============================================================================
@@ -449,22 +550,26 @@ function _Hci()
 	endif
 	
 	if strcmp(tkn$,"dev")==0 then
-		rc = _dev()								//Display the address of the local device
+		rc = _dev()								// Display the address of the local device
 	endif
 	
 	if strcmp(tkn$,"inq")==0 then				
 		command = BLUEZ_COMMAND_HCITOOL_INQ
-		rc = _inquiry()							//This function only needs to show the address of remote devices
+		rc = _inquiry()							// This function only needs to show the address of remote devices
 	endif
 	
 	if strcmp(tkn$,"scan")==0 then
 		command = BLUEZ_COMMAND_HCITOOL_SCAN
-		rc = _inquiry()							//This function must show the address and name of remote devices
+		rc = _inquiry()							// This function must show the address and name of remote devices
+	endif
+	
+	if strcmp(tkn$, "con")==0 then
+		rc = _dispCon()							// Display all the connections
 	endif
 	
 	if strcmp(tkn$, "cc")==0 then
 		command = BLUEZ_COMMAND_HCITOOL_CC
-		rc = _sppConnect()						//This function should connect to an SPP device
+		rc = _sppConnect()						// This function should connect to an SPP device
 	endif
 	
 	if strcmp(tkn$, "dc")==0 then
@@ -473,11 +578,11 @@ function _Hci()
 	endif
 	
 	if strcmp(tkn$, "auth")== 0 then
-		rc = _auth()							//This is the equivalent of pair
+		rc = _auth()							// This is the equivalent of pair
 	endif
 	
 	if strcmp(tkn$, "lescan")==0 then
-		rc = _leScan()							//This function should show the addresses of Low Energy devices
+		rc = _leScan()							// This function should show the addresses of Low Energy devices
 	endif
 	
 	if strcmp(tkn$, "lecc")==0 then
@@ -545,7 +650,7 @@ endfunc 1
 //==============================================================================
 function _HciCfg()
 	
-	dim s$
+	dim s$, val
 	s$ = urtcmd$
 	while ExtractStrToken(s$, tkn$)!= 0
 		//tlen = ExtractStrToken(urtcmd$,tkn$)
@@ -578,8 +683,6 @@ function _HciCfg()
 				AssertResCode(rc)
 				print "\n";s$;"\n"
 			else
-				//print "At there tkn$ is : ";tkn$;"\n"
-				//print "and s$ is : ";s$;"\n"
 				name$ = tkn$ + s$
 				rc = BtcSetFriendlyName(name$)
 				AssertResCode(rc)
@@ -617,6 +720,34 @@ function _HciCfg()
 			AssertResCode(rc)
 		endif
 		
+		
+		if strcmp(tkn$, "inqtpl")==0 then
+			// Get/set the transmit power level
+			if ExtractStrToken(s$, tkn$) == 0  then
+				// Get the transmit power level
+				print "Inquiry transmit power level : ";inqtpl;"\n"
+			else 
+				// Set the transmit power level
+				if strcmp(tkn$,"-")==0 then
+					rc = ExtractStrToken(s$, tkn$)
+					val = StrValDec(tkn$)
+					if (val > 70) then
+						print "Invalid power value. Valid range is from -70 to 20 dBm\n"
+					else
+						inqtpl = val*-1
+					endif
+				else
+					if (val > 20) then
+						print "Invalid power value. Valid range is from -70 to 20 dBm\n"
+					else
+						inqtpl =  val
+					endif
+				endif
+				rc = BtcInquiryConfig(3,inqtpl)
+				AssertResCode(rc)
+			endif
+		endif
+		
 		if strcmp(tkn$,"inqmode")==0 then 
 			//Get/Set Inquiry mode
 			if ExtractStrToken(s$, tkn$) == 0  then
@@ -631,8 +762,9 @@ function _HciCfg()
 					print "Invalid inquiry mode detected. Please set inquiry mode to 0, 1, or 2\n"
 				endif
 			else
-				inqmode = StrValDec(tkn$)
-				if inqmode >= 0 && inqmode < 3 then
+				val = StrValDec(tkn$)
+				if val >= 0 && val < 3 then
+					inqmode = val
 					rc = BtcInquiryConfig(1, inqmode)
 					AssertResCode(rc)
 				else 
@@ -653,9 +785,9 @@ function _HciCfg()
 					print "Invalid inquiry type detected. Please set inquiry type to 0, or 1\n"
 				endif
 			else
-				inqmode = StrValDec(tkn$)
-				print "the decimal value is ";inqmode;"\n"
-				if inqtype >= 0 && inqtype < 2 then
+				val = StrValDec(tkn$)
+				if val >= 0 && val < 2 then
+					inqtype = val
 					rc = BtcInquiryConfig(0, inqtype)
 					AssertResCode(rc)
 				else 
@@ -668,8 +800,8 @@ function _HciCfg()
 			
 			dim fw, W, X, Y, Z
 			fw = SYSINFO(3)
-			print "\nApp Version: BlueZ Version 0.8\n"
-			print "Device Name: BT900\n"
+			print "\nApp Version: BlueZ Version ";mjVersion;".";mnVersion;"\n"
+			print "Device Name: ";BleGetDeviceName$();"\n"
 			print "Firmware: ";W;".";X;".";Y;".";Z;"\n"
 			print "Manufacturer: Laird Technologies\n"
 		endif
@@ -695,6 +827,10 @@ function _rfcomm()
 	
 	if strcmp(tkn$, "write")==0 then
 		rc = _rfcommWrite()
+	endif
+	
+	if strcmp(tkn$, "bind")==0 then
+		rc = _rfcommBind()
 	endif
 	
 endfunc 1
@@ -780,10 +916,12 @@ endfunc 1
 // Called after an SPP connection attempt
 //==============================================================================
 function HandlerSppCon(hConn, res) as integer
-    dim hz
-
+	dim hz, az
     //if connected successfully
 	if res == 0 then
+		hz = AcqConnHandle(hConn)
+		az = AcqConnAddr()
+		conns = conns + 1
 		if command == BLUEZ_COMMAND_RFCOMM_CONNECT then
 			print "\nrfcomm connected. Connection handle: ";hConn;"\n";pr$
 		else 
@@ -805,9 +943,9 @@ endfunc 1
 // Called when an SPP disconnection occurs
 //==============================================================================
 function HandlerSppDiscon(hConn)
-    dim hz
-    
-    //hz = RelConnHandle(hConn)
+    dim hz, az
+    hz = RelConnHandle(hConn)
+	az = RelConnAddr()
     conns = conns - 1
     print "\nDisconnected\n";pr$ 
 endfunc 1
@@ -826,10 +964,23 @@ endfunc 1
 function HandlerSppData()
     dim hPort, data$, rLen
     '//read and print data while there is data available to read
-    while BtcSppRead(hPort, data$, rLen) == 0    
+	while BtcSppRead(hPort, data$, rLen) == 0    
         if rLen>0 then
             //print"\nPort Handle: ";hPort; " Length: ";rLen;"\nData: ";data$;pr$
 			print "\nrfcomm data: ";data$;"\n";pr$
+        endif
+    endwhile
+endfunc 1
+//==============================================================================
+// Called when data is received via SPP in bridge mode
+//==============================================================================
+function HandlerSppDataBridge()
+    dim hPort, data$, rLen
+    
+    '//read and print data while there is data available to read
+    while BtcSppRead(hPort, data$, rLen) == 0    
+        if rLen>0 then
+            print data$
         endif
     endwhile
 endfunc 1
@@ -876,7 +1027,7 @@ endfunc 1
 // Algorithm will prevent display of data from the same peer consecutively 
 //==============================================================================
 function HandlerAdvRpt() as integer
-	dim ad$,dta$,ndisc,rsi,tag
+	dim ad$,dta$,ndisc,rsi,tag, nm$
 	rc = BleScanGetAdvReport(ad$,dta$,ndisc,rsi)
 	AssertResCode(rc)
 	while rc==0
@@ -885,15 +1036,15 @@ function HandlerAdvRpt() as integer
 		//;"  ";StrEscape$(dta$)
 		//;" ";strhexize$(dta$);" ";ndisc;" ";rsi
 		tag = 0x09
-		rc = BLEGETADBYTAG(dta$, tag, name$)
+		rc = BLEGETADBYTAG(dta$, tag, nm$)
 		if rc == 0x6060 then
 			tag = 0x08
-			rc = BLEGETADBYTAG(dta$, tag, name$)
+			rc = BLEGETADBYTAG(dta$, tag, nm$)
 			AssertResCode(rc)
 		endif
 				
 		if rc == 0 then
-			print "  ";name$
+			print "  ";nm$
 		endif
 		//else
 		//	print "  n/a"
@@ -912,11 +1063,13 @@ endfunc 1
 // This handler is called when there is a BLE message
 //==============================================================================
 function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as integer
-  //dim hz
+  dim hz, az
   
   select nMsgId
   case BLE_EVBLEMSGID_CONNECT
-    hz = nCtx
+    hz = AcqConnHandle(nCtx)
+	az = AcqConnAddr()
+	conns = conns + 1
     print "\nConnected\n";pr$
 	
     if hz == 0 then
@@ -931,6 +1084,11 @@ function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as intege
     endif
     
   case BLE_EVBLEMSGID_DISCONNECT
+    // here must get address from the handle
+	rc = GetAddrFromHandle(nCtx)
+	hz = RelConnHandle(nCtx)
+	az = RelConnAddr()
+    conns = conns - 1
     print "\nDisconnected\n";pr$
 
   case BLE_EVBLEMSGID_DISPLAY_PASSKEY
@@ -1105,6 +1263,75 @@ function HandlerUartRxCmd() as integer
 	endif
 endfunc 1
 
+//==============================================================================
+// Called when data is received via UART when bridged to SPP
+//==============================================================================
+function HandlerUartRxSpp()
+    
+	dim uLen, u$, nLen, nLen2 : uLen = 1
+	dim carCnt                  //count variable for number of times '^' entered
+    WHILE uLen != 0
+        //read data that has arrived through via the UART
+        uLen = UartRead(u$) 
+    
+        if uLen > 0 then
+            if StrCmp(u$,"^")==0 then
+                // print "\nBefore: ";carCnt                 
+                if TimerRunning(0)==0 then
+                    carCnt = carCnt + 1
+                    if carCnt<3 then
+                        TimerStart(0,CAR_PRESS_DELAY,0) 
+                    else
+                        rc=SendMsgApp(0,CMD_MODE)    //* Using this for switching between bridge and cmd mode
+                    endif
+                else    //invalid press                    
+                    TimerCancel(0)
+                    carCnt = 0
+                endif
+            else
+                //write data to most recent spp connection
+                nLen2 = 0
+                WHILE nLen2 != uLen
+                    rc = BtcSPPWrite(hcSpp, u$, nLen)
+                    IF rc != 0 THEN
+                        //Assume problem with the SPP connection
+                        exitfunc rc
+                    ENDIF
+                    STRSHIFTLEFT(u$, nLen)
+                    nLen2 = nLen2 + nLen
+                ENDWHILE
+            endif
+        endif
+    ENDWHILE
+endfunc 1
+
+//* Using this instead of HandlerSio28 to switch modes
+'//==============================================================================
+'// Called after SendMsgApp is called. Used to switch between command and bridge mode
+'//==============================================================================
+function SetMode(msgID, cmd) as integer
+        
+    if cmd==CMD_MODE then
+        //OnSetModeCmd()      //let sblib handle it first
+        //DTR Deasserted so command mode
+        //OnEvent  EVUARTRX       call HandlerUartRxCmd
+        //Onevent  EVNOTIFYBUF    call HandlerNotifyBufCmd
+        //OnEvent  EVATTRNOTIFY   call HandlerAttrNtfyCmd
+        //carCnt=0
+        //UartRsp(0)
+
+    elseif cmd==BRIDGE_SPP_MODE then
+        //if conns>0 then
+        //    OnSetModeSpp()      //let sblib handle it first
+            OnEvent  EVUARTRX                call HandlerUartRxSpp
+			OnEvent  EVBTC_SPP_DATA_RECEIVED  	call HandlerSppDataBridge
+        //    Onevent  EVNOTIFYBUF             call HandlerNotifyBufCmd
+        //    OnEvent  EVATTRNOTIFY            call HandlerAttrNtfyCmd
+         //   print ok$
+        //endif
+    endif
+endfunc 1
+
 //******************************************************************************
 
 //******************************************************************************
@@ -1131,22 +1358,26 @@ OnEvent  EVBTC_PAIR_RESULT        	call HandlerPairRes
 OnEvent EVBLE_ADV_REPORT			call HandlerAdvRpt
 OnEvent  EVBLE_SCAN_TIMEOUT       	call HandlerBlrScanTimOut
 OnEvent  EVBLEMSG                 	call HandlerBleMsg
-//OnEvent EvDiscon                  	call HndlrDiscon
+//OnEvent EvDiscon                    call HndlrDiscon
 
 OnEvent  EVDISCPRIMSVC            	call HandlerPrimSvc
 OnEvent  EVDISCCHAR               	call HandlerCharDisc
 OnEvent  EVDISCDESC               	call HandlerDescDisc
-OnEvent EVATTRREAD 					call HandlerAttrRead
+OnEvent  EVATTRREAD 				call HandlerAttrRead
 OnEvent  EVATTRWRITE              	call HandlerAttrWrite
 OnEvent  EVATTRNOTIFY             	call HandlerAttrNtfyCmd
 
-//OnEvent 
+OnEvent  EVMSGAPP                 call SetMode
+
 //==============================================================================
 //==============================================================================
 sub Initialise()
 	InitBtDevice()
+	InitConnHandles()
+	InitConnAddr()
+	
 	print "\n-----------------------\n"
-	print " BLUEZ EXPLORER v0.7\n"
+	print " BLUEZ EXPLORER v";mjVersion;".";mnVersion;"\n"
 	print "-----------------------\n"
 	print "\nType \22help\22 or \22<command> help\22\n"
 	
