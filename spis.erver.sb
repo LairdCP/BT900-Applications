@@ -1,0 +1,255 @@
+//SPI example script.
+//* Allows reading and writing to SPI memory
+//* Supports running on BT900
+//* Addresses full 256Kb of on-board memory
+
+#DEFINE BLE_SERVICE_SECONDARY                           0
+#DEFINE BLE_SERVICE_PRIMARY                             1
+
+dim rc //Result code
+DIM Service1 //composite handle for hts primary service
+DIM Service1UUID : Service1UUID = BleHandleUuid16(0x181F) //HT Svc UUID Handle, 0x181F for SPI sample (Not registered with Bluetooth SIG)
+DIM Char1 //Characteristic 1 (Memory location)
+DIM Char2 //Characteristic 2 (Read memory)
+DIM Char3 //Characteristic 3 (Write memory)
+DIM Char4 //Characteristic 4 (Device control)
+dim SPIHndl //SPI Handle
+dim rd$, wr$ //SPI memory read/write data
+dim MemLoc$ //SPI memory position
+dim APP_VERSION$ : APP_VERSION$ = "0.7"
+
+'//******************************************************************************
+'// Command success handler
+'//******************************************************************************
+SUB AssertRC(rc,ln)   
+    IF rc!=0 THEN
+        PRINT "\nFail :";integer.h' rc;" at tag ";ln
+    ENDIF
+ENDSUB
+
+'//******************************************************************************
+'// Wait for WR bit in status flag to reset
+'//******************************************************************************
+SUB WaitWrite()
+	DO
+		rc = GpioWrite(8,0)
+		wr$ = "\05\00"
+		rd$ = ""
+		rc=SpiReadWrite(wr$,rd$)
+		AssertRC(rc, 22)
+		rc = GpioWrite(8,1)
+	UNTIL ((StrGetChr(rd$,1)&1) == 0)
+ENDSUB
+
+'//******************************************************************************
+'// Enable(1)/Disable(0) write mode
+'//******************************************************************************
+SUB SPIWrites(WriteMode)
+	rc = GpioWrite(8,0)
+	IF WriteMode == 0 THEN
+		//Disable
+		wr$ = "\04"
+	ELSEIF WriteMode == 1 THEN
+		//Enable
+		wr$ = "\06"
+	ENDIF
+	rc = SpiWrite(wr$)
+	rc = GpioWrite(8,1)
+ENDSUB
+
+FUNCTION BleEvent(BYVAL msgID, BYVAL msgCtx)
+	//Runs when a BLE connection trigger occurs
+	IF msgID == 0 THEN
+		//Connection
+		PRINT "Connect.\n"
+	ELSEIF msgID == 1 THEN
+		//Disconnection
+		PRINT "End!\n"
+		
+		//Restart BLE adverts
+		dim addr$ : addr$ = ""
+		PRINT BleAdvertStart(0,addr$,500,0,0)
+	ENDIF
+ENDFUNC 1
+
+FUNCTION HndlrCharVal(BYVAL charHandle, BYVAL offset, BYVAL len) 
+	//When characteristic is written
+	dim attr$
+	dim TmpVal, TmpVal2
+	IF charHandle == Char1 THEN
+		//Move position of memory
+		rc = BleCharValueRead(charHandle, attr$)
+		IF (strlen(attr$) < 4 || (strlen(attr$) == 4 && (StrGetChr(attr$, 0) != 0xf || StrGetChr(attr$, 1) != 0xf || StrGetChr(attr$, 2) != 0xf) || (StrGetChr(attr$, 0) == 0xf && StrGetChr(attr$, 1) == 0xf && StrGetChr(attr$, 2) == 0xf && StrGetChr(attr$, 3) < 8))) THEN
+			//Valid
+//		TmpVal = STRVALDEC(attr$)
+//print "\nattr;";attr$
+
+'0 - fff7
+
+//		IF (TmpVal >= 0 && TmpVal < 4097) THEN
+//			//Valid memory location
+//print "\nValid"
+//			MemLoc = TmpVal
+//		ELSE
+//			//Invalid memory location
+//			sprint #attr$, MemLoc
+//			rc = BleCharValueWrite(Char1, attr$)
+//TODO assert
+//		ENDIF
+MemLoc$ = attr$
+ELSE
+			rc = BleCharValueWrite(Char1, MemLoc$)
+ENDIF
+
+		//Read 8 bytes into the buffer
+		rc = GpioWrite(8,0)
+		attr$ = RIGHT$(MemLoc$, 2)
+		wr$ ="\03" + attr$ + "\00\00\00\00\00\00\00\00" : rd$ = "" : rc=SpiReadWrite(wr$,rd$)
+		rc = GpioWrite(8,1)
+		rd$ = right$(rd$, 8)
+		rc = BleCharValueWrite(Char2, rd$)
+		assertRC(rc, 111)
+	ELSEIF charHandle == Char3 THEN
+		//Write data to memory
+		dim TmpStr$
+		rc = BleCharValueRead(charHandle, attr$)
+
+		//Enable writes
+		SPIWrites(1)
+		waitWrite()
+
+		//Write 8 bytes into memory
+		rc = GpioWrite(8,0)
+		TmpStr$ = RIGHT$(MemLoc$, 2)
+		wr$ = "\02" + TmpStr$ + attr$
+		rc = SpiWrite(wr$)
+		assertRC(rc, 222)
+		rc= GpioWrite(8,1)
+		waitWrite()
+
+		//Disable writes
+		SPIWrites(0)
+
+		//Read 8 bytes into the buffer
+		rc = GpioWrite(8,0)
+		attr$ = RIGHT$(MemLoc$, 2)
+		wr$ ="\03" + attr$ + "\00\00\00\00\00\00\00\00" : rd$ = "" : rc=SpiReadWrite(wr$,rd$)
+		rc = GpioWrite(8,1)
+		rd$ = right$(rd$, 8)
+		rc = BleCharValueWrite(Char2, rd$)
+	ELSEIF charHandle == Char4 THEN
+		//Device control
+		rc = BleCharValueRead(charHandle, attr$)
+
+		IF (strcmp(attr$, "\01") == 0) THEN
+			//Exit
+//TODO: stop adverts, close connections
+			SpiClose(SPIHndl)
+			EXITFUNC 0
+		ELSEIF (strcmp(attr$, "\02") == 0) THEN
+			//Reboot
+			SpiClose(SPIHndl)
+//TODO (as above) + reboot somehow
+		ENDIF
+	ENDIF
+ENDFUNC 1
+
+//Setup SPI memory
+rc= GpioSetFunc(8,2,1)
+rc= GpioWrite(8,1)
+
+//Open SPI connection
+rc=SpiOpen(1, 250000, 1, SPIHndl)
+
+//Get Status Register
+waitWrite()
+
+//Start a BLE server
+rc = BleGAPSvcInit("SPIServer", 0, 256, 80000, 100000, 4000000, 0)
+AssertRC(rc,47)
+rc = BleSvcRegDevInfo("Laird", "BT900", "", "1.0", "1.0", "", "", "")
+AssertRC(rc,49)
+
+//Create service
+rc = BleServiceNew(BLE_SERVICE_PRIMARY, Service1UUID, Service1)
+AssertRC(rc,53)
+
+//Add first characteristic
+dim hrs$ : hrs$ = "\00\00"
+rc = BleCharNew(0xE, BleHandleUuid16(0x2AAA), BleAttrMetadata(1,1,2,0,rc), 0, 0) //Memory position (read/write)
+assertrc(rc,127)
+rc = BleCharCommit(Service1, hrs$, Char1)
+assertrc(rc,1411)
+
+//Second characteristic
+rc = BleCharNew(0x2, BleHandleUuid16(0x2AAB), BleAttrMetadata(1,0,8,0,rc), 0, 0) //Memory Read (read)
+assertrc(rc,127)
+//Read 8 bytes into the buffer
+rc = GpioWrite(8,0)
+wr$ ="\03\00\00\00\00\00\00\00\00\00\00"
+rc = SpiReadWrite(wr$, hrs$)
+rc = GpioWrite(8,1)
+hrs$ = right$(hrs$, 8)
+rc = BleCharCommit(Service1, hrs$, Char2)
+assertrc(rc,1412)
+
+//Third characteristic
+hrs$ = "\00\00\00\00\00\00\00\00"
+rc = BleCharNew(0xC, BleHandleUuid16(0x2AAC), BleAttrMetadata(0,1,8,0,rc), 0, 0) //Memory write (write)
+assertrc(rc,127)
+rc = BleCharCommit(Service1, hrs$, Char3)
+assertrc(rc,1413)
+
+//Fourth characteristic
+hrs$ = "0"
+rc = BleCharNew(0xC, BleHandleUuid16(0x2AAD), BleAttrMetadata(0,1,1,0,rc), 0, 0) //Device control (write)
+assertrc(rc,127)
+rc = BleCharCommit(Service1, hrs$, Char4)
+assertrc(rc,1413)
+
+//Commit services
+rc = BleServiceCommit(Service1)
+AssertRC(rc,53)
+
+//Configure BLE advert packet
+DIM advRpt$ : advRpt$=""
+DIM scRpt$ : scRpt$=""
+rc = BleAdvRptInit(advRpt$, 2, 1, 10)
+AssertRC(rc,351)
+rc = BleAdvRptAddUuid16(advRpt$, 0x181F, -1, -1, -1, -1, -1)
+AssertRC(rc,352)
+rc = BleAdvRptsCommit(advRpt$, scRpt$)
+AssertRC(rc,353)
+
+//Start BLE adverts
+dim addr$ : addr$ = ""
+rc = BleAdvertStart(0,addr$,500,0,0)
+AssertRC(rc,354)
+
+///TEST
+'dim abc
+'abc = 0
+
+'dim attr$
+'dim bbb$ : bbb$ = "\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"
+'while abc < 4000
+	//Read 8 bytes from memory at location 0x0123 and should be DEADBEEF
+'	rc = GpioWrite(8,0)
+'	SPRINT #attr$, INTEGER.H'abc
+'	attr$ = RIGHT$(attr$, 4)
+'	attr$ = StrDehexize$(attr$)
+'	wr$ ="\03" + attr$ + "\00\00\00\00\00\00\00\00" : rd$ = "" : rc=SpiReadWrite(wr$,rd$)
+'	rc = GpioWrite(8,1)
+'	rc = BleCharValueWrite(Char2, rd$)
+'if (strcmp(bbb$, rd$) != 0) then
+'	print "\nRead from ";abc;" (";attr$;") : ";rd$
+'endif
+'	abc = abc+8
+'endwhile
+///TEST
+
+//Events
+ONEVENT EVBLEMSG CALL BleEvent //Runs on BLE event
+ONEVENT EVCHARVAL CALL HndlrCharVal //Runs when characteristic is written
+
+WAITEVENT

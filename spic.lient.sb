@@ -1,0 +1,228 @@
+ // Commands:
+ //
+ // set address <address>	: Sets the memory location to the address specified (0-FFF7)
+ // set memory <data>		: Writes 8 bytes of data to the memory location
+ // show address		: Shows the current memory address
+ // show memory			: Reads 8 bytes of data from the memory location
+ // reboot			: Reboots the connected device
+ // connect			: Connects to the host BT900
+ // disconnect			: Disconnects from the BT900
+ // help			: Shows list of commands
+ // version			: Shows the version
+ // quit/exit			: Exits the application
+ // 
+
+ //Defines for the DoFunc variable
+ #define READ_ADDRESS 0
+ #define READ_MEMORY 1
+ #define WRITE_ADDRESS 2
+ #define WRITE_MEMORY 3
+ 
+ dim rc //Function return code
+ dim TargetMAC$ : TargetMAC$ = "\00\00\16\a4\09\3a\99" //MAC of the device to connect too
+ dim ConnectionStatus : ConnectionStatus = 0 //0 = disconnected, 1 = connected
+ dim nCtxG //Global BLE handler
+ dim APP_VERSION$ : APP_VERSION$ = "0.1" //Version of client program
+ dim TmpStr$ : TmpStr$ = "" //Temporary string for inter-function passing
+ 
+ //List of UUID's
+ dim AddressUUID : AddressUUID = 0
+ dim RMemoryUUID : RMemoryUUID = 0
+ dim WMemoryUUID : WMemoryUUID = 0
+ dim DeviceUUID : DeviceUUID = 0
+ 
+ //List of service handle IDs
+ dim AddressHID : AddressHID = 0x2AAA
+ dim RMemoryHID : RMemoryHID = 0x2AAB
+ dim WMemoryHID : WMemoryHID = 0x2AAC
+ dim DeviceHID : DeviceHID = 0x2AAD
+
+ dim DoFunc : DoFunc = 0 //Temporary variable for what function to perform when characteristic is found
+ 
+ //Global variables for UART
+ dim nMatch, stRsp$, urtcmd$, tkn$
+		
+FUNCTION HndlrCnTOut()
+	//Runs on connection timeout
+	PRINT "Error: Connection attempt timed out."
+ENDFUNC 1
+
+FUNCTION HndlrBleMsg(nMsgId, nCtx)
+	//Runs on BLE message
+	IF nMsgId == 0 THEN
+		//Connected!
+		PRINT "Connected!\n"
+		nCtxG = nCtx
+		ConnectionStatus = 1
+	ELSEIF nMsgId == 1 THEN
+		//Disconnected
+		ConnectionStatus = 0
+		PRINT "Disconnected!\n"
+
+		//Reset all handler UUIDs back to default (unset)
+		AddressUUID = 0
+		RMemoryUUID = 0
+		WMemoryUUID = 0
+		DeviceUUID = 0
+	ENDIF
+ENDFUNC 1
+ 
+ FUNCTION DoConnect()
+	//Makes a connection to the host device
+	IF ConnectionStatus == 0 THEN
+		//Not connected
+		rc = BleConnect(TargetMAC$, 5000, 10000, 40000, 5000000)
+	ELSE
+		PRINT "Error: Already connected to target device.\n"
+	ENDIF
+ ENDFUNC 1
+ 
+ FUNCTION DoDisconnect()
+	//Disconnects from the host device
+	IF ConnectionStatus == 1 THEN
+		rc = BleDisconnect(nCtxG)
+	ELSE
+		PRINT "Error: Not connected to a device.\n"
+	ENDIF
+ ENDFUNC 1
+ 
+ FUNCTION IsConnected()
+	//Returns a message if not connected to the device
+	IF ConnectionStatus == 0 THEN
+		PRINT "Error: you must be connected to the target BT900 to use this function.\n"
+		EXITFUNC 2
+	ENDIF
+ ENDFUNC 1
+
+FUNCTION OnUartCmd()
+	dim tlen, tkn$, Buf$
+	rc=-2 //assume there is no error
+	tlen = ExtractStrToken(urtcmd$,tkn$) //get first token
+	IF tlen > 0 THEN
+		IF strcmp(tkn$, "show")==0 THEN
+			IF IsConnected() == 1 THEN
+				tlen = ExtractStrToken(urtcmd$,tkn$) //get next token
+				IF strcmp(tkn$, "address")==0 THEN
+					//Show remote address
+					IF (AddressUUID > 0) THEN
+						rc = BleGattcRead(nCtxG, AddressUUID, 0)
+					ELSE
+						DoFunc = READ_ADDRESS
+						rc = BleGattCFindChar(nCtxG, BleHandleUuid16(0x181F), 0, BleHandleUuid16(AddressHID), 0)
+					ENDIF
+				ELSEIF strcmp(tkn$, "memory")==0 THEN
+					//Get memory
+					IF (RMemoryUUID > 0) THEN
+						rc = BleGattcRead(nCtxG, RMemoryUUID, 0)
+					ELSE
+						DoFunc = READ_MEMORY
+						rc = BleGattCFindChar(nCtxG, BleHandleUuid16(0x181F), 0, BleHandleUuid16(RMemoryHID), 0)
+					ENDIF
+				ENDIF
+			ENDIF
+		ELSEIF strcmp(tkn$, "set")==0 THEN
+			IF IsConnected() == 1 THEN
+				tlen = ExtractStrToken(urtcmd$,tkn$) //get next token
+				IF strcmp(tkn$, "address")==0 THEN
+					//Update address on server
+					tlen = ExtractStrToken(urtcmd$,tkn$) //get next token
+					TmpStr$ = strdehexize$(tkn$)
+					IF (AddressUUID > 0) THEN
+						rc = BleGATTCWrite(nCtxG, AddressUUID, TmpStr$)
+					ELSE
+						DoFunc = WRITE_ADDRESS
+						rc = BleGattCFindChar(nCtxG, BleHandleUuid16(0x181F), 0, BleHandleUuid16(AddressHID), 0)
+					ENDIF
+				ELSEIF strcmp(tkn$, "memory")==0 THEN
+					//Update memory on server
+					tlen = ExtractStrToken(urtcmd$,tkn$) //get next token
+					TmpStr$ = strdehexize$(tkn$)
+					IF (WMemoryUUID > 0) THEN
+						rc = BleGATTCWrite(nCtxG, WMemoryUUID, TmpStr$)
+					ELSE
+						DoFunc = WRITE_MEMORY
+						rc = BleGattCFindChar(nCtxG, BleHandleUuid16(0x181F), 0, BleHandleUuid16(WMemoryHID), 0)
+					ENDIF
+				ENDIF
+			ENDIF
+		ELSEIF strcmp(tkn$, "connect")==0 THEN
+		rc = DoConnect()
+		ELSEIF strcmp(tkn$, "disconnect")==0 THEN
+		rc = DoDisconnect()
+		ELSEIF StrCmp(tkn$, "help")==0 THEN
+'todo
+		ELSEIF strcmp(tkn$, "version")==0 THEN
+			PRINT "Version ";APP_VERSION$;"\n"
+		ELSEIF strcmp(tkn$, "quit")==0 || strcmp(tkn$, "exit")==0 THEN
+			IF ConnectionStatus == 1 THEN
+				rc = DoDisconnect()
+			ENDIF
+			EXITFUNC 0
+		ELSE
+			PRINT "Error: '";tkn$;LEFT$(urtcmd$, STRLEN(urtcmd$)-1);"' is not a valid command\n"
+		ENDIF
+	ENDIF
+	//Clear UART RX buffer
+	urtcmd$ = ""
+ENDFUNC 1
+ 
+FUNCTION HndlrUartRx()
+	//check if CR has been received
+	nMatch=UartReadMatch(stRsp$,13)
+	if nMatch!=0 then
+		//CR exists in the input buffer
+		urtcmd$ = strsplitleft$(stRsp$,nMatch)
+		EXITFUNC OnUartCmd()
+	ENDIF
+ENDFUNC 1
+	
+FUNCTION HndlrGCData(nCtx, nHndl, nStat)
+	//Runs when data has been read from remote GATT server
+	dim offset, attrData$, Tmp
+	IF nStat == 0 THEN
+		rc = BleGATTCReadData(nCtx, nHndl, offset, attrData$)
+		IF nHndl == AddressUUID THEN
+			//Address reply
+			PRINT "SPI Memory Current Address: ";strhexize$(attrData$);"\n"
+		ELSEIF nHndl == RMemoryUUID THEN
+			//Read memory reply
+			PRINT "SPI Memory Data: ";strhexize$(attrData$);"\n"
+		ENDIF
+	ELSE
+		PRINT "Error: Data reading from remote GATT server failed (Code: ";nStat;")\n"
+	ENDIF
+	ENDFUNC 1
+
+FUNCTION HndlrFindCh(nCtx, cP, hCv, sH)
+	//Runs when a characteristic has been discovered
+	dim Buf$ : Buf$ = ""
+	IF (DoFunc == READ_ADDRESS) THEN
+		AddressUUID = hCv
+		rc = BleGattcRead(nCtxG, hCv, 0)
+	ELSEIF (DoFunc == READ_MEMORY) THEN
+		RMemoryUUID = hCv
+		rc = BleGattcRead(nCtxG, hCv, 0)
+	ELSEIF (DoFunc == WRITE_ADDRESS) THEN
+		AddressUUID = hCv
+		rc = BleGATTCWrite(nCtxG, AddressUUID, TmpStr$)
+	ELSEIF (DoFunc == WRITE_MEMORY) THEN
+		WMemoryUUID = hCv
+		rc = BleGATTCWrite(nCtxG, WMemoryUUID, TmpStr$)
+'	ELSEIF (DoFunc == WRITE_MEMORY) THEN
+'		AlarmModeUUID = hCv
+'		rc = BleGATTCWrite(nCtxG, AlarmModeUUID, TmpStr$)
+	ENDIF
+ENDFUNC 1
+
+//Open GATT Client
+rc = BleGattcOpen(0,0)
+PRINT "SPI Memory Client ready!\n"
+
+//Events 
+ONEVENT EVUARTRX			CALL HndlrUartRx //Runs when UART gets data
+ONEVENT EVBLE_CONN_TIMEOUT		CALL HndlrCnTOut //Runs on connection timeout
+ONEVENT EVBLEMSG			CALL HndlrBleMsg //Runs on BLE message
+ONEVENT EVATTRREAD			CALL HndlrGCData //Runs on GATT Client data ready for reading
+ONEVENT EVFINDCHAR			CALL HndlrFindCh //Runs on characteristic found
+
+WAITEVENT
