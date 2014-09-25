@@ -247,12 +247,13 @@ endsub
 //==============================================================================
 // Initialise the Bluetooth device
 // Set the device to be disoverable, connectable, pairable, 
-// Set the inquiry type to be general
+// Set the inquiry type to be general, inquiry mode to be extended
 //==============================================================================
 sub InitBtDevice()
 	
 	dim nHandle
 	
+	// Set the name of the local Bluetooth device
 	name$ = SYSINFO$(4)
 	name$ = right$(name$, 6)
 	name$ = StrHexize$(name$)
@@ -260,22 +261,27 @@ sub InitBtDevice()
 	rc = BTCSETFRIENDLYNAME (name$)
 	AssertResCode(rc)
 	
-	rc = BtcSetDiscoverable(1, 300)				//Discoverable, timeout is 5 minutes
+	// Set device is discoverable with 300s discoverability timeout
+	rc = BtcSetDiscoverable(1, 300)
 	AssertResCode(rc)
 	
-	rc = BtcSetConnectable(1)					//Connectable
+	// Set device to be connectable
+	rc = BtcSetConnectable(1)
 	AssertResCode(rc)
 	
-	rc = BtcSetPairable(1)						//Pairable
+	// Set the device to be pairable
+	rc = BtcSetPairable(1)
 	AssertResCode(rc)				
 												
-
-	rc = BtcInquiryConfig(0, inqtype)			// Inquiry Type: General
+	// Set inquiry type to be general
+	rc = BtcInquiryConfig(0, inqtype)
 	AssertResCode(rc)
 	
-	rc = BtcInquiryConfig(1, inqmode)			// Inquiry mode: Extended
+	// Set inquiry mode to be extended
+	rc = BtcInquiryConfig(1, inqmode)
 	AssertResCode(rc)
 	
+	// Open Spp
 	rc = btcSppOpen(nHandle)
 	AssertResCode(rc)
 	
@@ -312,31 +318,16 @@ function _HciHelp()
 	print "	inq 		Inquire remote devices\n"
 	print "	scan		Scan for remote devices\n"
 	print "	name		Get name from remote device\n"
-//	print "	info		Get information from remote device\n"
-//	print "	spinq		Start periodic inquiry\n"
-//	print "	epinq		Exit periodic inquiry\n"
-//	print "	cmd 		Submit arbitrary HCI commands\n"
 	print "	con 		Display active connection handles\n"
 	print "	cc  		Create connection to remote device\n"
 	print "	dc  		Disconnect from remote device\n"
-//	print "	sr  		Switch master/slave role\n"
-//	print "	cpt 		Change connection packet type\n"
-//	print "	rssi		Display connection RSSI\n"
-//	print "	lq  		Display link quality\n"
 	print "	tpl 		Display transmit power level\n"
-//	print "	afh 		Display AFH channel map\n"
-//	print "	lp  		Set/display link policy settings\n"
-//	print "	lst 		Set/display link supervision timeout\n"
-//	print "	auth		Request authentication\n"
+	print "	auth		Request authentication\n"
 //	print "	enc 		Set connection encryption\n"
 //	print "	key         Change connection link key\n"
 //	print "	clkoff      Read clock offset\n"
 //	print "	clock       Read local or remote clock\n"
 	print "	lescan      Start LE scan\n"
-//	print "	lewladd     Add device to LE White List\n"
-//	print "	lewlrm      Remove device from LE White List\n"
-//	print "	lewlsz      Read size of LE White List\n"
-//	print "	lewlclr     Clear LE White list\n"
 	print "	lecc        Create a LE Connection\n"
 	print "	ledc        Disconnect a LE Connection\n"
 //	print "	lecup       LE Connection Update\n"
@@ -494,7 +485,7 @@ function _Hci()
 			command = BLUEZ_COMMAND_HCITOOL_NAME
 			rc = _hciName()							
 
-		elseif strcmp(tkn$,"name")==0 then
+		elseif strcmp(tkn$,"con")==0 then
 			// Display active connection handles
 			command = BLUEZ_COMMAND_HCITOOL_CON
 			rc = _hciCon()							
@@ -551,21 +542,16 @@ function _Gatt()
 		if strcmp(tkn$,"help")==0 then
 			rc = _GattHelp()
 			exitfunc 1
-		endif
 
-		if strcmp(tkn$,"primary")==0 then
+		elseif strcmp(tkn$,"primary")==0 then
 			command = BLUEZ_COMMAND_GATTTOOL_PRIMARY
 			rc = _GattPrimary()
-			exitfunc 1
-		endif	
 
-		if strcmp(tkn$,"characteristics")==0 then
+		elseif strcmp(tkn$,"characteristics")==0 then
 			command = BLUEZ_COMMAND_GATTTOOL_CHARACTERISTICS
 			rc = _GattChar()
-			exitfunc 1
-		endif
 	
-		if strcmp(tkn$, "char")==0 then 
+		elseif strcmp(tkn$, "char")==0 then 
 			strshiftleft(s$, 1)
 			rc = ExtractStrToken(s$, tkn$)
 			if strcmp(tkn$, "read")==0 then
@@ -578,8 +564,10 @@ function _Gatt()
 				command = BLUEZ_COMMAND_GATTTOOL_CHAR_DESC
 				rc = _GattCharDesc()
 			endif
-			exitfunc 1 
-	
+		
+		else 
+			print "Unknown command - \22";tkn$;"\22\n"
+		
 		endif
 	endwhile
 
@@ -603,19 +591,15 @@ function _HciCfg()
 		if strcmp(tkn$,"help")==0 then
 			rc = _HciCfgHelp()
 			exitfunc 1
-		endif
 	
-	
-		if strcmp(tkn$,"auth")==0 then 
+		elseif strcmp(tkn$,"auth")==0 then 
 			print "Set the device to be pairable\n" 
 			rc = BtcSetConnectable(1)
 			AssertResCode(rc)
 			rc = BtcSetPairable(1)
 			AssertResCode(rc)
-			
-		endif
 	
-		if strcmp(tkn$,"name")==0 then 
+		elseif strcmp(tkn$,"name")==0 then 
 			tlen = ExtractStrToken(s$,tkn$)
 			if tlen == 0 then
 				rc = BtcGetFriendlyName(s$)
@@ -627,40 +611,32 @@ function _HciCfg()
 				AssertResCode(rc)
 				exitfunc 1
 			endif
-		endif
 	
-		if strcmp(tkn$,"piscan")==0 then 
+		elseif strcmp(tkn$,"piscan")==0 then 
 			//Enable inquiry scan and page scan (default)
 			rc = BtcSetDiscoverable(1, 300)
 			AssertResCode(rc)
 			rc = BtcSetConnectable(1)
 			AssertResCode(rc)
-			
-		endif
 	
-		if strcmp(tkn$,"pscan")==0 then 
+		elseif strcmp(tkn$,"pscan")==0 then 
 			//Enable page scan
 			rc = BtcSetConnectable(1)
 			AssertResCode(rc)
-		endif
 	
-		if strcmp(tkn$,"iscan")==0 then 
+		elseif strcmp(tkn$,"iscan")==0 then 
 			//Enable inquiry scan
 			rc = BtcSetDiscoverable(1, 300)
 			AssertResCode(rc)
-			
-		endif
 	
-		if strcmp(tkn$,"noscan")==0 then 
+		elseif strcmp(tkn$,"noscan")==0 then 
 			//The adapter in not detectable by other devices and will not accept any incoming connections
 			rc = BtcSetDiscoverable(0, 300)
 			AssertResCode(rc)
 			rc = BtcSetConnectable(0)
 			AssertResCode(rc)
-		endif
 		
-		
-		if strcmp(tkn$, "inqtpl")==0 then
+		elseif strcmp(tkn$, "inqtpl")==0 then
 			// Get/set the transmit power level
 			if ExtractStrToken(s$, tkn$) == 0  then
 				// Get the transmit power level
@@ -685,9 +661,8 @@ function _HciCfg()
 				rc = BtcInquiryConfig(3,inqtpl)
 				AssertResCode(rc)
 			endif
-		endif
 		
-		if strcmp(tkn$,"inqmode")==0 then 
+		elseif strcmp(tkn$,"inqmode")==0 then 
 			//Get/Set Inquiry mode
 			if ExtractStrToken(s$, tkn$) == 0  then
 				// Get inquiry mode
@@ -710,9 +685,8 @@ function _HciCfg()
 					print "Invalid inquiry mode. Valid values are 0, 1, and 2\n"
 				endif
 			endif
-		endif
 		
-		if strcmp(tkn$,"inqtype")==0 then 
+		elseif strcmp(tkn$,"inqtype")==0 then 
 			//Get/Set Inquiry type
 			if ExtractStrToken(s$, tkn$) == 0  then
 				// Get inquiry type
@@ -733,18 +707,19 @@ function _HciCfg()
 					print "Invalid inquiry type. Valid values are 0 and 1\n"
 				endif
 			endif
-		endif
 		
-		if strcmp(tkn$, "version")==0 then
-			
+		elseif strcmp(tkn$, "version")==0 then
 			dim fw, W, X, Y, Z
 			fw = SYSINFO(3)
 			print "\nApp Version: BlueZ Version ";mjVersion;".";mnVersion;"\n"
 			print "Device Name: ";BleGetDeviceName$();"\n"
 			print "Firmware: ";W;".";X;".";Y;".";Z;"\n"
 			print "Manufacturer: Laird Technologies\n"
-		endif
+			
+		else 
+			print "Unknown command - \22";tkn$;"\22\n"
 		
+		endif
 	endwhile
 	
 endfunc 1
@@ -756,20 +731,21 @@ function _rfcomm()
 	tlen = ExtractStrToken(urtcmd$,tkn$)
 	if strcmp(tkn$, "help")==0 then
 		rc = _rfcommHelp()
-		exitfunc 1 
-	endif
-	
-	if strcmp(tkn$, "connect")==0 then
+		exitfunc 1
+
+	elseif strcmp(tkn$, "connect")==0 then
 		command = BLUEZ_COMMAND_RFCOMM_CONNECT
 		rc = _rfcommConnect()
-	endif
 	
-	if strcmp(tkn$, "write")==0 then
+	elseif strcmp(tkn$, "write")==0 then
 		rc = _rfcommWrite()
-	endif
 	
-	if strcmp(tkn$, "bind")==0 then
+	elseif strcmp(tkn$, "bind")==0 then
 		rc = _rfcommBind()
+		
+	else
+		print "Unknown command - \22";tkn$;"\22\n"
+	
 	endif
 	
 endfunc 1
@@ -872,6 +848,9 @@ function HandlerInqResp(respType) as integer
 			else
 				print "  n/a"
 			endif
+		// Found the device so cancel inquiry
+		rc = BtcInquiryCancel()
+		AssertResCode(rc)
 		endif
 	endif
 	

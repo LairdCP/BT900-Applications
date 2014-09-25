@@ -139,9 +139,8 @@ endfunc 5
 //-------------------------------------------------------------------------
 // hcitool cc [--role=m|s] [--ptype=pkt_types] <bdaddr>				//[] denotes optional fields
 //-------------------------------------------------------------------------
-function _dispCon()
+function _hciCon()
 	
-	// Maybe try to get the address from handles here
 	dim z
 	for z=1 to conns
 		print "    ";hc[z];"\n"
@@ -163,7 +162,6 @@ function _hciCc()
 		exitfunc 1
 		
 		else
-			addr$ = tkn$					//if connection is successful, addr$ will be added to array
 			tkn$ = strdehexize$(tkn$)
 			rc = BtcSppConnect(tkn$)
 			AssertResCode(rc)
@@ -178,6 +176,7 @@ endfunc 5
 // hcitool dc <bdaddr>
 //-------------------------------------------------------------------------
 function _hciDc()
+	
 	DIM str$
 	
 	while ExtractStrToken(urtcmd$, tkn$)!=0
@@ -207,20 +206,34 @@ endfunc 5
 //-------------------------------------------------------------------------
 function _hciAuth()
 	
+	DIM num_of_params : num_of_params = 0
+	
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 			//print the hcitool auth help menu
 			print "Usage:\n"
 			print "		hcitool auth <bdaddr>\n"
-		
 			exitfunc 1
 		
 		else
 			tkn$ = strdehexize$(tkn$)
-			rc = BtcPair(tkn$, 0)						// Do not store bonding information 
-			AssertResCode(rc)
+			num_of_params = num_of_params + 1
+		
 		endif
 	endwhile
+	
+	
+	if num_of_params != 1 then
+		print "name: too few arguments (minimal: 1)\n"
+		print "Usage:\n"
+		print "		name <bdaddr>\n"
+		exitfunc 1
+	endif
+	
+	//pair with bluetooth device 
+	rc = BtcPair(tkn$, 0)						
+	AssertResCode(rc)
+			
 endfunc 1
 //-------------------------------------------------------------------------
 // hcitool lescan [--privacy] [--passive] [--discovery=g|l] [--duplicates]			//[] denotes optional fields
