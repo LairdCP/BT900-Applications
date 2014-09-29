@@ -141,6 +141,7 @@ endfunc 5
 //-------------------------------------------------------------------------
 function _hciCon()
 	
+	print "Connection handles:"
 	dim z
 	for z=1 to conns
 		print "    ";hc[z];"\n"
@@ -361,6 +362,7 @@ function _rfcommWrite()
 	dim hndl, dta$, len
 		
 	while ExtractStrToken(urtcmd$, tkn$)!=0
+		
 		if strcmp(tkn$,"help")==0 then
 			print "Usage:\n"
 			print "		rfcomm write --handle=0000 --data=abc123\n"
@@ -375,8 +377,7 @@ function _rfcommWrite()
 			strshiftleft(urtcmd$, 1)
 			dta$ = urtcmd$
 			break
-		endif
-		
+		endif	
 	
 	endwhile
 	
@@ -428,6 +429,7 @@ function _rfcommBind()
 		elseif strcmp(tkn$,"handle")==0 then
 			strshiftleft(urtcmd$, 1)
 			rc = ExtractStrToken(urtcmd$, tkn$)
+			// Must check here if connection handle exists
 			rc = ExtractIntToken(tkn$, hcSpp)
 			
 		//else

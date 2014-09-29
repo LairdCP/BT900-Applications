@@ -143,10 +143,11 @@ dim command : command = 0				// Currently active BlueZ command
 dim testhndl
 dim inqtype	: inqtype = 0				// Inquiry Type: 0 General, 1 Limited
 dim inqmode	: inqmode = 2				// Inquiry Mode: 0 for Standard, 1 for with RSSI, 2 for Extended)
+dim sspmode : sspmode = 1				// SSP Mode: 0 for disabled, 1 for enabled 
 
 dim inqtpl : inqtpl=4						// Inquiry transmit power level
 dim mjVersion : mjVersion=0			// Major version number
-dim mnVersion : mnVersion=82				// Minor version number
+dim mnVersion : mnVersion=83				// Minor version number
 
 //******************************************************************************
 // Initialise Global Variable
@@ -261,29 +262,39 @@ sub InitBtDevice()
 	rc = BTCSETFRIENDLYNAME (name$)
 	AssertResCode(rc)
 	
+	// Configure classic BT radio
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	// Set device is discoverable with 300s discoverability timeout
 	rc = BtcSetDiscoverable(1, 300)
 	AssertResCode(rc)
-	
 	// Set device to be connectable
 	rc = BtcSetConnectable(1)
 	AssertResCode(rc)
-	
 	// Set the device to be pairable
 	rc = BtcSetPairable(1)
-	AssertResCode(rc)				
-												
+	AssertResCode(rc)															
 	// Set inquiry type to be general
 	rc = BtcInquiryConfig(0, inqtype)
 	AssertResCode(rc)
-	
 	// Set inquiry mode to be extended
 	rc = BtcInquiryConfig(1, inqmode)
 	AssertResCode(rc)
-	
 	// Open Spp
 	rc = btcSppOpen(nHandle)
 	AssertResCode(rc)
+	sspmode = 1
+	
+	//Configure LE radio
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	// Start advertising
+	dim a$
+	rc = BleAdvertStart(0,a$,25,6000,0)
+	AssertResCode(rc)
+	
+	
+	
+	
+	
 	
 endsub											
 //==============================================================================
@@ -349,7 +360,7 @@ function _GattHelp()
 //  --help-char-read-write                    Show all Characteristics Value/Descriptor Read/Write arguments
 
 	print "Usage:\n"
-	print "  gatttool [OPTION...] <command>\n"
+	print "	gatttool [OPTION...] <command>\n"
 	print "\n"
 	print "GATT commands\n"
 	print "	--primary                                 Primary Service Discovery\n"
@@ -383,8 +394,8 @@ function _HciCfgHelp() as integer
 	//print "	down               	Close HCI device\n"
 	//print "	reset              	Reset HCI device\n"
 	//print "	rstat              	Reset statistic counters\n"
-	//print "	auth               	Enable Authentication\n"
-	//print "	noauth             	Disable Authentication\n"
+	print "	auth               	Enable Authentication\n"
+	print "	noauth             	Disable Authentication\n"
 	//print "	encrypt            	Enable Encryption\n"
 	//print "	noencrypt          	Disable Encryption\n"
 	print "	piscan             	Enable Page and Inquiry scan\n"
@@ -406,11 +417,11 @@ function _HciCfgHelp() as integer
 	//print "		pageparms  [win:int]	Get/Set page scan window and interval\n"
 	//print "		pageto     [to]    	Get/Set page timeout\n"
 	//print "		afhmode    [mode]  	Get/Set AFH mode\n"
-	//print "		sspmode    [mode]  	Get/Set Simple Pairing Mode\n"
+	print "	sspmode    [mode]  	Get/Set Simple Pairing Mode\n"
 	//print "		aclmtu     <mtu:pkt>	Set ACL MTU and number of packets\n"
 	//print "		scomtu     <mtu:pkt>	Set SCO MTU and number of packets\n"
-	//print "		putkey     <bdaddr>	Store link key on the device\n"
-	//print "		delkey     <bdaddr>	Delete link key from the device\n"
+	print "	putkey     <bdaddr>	Store link key on the device\n"
+	print "	delkey     <bdaddr>	Delete link key from the device\n"
 	//print "		oobdata            	Display local OOB data\n"
 	//print "		commands           	Display supported commands\n"
 	//print "		features           	Display device features\n"
@@ -419,8 +430,8 @@ function _HciCfgHelp() as integer
 	//print "		block      <bdaddr>	Add a device to the blacklist\n"
 	//print "		unblock    <bdaddr>	Remove a device from the blacklist\n"
 	//print "		lerandaddr <bdaddr>	Set LE Random Address\n"
-	//print "		leadv              	Enable LE advertising\n"
-	//print "		noleadv            	Disable LE advertising\n"
+	print "	leadv              	Enable LE advertising\n"
+	print "	noleadv            	Disable LE advertising\n"
 	//print "		lestates           	Display the supported LE states\n\n"
 	print "\n"
 
@@ -438,7 +449,7 @@ function _rfcommHelp()
 	print "      connect     Connect device\n"
 	//print " 	listen   <dev> [channel [cmd]]   	Listen\n"
 	//print " 	watch    <dev> [channel [cmd]]   	Watch\n"
-	print "      write       Write data to device\n\n"
+	print "      write       Write data to device\n"
 	print "      bind        Bind device\n"
 	print "\nOptions:\n"
 	//print " 	-i [hciX|bdaddr]      Local HCI device or BD Address\n"
@@ -461,7 +472,6 @@ endfunc 1
 function _Hci()
 	
 	while ExtractStrToken(urtcmd$, tkn$)!=0
-		//=================================================
 		if strcmp(tkn$,"help")==0 then
 			rc = _hciHelp()
 			exitfunc 1
@@ -517,8 +527,6 @@ function _Hci()
 			// Disconnect a LE Connection
 			rc = _hciLeDc()
 			
-		else 
-			print "Unknown command - \22";tkn$;"\22\n"
 		endif
 		
 	endwhile
@@ -538,19 +546,22 @@ function _Gatt()
 			//print "\ngatttool help\n"
 			//exitfunc 5		//Youssif: Here must display message need mroe parameters
 		//endif
-		//=================================================
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		if strcmp(tkn$,"help")==0 then
 			rc = _GattHelp()
 			exitfunc 1
 
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"primary")==0 then
 			command = BLUEZ_COMMAND_GATTTOOL_PRIMARY
 			rc = _GattPrimary()
 
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"characteristics")==0 then
 			command = BLUEZ_COMMAND_GATTTOOL_CHARACTERISTICS
 			rc = _GattChar()
 	
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$, "char")==0 then 
 			strshiftleft(s$, 1)
 			rc = ExtractStrToken(s$, tkn$)
@@ -564,9 +575,6 @@ function _Gatt()
 				command = BLUEZ_COMMAND_GATTTOOL_CHAR_DESC
 				rc = _GattCharDesc()
 			endif
-		
-		else 
-			print "Unknown command - \22";tkn$;"\22\n"
 		
 		endif
 	endwhile
@@ -587,18 +595,26 @@ function _HciCfg()
 		//print "\nhciconfig help"
 		//exitfunc 5		//Youssif: Here must display message need mroe parameters
 		//endif
-	
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		if strcmp(tkn$,"help")==0 then
 			rc = _HciCfgHelp()
 			exitfunc 1
 	
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"auth")==0 then 
 			print "Set the device to be pairable\n" 
 			rc = BtcSetConnectable(1)
 			AssertResCode(rc)
 			rc = BtcSetPairable(1)
 			AssertResCode(rc)
+		
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~		
+		elseif strcmp(tkn$,"noauth")==0 then
+			print "Set the device to be unpairable\n"
+			rc = BtcSetPairable(0)
+			AssertResCode(rc)
 	
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"name")==0 then 
 			tlen = ExtractStrToken(s$,tkn$)
 			if tlen == 0 then
@@ -612,6 +628,7 @@ function _HciCfg()
 				exitfunc 1
 			endif
 	
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"piscan")==0 then 
 			//Enable inquiry scan and page scan (default)
 			rc = BtcSetDiscoverable(1, 300)
@@ -619,16 +636,19 @@ function _HciCfg()
 			rc = BtcSetConnectable(1)
 			AssertResCode(rc)
 	
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"pscan")==0 then 
 			//Enable page scan
 			rc = BtcSetConnectable(1)
 			AssertResCode(rc)
 	
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"iscan")==0 then 
 			//Enable inquiry scan
 			rc = BtcSetDiscoverable(1, 300)
 			AssertResCode(rc)
 	
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"noscan")==0 then 
 			//The adapter in not detectable by other devices and will not accept any incoming connections
 			rc = BtcSetDiscoverable(0, 300)
@@ -636,6 +656,7 @@ function _HciCfg()
 			rc = BtcSetConnectable(0)
 			AssertResCode(rc)
 		
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$, "inqtpl")==0 then
 			// Get/set the transmit power level
 			if ExtractStrToken(s$, tkn$) == 0  then
@@ -662,6 +683,7 @@ function _HciCfg()
 				AssertResCode(rc)
 			endif
 		
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"inqmode")==0 then 
 			//Get/Set Inquiry mode
 			if ExtractStrToken(s$, tkn$) == 0  then
@@ -686,6 +708,7 @@ function _HciCfg()
 				endif
 			endif
 		
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"inqtype")==0 then 
 			//Get/Set Inquiry type
 			if ExtractStrToken(s$, tkn$) == 0  then
@@ -708,6 +731,68 @@ function _HciCfg()
 				endif
 			endif
 		
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		elseif strcmp(tkn$, "sspmode")==0 then
+			dim hn
+			// Get/Set Simple Pairing Mode
+			if ExtractStrToken(s$, tkn$) == 0  then
+			// Get Simple Pairing Mode
+				print "Simple Pairing Mode: "
+				if sspmode == 0 then 
+					print "Disabled\n"
+				else 
+					print "Enabled\n"
+				endif
+			else
+				val = StrValDec(tkn$)
+				if val == 0 then
+					rc = BtcSppClose(hn)
+					AssertResCode(rc)
+					sspmode = 0
+				elseif val == 1 then
+					rc = BtcSppOpen(hn)
+					AssertResCode(rc)
+					sspmode = 1
+				else
+					print "Invalid ssp mode. Valid values are 0 and 1\n"
+				endif
+			endif
+			
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		elseif strcmp(tkn$, "putkey")==0 then
+			//store link key on the device
+			if ExtractStrToken(s$, tkn$) == 0 then
+				print "MAC address not supplied\n"
+			else
+				print "Save key \n"
+				tkn$ = strdehexize$(tkn$)
+				rc = BtcBondingPersistKey(tkn$)
+			endif
+		
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		elseif strcmp(tkn$, "delkey")==0 then
+			//delete link key on the device
+			if ExtractStrToken(s$, tkn$) == 0 then
+				print "MAC address not supplied\n"
+			else
+				print "Delete key \n"
+				tkn$ = strdehexize$(tkn$)
+				rc = BtcBondingPersistKey(tkn$)
+			endif
+			
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		elseif strcmp(tkn$, "leadv")==0 then
+			dim a$
+			rc = BleAdvertStart(0,a$,25,6000,0)
+			AssertResCode(rc)
+			
+		
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		elseif strcmp(tkn$, "noleadv")==0 then
+			rc = BleAdvertStop()
+			AssertResCode(rc)
+		
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$, "version")==0 then
 			dim fw, W, X, Y, Z
 			fw = SYSINFO(3)
@@ -715,9 +800,6 @@ function _HciCfg()
 			print "Device Name: ";BleGetDeviceName$();"\n"
 			print "Firmware: ";W;".";X;".";Y;".";Z;"\n"
 			print "Manufacturer: Laird Technologies\n"
-			
-		else 
-			print "Unknown command - \22";tkn$;"\22\n"
 		
 		endif
 	endwhile
@@ -728,25 +810,27 @@ endfunc 1
 //==============================================================================
 function _rfcomm()
 	
-	tlen = ExtractStrToken(urtcmd$,tkn$)
-	if strcmp(tkn$, "help")==0 then
-		rc = _rfcommHelp()
-		exitfunc 1
+	while ExtractStrToken(urtcmd$, tkn$)!= 0
+		if strcmp(tkn$, "help")==0 then
+			rc = _rfcommHelp()
+			exitfunc 1
 
-	elseif strcmp(tkn$, "connect")==0 then
-		command = BLUEZ_COMMAND_RFCOMM_CONNECT
-		rc = _rfcommConnect()
+		elseif strcmp(tkn$, "connect")==0 then
+			command = BLUEZ_COMMAND_RFCOMM_CONNECT
+			rc = _rfcommConnect()
 	
-	elseif strcmp(tkn$, "write")==0 then
-		rc = _rfcommWrite()
+		elseif strcmp(tkn$, "write")==0 then
+			rc = _rfcommWrite()
+			exitfunc 1
 	
-	elseif strcmp(tkn$, "bind")==0 then
-		rc = _rfcommBind()
+		elseif strcmp(tkn$, "bind")==0 then
+			rc = _rfcommBind()
 		
-	else
-		print "Unknown command - \22";tkn$;"\22\n"
+		elseif strcmp(tkn$,"-")!=0 then
+			print "Unknown command - \22";tkn$;"\22\n"
 	
-	endif
+		endif
+	endwhile
 	
 endfunc 1
 //==============================================================================
@@ -754,7 +838,8 @@ endfunc 1
 //==============================================================================
 function OnUartCmd() as integer
 
-	tlen = ExtractStrToken(urtcmd$,tkn$) //get first token
+	// get first token
+	tlen = ExtractStrToken(urtcmd$,tkn$) 
 	
 	if strcmp(tkn$,"hcitool")==0 then
 		rc = _Hci()
@@ -780,9 +865,7 @@ function OnUartCmd() as integer
 	else
 		print tkn$;": command not found\n"
 	endif
-	
-	// send a response back to the user
-	//UartRsp(rc)
+
 	print pr$
 	
 endfunc 1
@@ -802,9 +885,11 @@ function HandlerInqResp(respType) as integer
 	// Get the report from the inquiry response
 	rc = BtcInquiryGetReport(ad$,dta$,ndx,rsi)
 	
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	if command == BLUEZ_COMMAND_HCITOOL_INQ then
 		print "\n		"; StrHexize$(ad$)
 			
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	elseif command == BLUEZ_COMMAND_HCITOOL_SCAN then
 		print "\n		"; StrHexize$(ad$)
 		if respType == 2 then
@@ -825,6 +910,7 @@ function HandlerInqResp(respType) as integer
 			print "  n/a"
 		endif
 		
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	elseif command == BLUEZ_COMMAND_HCITOOL_NAME then
 		// Only looking for name of specified address
 		if strcmp(ad$, addr$)!=0 then
@@ -859,19 +945,17 @@ endfunc 1
 // Called after an SPP connection attempt
 //==============================================================================
 function HandlerSppCon(hConn, res) as integer
+	
 	dim hz, az
     //if connected successfully
 	if res == 0 then
 		hz = AcqConnHandle(hConn)
 		conns = conns + 1
-		if command == BLUEZ_COMMAND_RFCOMM_CONNECT then
-			print "\nrfcomm connected. Connection handle: ";hConn;"\n";pr$
-		else 
-			print "\nConnected\n";pr$
-		endif
+		print "\nhandle: ";hConn;"\n";pr$
 	else
-		print "\nrfcomm connection failed: ";res;"\n";pr$
+		print "\nconnection failed: ";res;"\n";pr$
     endif        
+
 endfunc 1
 //==============================================================================
 // Called when a connection attempt to an SPP device times out
@@ -1004,7 +1088,8 @@ function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as intege
   case BLE_EVBLEMSGID_CONNECT
     hz = AcqConnHandle(nCtx)
 	conns = conns + 1
-    print "\nConnected\n";pr$
+    //print "\nConnected\n";pr$
+	print "handle : ";nCtx;"\n"
 	
     if hz == 0 then
       //Could not store the handle so drop the connection
@@ -1196,12 +1281,14 @@ function HandlerUartRxSpp()
     
         if uLen > 0 then
             if StrCmp(u$,"^")==0 then
+				//print "found one\n"
                 // print "\nBefore: ";carCnt                 
                 if TimerRunning(0)==0 then
                     carCnt = carCnt + 1
                     if carCnt<3 then
                         TimerStart(0,CAR_PRESS_DELAY,0) 
                     else
+						print "Exit command mode\n"
                         rc=SendMsgApp(0,CMD_MODE)    //* Using this for switching between bridge and cmd mode
                     endif
                 else    //invalid press                    
@@ -1298,14 +1385,14 @@ sub Initialise()
 	print " BLUEZ EXPLORER v";mjVersion;".";mnVersion;"\n"
 	print "-----------------------\n"
 	print "\nType \22help\22 or \22<command> help\22\n"
+	print pr$
 	
 endsub
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 Initialise()
 
-//UartRsp(rc)
-print pr$
+
 //------------------------------------------------------------------------------
 // Wait for a synchronous event.
 // An application can have multiple <WaitEvent> statements
