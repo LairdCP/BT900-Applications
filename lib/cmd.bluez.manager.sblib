@@ -43,7 +43,7 @@ endfunc 1
 //-------------------------------------------------------------------------
 function _hciScan()
 	
-	DIM inqLen : inqLen = 10
+	DIM inqLen : inqLen = 15
 	DIM numRsp : numRsp = 50
 	
 	while ExtractStrToken(urtcmd$, tkn$)!=0
@@ -89,7 +89,7 @@ function _hciName()
 		if strcmp(tkn$,"help")==0 then
 			// print the name help menu
 			print "Usage:\n"
-			print "		name <bdaddr>\n"
+			print "		hcitool name <bdaddr>\n"
 			exitfunc 1
 		
 		else
@@ -126,7 +126,7 @@ function _hciDev()
 		if strcmp(tkn$,"help")==0 then
 			//print the dev help menu
 			print "Usage:\n"
-			print "		dev\n"
+			print "		hcitool dev\n"
 			exitfunc 1
 		endif
 	endwhile
@@ -135,18 +135,27 @@ function _hciDev()
 	str$ = right$(str$, 6)
 	print "Device: \n     ";name$;"    ";StrHexize$(str$);"\n"
 			
-endfunc 5
+endfunc 1
 //-------------------------------------------------------------------------
 // hcitool cc [--role=m|s] [--ptype=pkt_types] <bdaddr>				//[] denotes optional fields
 //-------------------------------------------------------------------------
 function _hciCon()
 	
-	print "Connection handles:"
+	while ExtractStrToken(urtcmd$, tkn$)!=0
+		if strcmp(tkn$,"help")==0 then
+			//print the dev help menu
+			print "Usage:\n"
+			print "		hcitool con\n"
+			exitfunc 1
+		endif
+	endwhile
+	
+	print "Connection handles:\n"
 	dim z
 	for z=1 to conns
 		print "    ";hc[z];"\n"
 	next
-	
+
 endfunc 1 
 //-------------------------------------------------------------------------
 // hcitool cc [--role=m|s] [--ptype=pkt_types] <bdaddr>				//[] denotes optional fields
@@ -157,21 +166,25 @@ function _hciCc()
 	
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
-		//print the  hcitool cc help menu
-		print "Usage:\n"
-		print "		hcitool cc <bdaddr>\n"//[--role=m|s] [--ptype=pkt_types] <bdaddr>\n"
-		exitfunc 1
+			//print the  hcitool cc help menu
+			print "Usage:\n"
+			print "		hcitool cc <bdaddr>\n"//[--role=m|s] [--ptype=pkt_types] <bdaddr>\n"
+			exitfunc 1
 		
 		else
-			tkn$ = strdehexize$(tkn$)
-			rc = BtcSppConnect(tkn$)
-			AssertResCode(rc)
-			if rc == 0 then 
-				print "Connecting...\n"
-			endif
+			addr$ = tkn$
+		
 		endif
 	endwhile
-endfunc 5
+	
+	addr$ = strdehexize$(addr$)
+	rc = BtcSppConnect(addr$)
+	AssertResCode(rc)
+	if rc == 0 then 
+		print "Connecting...\n"
+	endif
+			
+endfunc 1
 
 //-------------------------------------------------------------------------
 // hcitool dc <bdaddr>
@@ -182,25 +195,26 @@ function _hciDc()
 	
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
-		//print the hcitool dc help menu
-		print "Usage:\n"
-		print "		hcitool dc <bdaddr>\n"
-		
-		exitfunc 1
+			//print the hcitool dc help menu
+			print "Usage:\n"
+			print "		hcitool dc <bdaddr>\n"
+			exitfunc 1
 		
 		else
 			addr$ = tkn$
-			tkn$ = strdehexize$(tkn$)
-			rc = BtcGetHandleFromBDAddr(tkn$,hcSpp)
-			AssertResCode(rc)
-			rc = BtcSppDisconnect(hcSpp)
-			AssertResCode(rc)
-			if rc == 0 then 
-				print "Disconnecting...\n"
-			endif
 		endif
 	endwhile
-endfunc 5
+	
+	tkn$ = strdehexize$(addr$)
+	rc = BtcGetHandleFromBDAddr(tkn$,hcSpp)
+	AssertResCode(rc)
+	rc = BtcSppDisconnect(hcSpp)
+	AssertResCode(rc)
+	if rc == 0 then 
+		print "Disconnecting...\n"
+	endif
+			
+endfunc 1
 
 //-------------------------------------------------------------------------
 // hcitool auth	<bdaddr>
@@ -273,7 +287,7 @@ function _hciLeScan()
 			print "LE Scan...\n"
 		endif
 		
-endfunc 5
+endfunc 1
 //-------------------------------------------------------------------------
 // hcitool lecc [--random] <bdaddr>							// [] denotes optional fields
 //-------------------------------------------------------------------------
@@ -290,17 +304,18 @@ function _hciLeCc() as integer
 		
 		else
 			addr$ = tkn$
-			tkn$ = strdehexize$(tkn$)
-			rc = BleConnect(tkn$, 5000, 20000, 75000, 5000000)						// ConnectionTimeoutms, minConIntervalus, maxConIntervalus, nSupervisionTimeoutus
-			AssertResCode(rc)
-			if rc == 0 then
-				print "Connecting... \n"
-			endif
 		
 		endif
 	endwhile
 	
-endfunc 5
+	addr$ = strdehexize$(addr$)
+	rc = BleConnect(addr$, 5000, 20000, 75000, 5000000)						// ConnectionTimeoutms, minConIntervalus, maxConIntervalus, nSupervisionTimeoutus
+	AssertResCode(rc)
+	if rc == 0 then
+		print "Connecting... \n"
+	endif
+	
+endfunc 1
 //-------------------------------------------------------------------------
 // hcitool ledc <handle>
 //-------------------------------------------------------------------------
@@ -316,14 +331,17 @@ function _hciLeDc() as integer
 		
 		else
 			hz = StrValDec(tkn$)
-			rc = bledisconnect(hz)						// Do not store bonding information 
-			if rc == 0 then 
-				print "Disconnecting...\n"
-			endif
+
 		endif
 	endwhile
+
+	// Do not store bonding information 
+	rc = bledisconnect(hz)						
+	if rc == 0 then 
+		print "Disconnecting...\n"
+	endif	
 	
-endfunc 5
+endfunc 1
 //=========================================================================
 //						RFCOMM
 //=========================================================================
@@ -412,11 +430,9 @@ function _rfcommLsn()
 	print "Incoming data: ";dta$;"\n"
 	
 endfunc 1
-
 //-------------------------------------------------------------------------
 // rfcomm listen --handle=0000
 //-------------------------------------------------------------------------
-
 function _rfcommBind()
 	
 	while ExtractStrToken(urtcmd$, tkn$)!=0
@@ -458,6 +474,7 @@ function _GattPrimary() as integer
 			//print the gatttool help menu
 			print "Usage:\n"
 			print "		gatttool -b <MAC Address> --primary\n"
+			print urtcmd$;"\n"
 			exitfunc 1
 			
 		elseif strcmp(tkn$,"b")==0 then
@@ -617,3 +634,38 @@ function _GattCharDesc()
 	AssertResCode(rc)
 	
 endfunc 1
+//------------------------------------------------------------------------
+// gatt server adding
+//-------------------------------------------------------------------------
+function GattSrverAdding()
+	
+	dim nMatch
+	print "entered gatt\n"
+	
+	nMatch=UartReadMatch(stRsp$,13)
+	if nMatch!=0 then
+		//CR exists in the input buffer
+		urtcmd$ = strsplitleft$(stRsp$, nMatch)
+	endif	
+
+endfunc 1
+//-------------------------------------------------------------------------
+// gatttool server
+// - Create a uuid handle for the service
+// - commit the service
+// - Create a uuid handle for the characteristic
+// - Create a metadata that defines the permissions for the characteristics
+// - Choose properties of characteristics (readable, writable, writable no request, notifiable, indicatable, broadcastable, etc)
+// - 
+//-------------------------------------------------------------------------
+function _GattSrvr()
+
+	print "Enter the uuid\n"
+	waitevent
+	
+	OnEvent  EVUARTRX					call GattSrverAdding
+	//rc = BleSvcCommit(BLE_SERVICE_PRIMARY,BleHandleUuid16(0x180D),shHrs)
+	//AssertResCode(rc)
+
+endfunc 1
+	
