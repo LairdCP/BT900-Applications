@@ -361,14 +361,14 @@ function _rfcommConnect()
 			if strcmp(tkn$,"")==0 then
 				print "A valid Bluetooth address is required\n"
 			else
-				break
+				addr$ = tkn$
 			endif
 		endif
 	endwhile
 	
 	//Here get handle from provided address
-	tkn$ = strdehexize$(tkn$)
-	rc = BtcSppConnect(tkn$)
+	addr$ = strdehexize$(addr$)
+	rc = BtcSppConnect(addr$)
 	AssertResCode(rc)
 	
 endfunc 1 
@@ -468,8 +468,8 @@ endfunc 1
 //-------------------------------------------------------------------------
 function _GattPrimary() as integer
 
-	dim addr$
-	while ExtractStrToken(urtcmd$, tkn$)!=0
+	dim s$
+	while ExtractStrToken(s$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 			//print the gatttool help menu
 			print "Usage:\n"
@@ -499,8 +499,9 @@ endfunc 1
 // gatttool -b <MAC Address> --characteristics
 //-------------------------------------------------------------------------
 function _GattChar() as integer
-		dim addr$
-		while ExtractStrToken(urtcmd$, tkn$)!=0
+	
+		dim s$
+		while ExtractStrToken(s$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 			//print the gatttool help menu
 			print "Usage:\n"
@@ -528,9 +529,9 @@ endfunc 1
 // gatttool -b <MAC Address> --char-read --handle=0x0000
 //-------------------------------------------------------------------------
 function _GattCharRead() as integer
-	dim addr$, hndl
+	dim s$
 	
-	while ExtractStrToken(urtcmd$, tkn$)!=0
+	while ExtractStrToken(s$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 			//print the gatttool help menu
 			print "Usage:\n"
@@ -564,9 +565,9 @@ endfunc 1
 // gatttool -b <MAC Address> --char-write --handle=0x0000
 //-------------------------------------------------------------------------
 function _GattCharWrite() as integer
-	dim addr$, hndl, val$
+	dim s$, hndl, val$, val
 	
-	while ExtractStrToken(urtcmd$, tkn$)!=0
+	while ExtractStrToken(s$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 			//print the gatttool help menu
 			print "Usage:\n"
@@ -585,15 +586,16 @@ function _GattCharWrite() as integer
 			rc = ExtractIntToken(tkn$, hndl)
 		elseif strcmp(tkn$,"value")==0 then
 			strshiftleft(urtcmd$, 1)
-			rc = ExtractStrToken(urtcmd$, val$)
-			//rc = ExtractIntToken(tkn$, val)
+			//rc = ExtractStrToken(urtcmd$, val$)
+			rc = ExtractIntToken(tkn$, val)
 		endif 
 	endwhile
 	
-	if strcmp(val$,"")==0 then
-		print "A value is required\n"
-		exitfunc 1
-	endif
+	print "at this point, val is ewqul to : ";val;"\n"
+	//if strcmp(val$,"")==0 then
+	//	print "A value is required\n"
+	// exitfunc 1
+	// endif
 	
 	val$="\02\00"
 	rc = BleGattcOpen(0,0)
@@ -606,9 +608,9 @@ endfunc 1
 // gatttool -b <MAC Address> --char-desc
 //-------------------------------------------------------------------------
 function _GattCharDesc()
-	dim addr$, hndl
+	dim s$
 	
-	while ExtractStrToken(urtcmd$, tkn$)!=0
+	while ExtractStrToken(s$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 			//print the gatttool help menu
 			print "Usage:\n"
@@ -628,6 +630,7 @@ function _GattCharDesc()
 		
 	endwhile
 	
+	print "at this point, the conneciton handle is ";hz;"and the other handle";integer.h' hndl;"\n"
 	rc = BleGattcOpen(0,0)
 	AssertResCode(rc)
 	rc = BleDiscDescFirst(hz, 0, hndl)

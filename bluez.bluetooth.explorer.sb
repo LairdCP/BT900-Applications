@@ -153,6 +153,7 @@ dim sspmode : sspmode = 1				// SSP Mode: 0 for disabled, 1 for enabled
 dim inqtpl : inqtpl=4						// Inquiry transmit power level
 dim mjVersion : mjVersion=0			// Major version number
 dim mnVersion : mnVersion=83				// Minor version number
+dim hndl
 
 //******************************************************************************
 // Initialise Global Variable
@@ -368,22 +369,22 @@ function _GattHelp()
 	print "	gatttool [OPTION...] <command>\n"
 	print "\n"
 	print "GATT commands\n"
-	print "	--primary                Primary Service Discovery\n"
-	print "	--characteristics        Characteristics Discovery\n"
-	print "	--char-read              Characteristics Value/Descriptor Read\n"
-	print "	--char-write             Characteristics Value Write Without Response\n"
-	print "	--char-write-req         Characteristics Value Write \n"
-	print "	--char-desc              Characteristics Descriptor Discovery\n"
-	print "	--listen                 Listen for notifications and indications\n"
+	print "	--primary                                 Primary Service Discovery\n"
+	print "	--characteristics                         Characteristics Discovery\n"
+	print "	--char-read                               Characteristics Value/Descriptor Read\n"
+	print "	--char-write                              Characteristics Value Write Without Response\n"
+	print "	--char-write-req                          Characteristics Value Write \n"
+	print "	--char-desc                               Characteristics Descriptor Discovery\n"
+	print "	--listen                                  Listen for notifications and indications\n"
 	//print "	-I, --interactive                         Use interactive mode\n"
 	print "\n"
 	print "Options:\n"
 	//print "	-i, --adapter=hciX                        Specify local adapter interface\n"
-	print "	-b, --device=MAC         Specify remote Bluetooth address\n"
+	print "	-b, --device=MAC                          Specify remote Bluetooth address\n"
 	//print "	-t, --addr-type=[public | random]         Set LE address type. Default: public\n"
 	//print "	-m, --mtu=MTU                             Specify the MTU size\n"
 	//print "	-p, --psm=PSM                             Specify the PSM for GATT/ATT over BR/EDR\n"
-	//print "	-l, --sec-level=[low | medium | high]     Set security level. Default: low\n"
+	print "	-l, --sec-level=[low | medium | high]     Set security level. Default: low\n"
 	//print "	-I, --interactive                         Use interactive mode\n"
 	print "\n"
 	
@@ -544,6 +545,8 @@ function _Gatt()
 
 	//dim s$
 	//s$ = urtcmd$
+	dim pair : pair = 5
+	
 	while ExtractStrToken(urtcmd$, tkn$)!= 0
 		//tlen = ExtractStrToken(urtcmd$,tkn$)
 		//if tlen == 0 then
@@ -582,7 +585,22 @@ function _Gatt()
 			endif
 		
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-		
+		elseif strcmp(tkn$, "sec")==0 then
+			strshiftleft(urtcmd$, 1)
+			rc = ExtractStrToken(urtcmd$, tkn$)
+			if strcmp(tkn$, "level")==0 then
+				strshiftleft(urtcmd$,1)
+				rc = ExtractStrToken(urtcmd$, tkn$)
+				if strcmp(tkn$,"low")==0 then
+					// unpair with device after getting all tokens from command
+					pair = 0
+				elseif strcmp(tkn$,"medium")==0 || strcmp(tkn$,"high")==0 then
+					// pair with device after getting all tokens from command
+					pair = 1
+				endif
+			endif
+			
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$, "server")==0 then 
 			//create gatt server
 			rc = _GattSrvr()
@@ -591,6 +609,24 @@ function _Gatt()
 		endif
 	endwhile
 
+	
+	if pair == 5 then
+		// nothing happened
+
+	elseif pair == 0 then
+		// unpair with device
+		rc = BleBondingEraseKey(addr$)
+		AssertResCode(rc)
+		pair = 5
+		
+	elseif pair == 1 then
+		// pair with device
+		rc = BlePair(hz, 0)
+		AssertResCode(rc)
+		pair = 5
+		
+	endif
+	
 endfunc 1
 //==============================================================================
 // Extract the hciconfig command
@@ -1125,16 +1161,16 @@ function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as intege
     DbgMsgVal("Display Pairing Passkey ",nCtx)
 
   case BLE_EVBLEMSGID_NEW_BOND
-    DbgMsg(" +++ New Bond")
+    //DbgMsg(" +++ New Bond")
 
   case BLE_EVBLEMSGID_UPDATED_BOND
     DbgMsg(" +++ Updated Bond")
 
   case BLE_EVBLEMSGID_ENCRYPTED
-    DbgMsg(" +++ Encrypted Connection")
+    //DbgMsg(" +++ Encrypted Connection")
 
   case BLE_EVBLEMSGID_CONN_TO_BONDED_MASTER
-    DbgMsgVal(" -- Conn to Bonded Master ",nCtx)
+    //DbgMsgVal(" -- Conn to Bonded Master ",nCtx)
 
   case BLE_EVBLEMSGID_AUTH_KEY_REQUEST
     DbgMsgVal(" +++ Auth Key Request, type=",nCtx)
@@ -1210,7 +1246,7 @@ function HandlerDescDisc(hChar, hUuid, hDisc) as integer
 	
 	rc = BleDiscDescNext(hChar)
 	if rc !=0 then
-		print "OVER\n";pr$
+		print "\n";pr$
 		BleGattcClose()
 	endif
 	
@@ -1265,9 +1301,10 @@ function HandlerAttrNtfyCmd() as integer
   do
     rc=BleGattcNotifyRead(hConn,hAttr,att$,dscd)
     if rc==0 then
-      print "\n >BleGattcNotifyRead("
-      print "hConn=";integer.h' hConn;",handle=";hAttr;",Dumped=";dscd
-      print ",data=";StrHexize$(att$);")"
+      //print "\n >BleGattcNotifyRead("
+      //print "hConn=";integer.h' hConn;",handle=";hAttr;",Dumped=";dscd
+      //print ",data=";StrHexize$(att$);")"
+	  print "Indication handle = ";integer.h hAttr;" value: ";StrHexize$(att$);"\n"
     endif
   dowhile rc==0
 endfunc 1
