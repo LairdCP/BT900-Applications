@@ -462,14 +462,37 @@ endfunc 1
 //=========================================================================
 //						GATTTOOL
 //=========================================================================
+//-------------------------------------------------------------------------
+// gatttool -b <MAC Address> --primary
+//-------------------------------------------------------------------------
+function _gattSecLvl() as integer
 
+	strshiftleft(urtcmd$, 1)
+	rc = ExtractStrToken(urtcmd$, tkn$)
+	if strcmp(tkn$, "level")==0 then
+		strshiftleft(urtcmd$,1)
+		rc = ExtractStrToken(urtcmd$, tkn$)
+		
+		if strcmp(tkn$,"low")==0 then
+			// unpair with device after getting all tokens from command
+			rc = BleBondingEraseKey(addr$)
+			AssertResCode(rc)
+		
+		elseif strcmp(tkn$,"medium")==0 || strcmp(tkn$,"high")==0 then
+			// pair with device after getting all tokens from command
+			rc = BlePair(hz, 0)
+			AssertResCode(rc)
+		
+		endif
+	endif
+	
+endfunc 1 
 //-------------------------------------------------------------------------
 // gatttool -b <MAC Address> --primary
 //-------------------------------------------------------------------------
 function _GattPrimary() as integer
 
-	dim s$
-	while ExtractStrToken(s$, tkn$)!=0
+	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 			//print the gatttool help menu
 			print "Usage:\n"
@@ -486,6 +509,10 @@ function _GattPrimary() as integer
 			strshiftleft(urtcmd$, 1)
 			rc = ExtractStrToken(urtcmd$, addr$)
 		
+		elseif strcmp(tkn$, "sec")==0 then
+			//call the sec-level function to piar or unpair with LE device
+			rc = _gattSecLvl()
+		
 		endif
 	endwhile
 	
@@ -500,8 +527,7 @@ endfunc 1
 //-------------------------------------------------------------------------
 function _GattChar() as integer
 	
-		dim s$
-		while ExtractStrToken(s$, tkn$)!=0
+		while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 			//print the gatttool help menu
 			print "Usage:\n"
@@ -515,7 +541,11 @@ function _GattChar() as integer
 		elseif strcmp(tkn$,"device")==0 then
 			strshiftleft(urtcmd$, 1)
 			rc = ExtractStrToken(urtcmd$, addr$)
-			
+		
+		elseif strcmp(tkn$, "sec")==0 then
+			//call the sec-level function to piar or unpair with LE device
+			rc = _gattSecLvl()
+		
 		endif
 	endwhile
 	
@@ -529,9 +559,8 @@ endfunc 1
 // gatttool -b <MAC Address> --char-read --handle=0x0000
 //-------------------------------------------------------------------------
 function _GattCharRead() as integer
-	dim s$
 	
-	while ExtractStrToken(s$, tkn$)!=0
+	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 			//print the gatttool help menu
 			print "Usage:\n"
@@ -551,6 +580,10 @@ function _GattCharRead() as integer
 			rc = ExtractStrToken(urtcmd$, tkn$)
 			rc = ExtractIntToken(tkn$, hndl)
 		
+		elseif strcmp(tkn$, "sec")==0 then
+			//call the sec-level function to piar or unpair with LE device
+			rc = _gattSecLvl()
+		
 		endif 
 	endwhile
 	
@@ -565,9 +598,9 @@ endfunc 1
 // gatttool -b <MAC Address> --char-write --handle=0x0000
 //-------------------------------------------------------------------------
 function _GattCharWrite() as integer
-	dim s$, hndl, val$, val
+	dim hndl, val$, val
 	
-	while ExtractStrToken(s$, tkn$)!=0
+	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 			//print the gatttool help menu
 			print "Usage:\n"
@@ -577,17 +610,25 @@ function _GattCharWrite() as integer
 		elseif strcmp(tkn$,"b")==0 then
 			rc = ExtractStrToken(urtcmd$,addr$)
 			addr$ = strdehexize$(addr$)
+		
 		elseif strcmp(tkn$,"device")==0 then
 			strshiftleft(urtcmd$, 1)
 			rc = ExtractStrToken(urtcmd$, addr$)
+		
 		elseif strcmp(tkn$,"handle")==0 then
 			strshiftleft(urtcmd$, 1)
 			rc = ExtractStrToken(urtcmd$, tkn$)
 			rc = ExtractIntToken(tkn$, hndl)
+		
 		elseif strcmp(tkn$,"value")==0 then
 			strshiftleft(urtcmd$, 1)
 			//rc = ExtractStrToken(urtcmd$, val$)
 			rc = ExtractIntToken(tkn$, val)
+		
+		elseif strcmp(tkn$, "sec")==0 then
+			//call the sec-level function to piar or unpair with LE device
+			rc = _gattSecLvl()
+		
 		endif 
 	endwhile
 	
@@ -608,9 +649,8 @@ endfunc 1
 // gatttool -b <MAC Address> --char-desc
 //-------------------------------------------------------------------------
 function _GattCharDesc()
-	dim s$
 	
-	while ExtractStrToken(s$, tkn$)!=0
+	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 			//print the gatttool help menu
 			print "Usage:\n"
@@ -626,6 +666,10 @@ function _GattCharDesc()
 			rc = ExtractStrToken(urtcmd$, tkn$)
 			rc = ExtractIntToken(tkn$, hndl)
 			
+		elseif strcmp(tkn$, "sec")==0 then
+			//call the sec-level function to piar or unpair with LE device
+			rc = _gattSecLvl()
+
 		endif
 		
 	endwhile

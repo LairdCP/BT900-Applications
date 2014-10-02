@@ -543,9 +543,8 @@ endfunc 1
 //==============================================================================
 function _Gatt()
 
-	//dim s$
-	//s$ = urtcmd$
-	dim pair : pair = 5
+	//dim s$ : s$ = urtcmd$
+	
 	
 	while ExtractStrToken(urtcmd$, tkn$)!= 0
 		//tlen = ExtractStrToken(urtcmd$,tkn$)
@@ -583,22 +582,6 @@ function _Gatt()
 				command = BLUEZ_COMMAND_GATTTOOL_CHAR_DESC
 				rc = _GattCharDesc()
 			endif
-		
-		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-		elseif strcmp(tkn$, "sec")==0 then
-			strshiftleft(urtcmd$, 1)
-			rc = ExtractStrToken(urtcmd$, tkn$)
-			if strcmp(tkn$, "level")==0 then
-				strshiftleft(urtcmd$,1)
-				rc = ExtractStrToken(urtcmd$, tkn$)
-				if strcmp(tkn$,"low")==0 then
-					// unpair with device after getting all tokens from command
-					pair = 0
-				elseif strcmp(tkn$,"medium")==0 || strcmp(tkn$,"high")==0 then
-					// pair with device after getting all tokens from command
-					pair = 1
-				endif
-			endif
 			
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$, "server")==0 then 
@@ -608,24 +591,6 @@ function _Gatt()
 			
 		endif
 	endwhile
-
-	
-	if pair == 5 then
-		// nothing happened
-
-	elseif pair == 0 then
-		// unpair with device
-		rc = BleBondingEraseKey(addr$)
-		AssertResCode(rc)
-		pair = 5
-		
-	elseif pair == 1 then
-		// pair with device
-		rc = BlePair(hz, 0)
-		AssertResCode(rc)
-		pair = 5
-		
-	endif
 	
 endfunc 1
 //==============================================================================
@@ -1239,10 +1204,11 @@ endfunc 1
 // This handler is called when a BLE descriptor is discovered
 //==============================================================================
 function HandlerDescDisc(hChar, hUuid, hDisc) as integer
-	print "\nEVDISC"
-	print "\nhChar ";integer.h' hChar
-	print "\nhUuid ";integer.h' hUuid
-	print "\nhDisc ";integer.h' hDisc
+	
+	if hUuid !=0 then
+		print "\n"
+		print "handle : 0x";integer.h' hDisc;" uuid : ";integer.h' hUuid
+	endif
 	
 	rc = BleDiscDescNext(hChar)
 	if rc !=0 then
@@ -1296,17 +1262,16 @@ endfunc 1
 // This handler is called when there is data notified or indicated
 //==============================================================================
 function HandlerAttrNtfyCmd() as integer
-  dim hConn,hAttr,att$,dscd
-  print "\nEVATTRNOTIFY()"
-  do
-    rc=BleGattcNotifyRead(hConn,hAttr,att$,dscd)
-    if rc==0 then
-      //print "\n >BleGattcNotifyRead("
-      //print "hConn=";integer.h' hConn;",handle=";hAttr;",Dumped=";dscd
-      //print ",data=";StrHexize$(att$);")"
-	  print "Indication handle = ";integer.h hAttr;" value: ";StrHexize$(att$);"\n"
-    endif
-  dowhile rc==0
+  
+	dim hConn,hAttr,att$,dscd
+  
+	do
+		rc=BleGattcNotifyRead(hConn,hAttr,att$,dscd)
+		if rc==0 then
+			print "Indication handle = ";integer.h hAttr;" value: ";StrHexize$(att$)
+		endif
+	dowhile rc==0
+
 endfunc 1
 //==============================================================================
 // This handler is called when data has arrived at the serial port
