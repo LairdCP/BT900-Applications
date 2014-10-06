@@ -150,7 +150,7 @@ function _hciCon()
 		endif
 	endwhile
 	
-	print "Connection handles:\n"
+	print "Connections:\n"
 	dim z
 	for z=1 to conns
 		print "    ";hc[z];"\n"
@@ -160,7 +160,7 @@ endfunc 1
 //-------------------------------------------------------------------------
 // hcitool cc [--role=m|s] [--ptype=pkt_types] <bdaddr>				//[] denotes optional fields
 //-------------------------------------------------------------------------
-function _hciCc()
+function _hciPair()
 	
 	DIM str$
 	
@@ -168,7 +168,7 @@ function _hciCc()
 		if strcmp(tkn$,"help")==0 then
 			//print the  hcitool cc help menu
 			print "Usage:\n"
-			print "		hcitool cc <bdaddr>\n"//[--role=m|s] [--ptype=pkt_types] <bdaddr>\n"
+			print "		hcitool pair <bdaddr>\n"
 			exitfunc 1
 		
 		else
@@ -178,10 +178,10 @@ function _hciCc()
 	endwhile
 	
 	addr$ = strdehexize$(addr$)
-	rc = BtcSppConnect(addr$)
+	rc = BtcPair(addr$, 0)
 	AssertResCode(rc)
 	if rc == 0 then 
-		print "Connecting...\n"
+		print "Pairing...\n"
 	endif
 			
 endfunc 1
@@ -189,7 +189,7 @@ endfunc 1
 //-------------------------------------------------------------------------
 // hcitool dc <bdaddr>
 //-------------------------------------------------------------------------
-function _hciDc()
+function _hciUnpair()
 	
 	DIM str$
 	
@@ -197,7 +197,7 @@ function _hciDc()
 		if strcmp(tkn$,"help")==0 then
 			//print the hcitool dc help menu
 			print "Usage:\n"
-			print "		hcitool dc <bdaddr>\n"
+			print "		hcitool unpair <bdaddr>\n"
 			exitfunc 1
 		
 		else
@@ -205,13 +205,13 @@ function _hciDc()
 		endif
 	endwhile
 	
-	tkn$ = strdehexize$(addr$)
-	rc = BtcGetHandleFromBDAddr(tkn$,hcSpp)
-	AssertResCode(rc)
-	rc = BtcSppDisconnect(hcSpp)
+	addr$ = strdehexize$(addr$)
+	//rc = BtcGetHandleFromBDAddr(tkn$,hcSpp)
+	//AssertResCode(rc)
+	rc = BtcBondingEraseKey(addr$)
 	AssertResCode(rc)
 	if rc == 0 then 
-		print "Disconnecting...\n"
+		print "Unpairing...\n"
 	endif
 			
 endfunc 1
@@ -249,6 +249,16 @@ function _hciAuth()
 	rc = BtcPair(tkn$, 0)						
 	AssertResCode(rc)
 			
+endfunc 1
+//-------------------------------------------------------------------------
+// hcitool leadv
+//-------------------------------------------------------------------------
+function _hciAdv()
+	
+	dim prAdd$
+	rc = BleAdvertStart(1,prAdd$,25,600000,0)
+	AssertResCode(rc)
+	
 endfunc 1
 //-------------------------------------------------------------------------
 // hcitool lescan [--privacy] [--passive] [--discovery=g|l] [--duplicates]			//[] denotes optional fields
@@ -455,7 +465,7 @@ function _rfcommBind()
 	endwhile
 	
 	tkn$ = strdehexize$(tkn$)
-	rc=SendMsgApp(0,BRIDGE_SPP_MODE)
+	//rc=SendMsgApp(0,BRIDGE_SPP_MODE)
 	exitfunc -1
 	
 endfunc 1
