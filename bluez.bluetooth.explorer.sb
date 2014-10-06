@@ -116,11 +116,11 @@
 #define BLUEZ_COMMAND_RFCOMM_CONNECT					60
 
 // APP RUN MODES
-#define CMD_MODE                                 0
-#define BRIDGE_SPP_MODE                          2
+#define NORMAL_MODE                                 0
+#define RFCOMM_MODE                          		1
 
 
-#define CAR_PRESS_DELAY                     100          //ms to wait between registering entries of '^'
+#define CAR_PRESS_DELAY                     1000          //ms to wait between registering entries of '^'
 //******************************************************************************
 // Global Variable Declarations
 //******************************************************************************
@@ -152,9 +152,10 @@ dim sspmode : sspmode = 1				// SSP Mode: 0 for disabled, 1 for enabled
 
 dim inqtpl : inqtpl=4						// Inquiry transmit power level
 dim mjVersion : mjVersion=0			// Major version number
-dim mnVersion : mnVersion=87				// Minor version number
+dim mnVersion : mnVersion=88				// Minor version number
 dim hndl
 
+dim carCnt                  //count variable for number of times '^' entered
 //******************************************************************************
 // Initialise Global Variable
 //******************************************************************************
@@ -941,15 +942,11 @@ function HandlerSppCon(hConn, res) as integer
 	dim hz, az
     //if connected successfully
 	if res == 0 then
-		print "the addr$ at this point is : ";addr$;"\n"
-		rc = BtcGetHandleFromBdAddr(addr$,hConn)
-		AssertResCode(rc)
+		hcSpp = hConn
 		hz = AcqConnHandle(hConn)
 		conns = conns + 1
-		print "\nhandle: ";hConn;"\n";pr$
-		//hz = AcqConnHandle(hConn)
-		//conns = conns + 1
-		//print "\nhandle: ";hConn;"\n";pr$
+		print "\nRFCOMM connected. For hangup, type \22^^^\22\n"
+		rc=SendMsgApp(0,RFCOMM_MODE)
 	else
 		print "\nconnection failed: ";res;"\n";pr$
     endif        
@@ -969,6 +966,7 @@ function HandlerSppDiscon(hConn)
     hz = RelConnHandle(hConn)
     conns = conns - 1
     print "\nDisconnected\n";pr$ 
+	rc=SendMsgApp(0,NORMAL_MODE)
 endfunc 1
 //==============================================================================
 // This handler is called when there is an inquiry timeout
@@ -993,7 +991,7 @@ function HandlerSppData()
 	while BtcSppRead(hPort, data$, rLen) == 0    
         if rLen>0 then
             //print"\nPort Handle: ";hPort; " Length: ";rLen;"\nData: ";data$;pr$
-			print "\nrfcomm data: ";data$;"\n";pr$
+			print data$
         endif
     endwhile
 endfunc 1
@@ -1044,9 +1042,9 @@ endfunc 1
 function HandlerPairRes(res)
 	
 	if res == 0 then
-		print "paired";pr$
+		print "\npaired\n";pr$
 	else
-		print "pairing attempt failed : ";res;pr$
+		print "\npairing attempt failed : ";res;"\n";pr$
 	endif
 endfunc 1
 //==============================================================================
@@ -1268,6 +1266,44 @@ function HandlerAttrNtfyCmd() as integer
 	dowhile rc==0
 
 endfunc 1
+
+//==============================================================================
+// Called when data is received via UART when bridged to SPP
+//==============================================================================
+function HandlerUartRxSpp()
+    dim uLen, u$, nLen, nLen2 : uLen = 1
+    WHILE uLen != 0
+        //read data that has arrived through via the UART
+        uLen = UartRead(u$)
+    
+        if uLen > 0 then
+            if StrCmp(u$,"^")==0 then
+				carCnt = carCnt + 1
+				if carCnt<3 then
+					exitfunc 1
+				else
+				//* Using this for switching between bridge and cmd mode
+					carCnt = 0
+					rc = BtcSppDisconnect(hcSpp)
+					AssertResCode(rc)
+				endif
+            else
+				carCnt = 0
+                //write data to most recent spp connection
+                nLen2 = 0
+                WHILE nLen2 != uLen
+                    rc = BtcSPPWrite(hcSpp, u$, nLen)
+                    IF rc != 0 THEN
+                        //Assume problem with the SPP connection
+                        exitfunc rc
+                    ENDIF
+                    STRSHIFTLEFT(u$, nLen)
+                    nLen2 = nLen2 + nLen
+                ENDWHILE
+            endif
+        endif
+    ENDWHILE
+endfunc 1
 //==============================================================================
 // This handler is called when data has arrived at the serial port
 //==============================================================================
@@ -1281,6 +1317,17 @@ function HandlerUartRxCmd() as integer
 		exitfunc OnUartCmd()
 	endif
 endfunc 1
+'//==============================================================================
+'// Called after SendMsgApp is called. Used to switch between command and bridge mode
+'//==============================================================================
+function SetMode(msgID, cmd) as integer
+	if cmd == NORMAL_MODE then
+		OnEvent	 EVUARTRX				call HandlerUartRxCmd
+		carCnt=0
+	elseif cmd == RFCOMM_MODE then
+		OnEvent  EVUARTRX                call HandlerUartRxSpp
+	endif
+endfunc 1
 //******************************************************************************
 
 //******************************************************************************
@@ -1290,32 +1337,41 @@ endfunc 1
 //------------------------------------------------------------------------------
 // Enable synchronous event handlers
 //------------------------------------------------------------------------------
+// uart related events
 OnEvent  EVUARTRX					call HandlerUartRxCmd
 
+// hcitool related events (BTC)
 OnEvent EVINQRESP					call HandlerInqResp
 OnEvent	EVBTC_INQUIRY_TIMEOUT		call HandlerBtcInqTimOut	
 OnEvent EVBTC_DISCOV_TIMEOUT		call HandlerBtcDiscTimOut
 
+// rfcomm related events
 OnEvent  EVSPPCONN                	call HandlerSppCon
 OnEvent  EVBTC_SPP_CONN_TIMEOUT   	call HandlerSppConnTimOut
 OnEvent  EVSPPDISCON              	call HandlerSppDiscon
 OnEvent  EVBTC_SPP_DATA_RECEIVED  	call HandlerSppData
 
+// hcitool related events (BTC)
 OnEvent  EVBTC_PAIR_REQUEST       	call HandlerPairReq
 OnEvent  EVBTC_PIN_REQUEST        	call HandlerPinReq
 OnEvent  EVBTC_PAIR_RESULT        	call HandlerPairRes
 
+// hcitool related events (BLE)
 OnEvent EVBLE_ADV_REPORT			call HandlerAdvRpt
 OnEvent  EVBLE_SCAN_TIMEOUT       	call HandlerBlrScanTimOut
 OnEvent  EVBLEMSG                 	call HandlerBleMsg
 //OnEvent EvDiscon                    call HndlrDiscon
 
+// gatttool related events
 OnEvent  EVDISCPRIMSVC            	call HandlerPrimSvc
 OnEvent  EVDISCCHAR               	call HandlerCharDisc
 OnEvent  EVDISCDESC               	call HandlerDescDisc
 OnEvent  EVATTRREAD 				call HandlerAttrRead
 OnEvent  EVATTRWRITE              	call HandlerAttrWrite
 OnEvent  EVATTRNOTIFY             	call HandlerAttrNtfyCmd
+
+// Called for rfcomm connect and hangup
+OnEvent  EVMSGAPP                 call SetMode
 
 
 //==============================================================================
