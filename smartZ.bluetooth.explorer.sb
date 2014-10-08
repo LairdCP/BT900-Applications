@@ -8,32 +8,17 @@
 // +++++                                                                      ++
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
-// This library file provides commands to control BT Classic operation and should be
-// #included into the file 'cmd.ble.manager.sb' if running on a dual mode module
-// e.g. BT900.
+// This app provides for a command interface over the uart similar to the BlueZ
+// commands for Linux as follows
 //
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// Convention : (1) Case sensitive, and commands are presented in alphabetic order
-//              (2) If line ends with \ then it continues on next line. That does
-//                  not mean that it should be sent as multiple lines
-//              (3) Replace anything between ## 
-//              (4) #INTaaaa# means a number in decimal, hex, octal or binary
-//                      format -> 23 == 0x17 == h'17 == o'23 == b'10111
-//                      aaaa is just a description
-//              (5) #HEXaaaa# means a string without delimitors consisting of hex 
-//                      characters only aaaa is just a description
-//              (6) #STRaaaa# means a string without delimitors
-//                      aaaa is just a description
-//              (7) "STRaaaa" means a string which must have the " delimitor
-//                      aaaa is just a description
+//
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
 //******************************************************************************
 // Definitions
 //******************************************************************************
 
-        //Set this to 0 to disable all debugging messages
-#define ENABLE_DEBUG_PRINTS                  1
 
         // Number of connections
 #define NUM_OF_CONNS                         8
@@ -109,8 +94,6 @@
 
 // BLUEZ COMMAND IDs: GATTTOOL
 #define BLUEZ_COMMAND_GATTTOOL_SERVER_UUID				51
-//#define BLUEZ_COMMAND_GATTTOOL_SERVER_UUID				52
-//#define BLUEZ_COMMAND_GATTTOOL_SERVER_UUID				53
 
 // BLUEZ COMMAND IDs: RFCOMM
 #define BLUEZ_COMMAND_RFCOMM_CONNECT					60
@@ -118,9 +101,10 @@
 // APP RUN MODES
 #define NORMAL_MODE                                 0
 #define RFCOMM_MODE                          		1
+#define GATTTOOL_INTERACTIVE_MODE					2
 
 
-#define CAR_PRESS_DELAY                     1000          //ms to wait between registering entries of '^'
+
 //******************************************************************************
 // Global Variable Declarations
 //******************************************************************************
@@ -136,7 +120,6 @@ dim name$					// local device name
 dim addr$					// address of device being connected to
 
 dim hz						// this is the handle of the current connection (currently used by --primary)
-dim az						// this is the address of the current connected BT device
 dim gcState                 // gatt client state, 0=IDLE, 1=TableMapping
 dim sAttr
 dim eAttr
@@ -152,7 +135,7 @@ dim sspmode : sspmode = 1				// SSP Mode: 0 for disabled, 1 for enabled
 
 dim inqtpl : inqtpl=4						// Inquiry transmit power level
 dim mjVersion : mjVersion=0			// Major version number
-dim mnVersion : mnVersion=88				// Minor version number
+dim mnVersion : mnVersion=89				// Minor version number
 dim hndl
 
 dim carCnt                  //count variable for number of times '^' entered
@@ -372,10 +355,7 @@ function _GattHelp()
 	//print "	-i, --adapter=hciX                        Specify local adapter interface\n"
 	print "	-b, --device=MAC						Specify remote Bluetooth address\n"
 	//print "	-t, --addr-type=[public | random]         Set LE address type. Default: public\n"
-	//print "	-m, --mtu=MTU                             Specify the MTU size\n"
-	//print "	-p, --psm=PSM                             Specify the PSM for GATT/ATT over BR/EDR\n"
-	print "	-l, --sec-level=[low | medium | high]		Set security level. Default: low\n"
-	//print "	-I, --interactive                         Use interactive mode\n"
+	print "	-l, --sec-level=[low | medium | high]		Set security level. Default: low\n"	
 	print "\nFor more information on the usage of each command use:\n"
 	print "	gatttool <command> --help\n\n"
 	
@@ -429,6 +409,7 @@ function _HciCfgHelp() as integer
 	//print "		lerandaddr <bdaddr>	Set LE Random Address\n"
 	print "	leadv  				Enable LE advertising\n"
 	print "	noleadv				Disable LE advertising\n"
+	print "	letpl	[level]		Get/Set LE transmit power level\n"
 	//print "		lestates           	Display the supported LE states\n\n"
 	print "\n"
 
@@ -784,6 +765,33 @@ function _HciCfg()
 		elseif strcmp(tkn$, "noleadv")==0 then
 			rc = BleAdvertStop()
 			AssertResCode(rc)
+			
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		elseif strcmp(tkn$, "letpl")==0 then
+			// Get/set the LE transmit power level
+			if ExtractStrToken(s$, tkn$) == 0  then
+				// Get the LE transmit power level
+				print "LE transmit power level : ";letpl;"\n"
+			else 
+				// Set the LE transmit power level
+				if strcmp(tkn$,"-")==0 then
+					rc = ExtractStrToken(s$, tkn$)
+					val = StrValDec(tkn$)
+					if (val > 55) then
+						print "Invalid power value. Valid range is from -55 to 4 dBm\n"
+					else
+						letpl = val*-1
+					endif
+				else
+					if (val > 4) then
+						print "Invalid power value. Valid range is from -70 to 20 dBm\n"
+					else
+						letpl =  val
+					endif
+				endif
+				rc = BtcInquiryConfig(3,inqtpl)
+				AssertResCode(rc)
+			endif
 		
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$, "version")==0 then
