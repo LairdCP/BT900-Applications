@@ -251,16 +251,6 @@ function _hciAuth()
 			
 endfunc 1
 //-------------------------------------------------------------------------
-// hcitool leadv
-//-------------------------------------------------------------------------
-function _hciAdv()
-	
-	dim prAdd$
-	rc = BleAdvertStart(1,prAdd$,25,600000,0)
-	AssertResCode(rc)
-	
-endfunc 1
-//-------------------------------------------------------------------------
 // hcitool lescan [--privacy] [--passive] [--discovery=g|l] [--duplicates]			//[] denotes optional fields
 //-------------------------------------------------------------------------
 function _hciLeScan()
@@ -605,7 +595,7 @@ function _GattCharRead() as integer
 	
 endfunc 1
 //-------------------------------------------------------------------------
-// gatttool -b <MAC Address> --char-write --handle=0x0000
+// gatttool -b <MAC Address> --char-write --handle=0x0000  --value=0000
 //-------------------------------------------------------------------------
 function _GattCharWrite() as integer
 	dim hndl, val$, val
@@ -614,7 +604,7 @@ function _GattCharWrite() as integer
 		if strcmp(tkn$,"help")==0 then
 			//print the gatttool help menu
 			print "Usage:\n"
-			print "		gatttool -b <MAC Address> --char-write --handle=0x0000 \n"
+			print "		gatttool -b <MAC Address> --char-write --handle=0x0000 --value=0000 \n"
 			exitfunc 1
 		
 		elseif strcmp(tkn$,"b")==0 then
@@ -632,31 +622,37 @@ function _GattCharWrite() as integer
 		
 		elseif strcmp(tkn$,"value")==0 then
 			strshiftleft(urtcmd$, 1)
-			//rc = ExtractStrToken(urtcmd$, val$)
-			rc = ExtractIntToken(tkn$, val)
+			rc = ExtractStrToken(urtcmd$, val$)
+			val$ = StrDehexize$(val$)
 		
 		elseif strcmp(tkn$, "sec")==0 then
 			//call the sec-level function to piar or unpair with LE device
 			rc = _gattSecLvl()
 		
+		elseif strcmp(tkn$, "listen")==0 then
+			gattLsn = 1
+
 		endif 
 	endwhile
-	
-	print "at this point, val is ewqul to : ";val;"\n"
+
 	//if strcmp(val$,"")==0 then
 	//	print "A value is required\n"
 	// exitfunc 1
 	// endif
 	
-	val$="\02\00"
+	//val$="\02\00"
 	rc = BleGattcOpen(0,0)
 	AssertResCode(rc)
 	rc = BleGattcWrite(hz,hndl,val$)
 	AssertResCode(rc)
 	
+	if gattLsn == 1 then
+			rc = SendMsgApp(0, GATTTOOL_LISTEN)
+	endif
+	
 endfunc 1
 //-------------------------------------------------------------------------
-// gatttool -b <MAC Address> --char-desc
+// gatttool -b <MAC Address> --char-desc  --handle=0x0000
 //-------------------------------------------------------------------------
 function _GattCharDesc()
 	
@@ -664,7 +660,7 @@ function _GattCharDesc()
 		if strcmp(tkn$,"help")==0 then
 			//print the gatttool help menu
 			print "Usage:\n"
-			print "		gatttool -b <MAC Address> --char-desc\n"
+			print "		gatttool -b <MAC Address> --char-desc --handle=0x0000\n"
 			exitfunc 1
 		
 		elseif strcmp(tkn$,"b")==0 then
@@ -684,7 +680,6 @@ function _GattCharDesc()
 		
 	endwhile
 	
-	print "at this point, the conneciton handle is ";hz;"and the other handle";integer.h' hndl;"\n"
 	rc = BleGattcOpen(0,0)
 	AssertResCode(rc)
 	rc = BleDiscDescFirst(hz, 0, hndl)

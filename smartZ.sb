@@ -99,9 +99,10 @@
 #define BLUEZ_COMMAND_RFCOMM_CONNECT					60
 
 // APP RUN MODES
-#define NORMAL_MODE                                 0
-#define RFCOMM_MODE                          		1
-#define GATTTOOL_INTERACTIVE_MODE					2
+#define NORMAL_MODE                                 	0
+#define RFCOMM_MODE                          			1
+#define GATTTOOL_INTERACTIVE_MODE						2
+#define GATTTOOL_LISTEN									3
 
 
 
@@ -132,8 +133,10 @@ dim testhndl
 dim inqtype	: inqtype = 0				// Inquiry Type: 0 General, 1 Limited
 dim inqmode	: inqmode = 2				// Inquiry Mode: 0 for Standard, 1 for with RSSI, 2 for Extended)
 dim sspmode : sspmode = 1				// SSP Mode: 0 for disabled, 1 for enabled 
-
 dim inqtpl : inqtpl=4						// Inquiry transmit power level
+dim letpl : letpl = 4					// LE Tx Power level in dBm
+dim gattLsn : gattLsn = 0				// If Lsn = 1, notifications will be shown
+
 dim mjVersion : mjVersion=0			// Major version number
 dim mnVersion : mnVersion=89				// Minor version number
 dim hndl
@@ -156,34 +159,6 @@ sub AssertResCode(resCode)
 		print "error: ";integer.h' rc;"\n"
 	endif
 endsub 
-//==============================================================================
-//==============================================================================
-sub DbgMsg(byval msg$ as string)
-  if (ENABLE_DEBUG_PRINTS!=0) then
-    print "\n";msg$
-  endif
-endsub
-
-//==============================================================================
-//==============================================================================
-sub DbgMsgVal(byval msg$ as string, byval vl as integer)
-  if (ENABLE_DEBUG_PRINTS!=0) then
-    print "\n";msg$;" ";vl
-  endif
-endsub
-
-//==============================================================================
-//==============================================================================
-sub ShowConnParms(nCtx as integer)
-  dim intrvl,sprvto,slat
-  rc= BleGetCurConnParms(nCtx,intrvl,sprvto,slat)
-  //AssertResCode(rc,1240)
-  if rc==0 then
-    DbgMsgVal("Conn Interval",intrvl)
-    DbgMsgVal("Conn Supervision Timeout",sprvto)
-    DbgMsgVal("Conn Slave Latency",slat)
-  endif
-endsub
 //==============================================================================
 // Initialise all connection handles
 //==============================================================================
@@ -346,7 +321,7 @@ function _GattHelp()
 	print "	--characteristics						Characteristics Discovery\n"
 	print "	--char-read      						Characteristics Value/Descriptor Read\n"
 	print "	--char-write    						Characteristics Value Write Without Response\n"
-	print "	--char-write-req						Characteristics Value Write \n"
+	//print "	--char-write-req						Characteristics Value Write \n"
 	print "	--char-desc     						Characteristics Descriptor Discovery\n"
 	print "	--listen        						Listen for notifications and indications\n"
 	//print "	-I, --interactive                         Use interactive mode\n"
@@ -494,9 +469,6 @@ function _Hci()
 			// Request authentication
 			rc = _hciAuth()
 			
-		elseif strcmp(tkn$, "leadv")== 0 then
-			// Start LE adverts
-			rc = _hciAdv()
 	
 		elseif strcmp(tkn$, "lescan")==0 then
 			// Start LE scan
@@ -777,19 +749,19 @@ function _HciCfg()
 				if strcmp(tkn$,"-")==0 then
 					rc = ExtractStrToken(s$, tkn$)
 					val = StrValDec(tkn$)
-					if (val > 55) then
-						print "Invalid power value. Valid range is from -55 to 4 dBm\n"
+					if (val > 20) then
+						print "Invalid power value. Valid range is from -20 to 8 dBm\n"
 					else
 						letpl = val*-1
 					endif
 				else
-					if (val > 4) then
-						print "Invalid power value. Valid range is from -70 to 20 dBm\n"
+					if (val > 8) then
+						print "Invalid power value. Valid range is from -20 to 8 dBm\n"
 					else
 						letpl =  val
 					endif
 				endif
-				rc = BtcInquiryConfig(3,inqtpl)
+				rc = BleTxPowerSet(letpl)
 				AssertResCode(rc)
 			endif
 		
@@ -988,7 +960,13 @@ endfunc 1
 // This handler is called when there is an inquiry timeout
 //==============================================================================
 function HandlerBtcDiscTimOut() as integer
-	print "\nDiscoverability timed out\n";pr$
+	
+	//Enable inquiry scan and page scan (default)
+	rc = BtcSetDiscoverable(1, 300)
+	AssertResCode(rc)
+	rc = BtcSetConnectable(1)
+	AssertResCode(rc)
+	
 endfunc 1
 //==============================================================================
 // Called when data is received via SPP
@@ -1125,13 +1103,13 @@ function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as intege
     print "\nDisconnected\n";pr$
 
   case BLE_EVBLEMSGID_DISPLAY_PASSKEY
-    DbgMsgVal("Display Pairing Passkey ",nCtx)
+    print "Display Pairing Passkey ";nCtx
 
   case BLE_EVBLEMSGID_NEW_BOND
     //DbgMsg(" +++ New Bond")
 
   case BLE_EVBLEMSGID_UPDATED_BOND
-    DbgMsg(" +++ Updated Bond")
+    print " +++ Updated Bond"
 
   case BLE_EVBLEMSGID_ENCRYPTED
     //DbgMsg(" +++ Encrypted Connection")
@@ -1140,16 +1118,16 @@ function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as intege
     //DbgMsgVal(" -- Conn to Bonded Master ",nCtx)
 
   case BLE_EVBLEMSGID_AUTH_KEY_REQUEST
-    DbgMsgVal(" +++ Auth Key Request, type=",nCtx)
+    print " +++ Auth Key Request, type=";nCtx
 
   case BLE_EVBLEMSGID_CONN_PARMS_UPDATE
     //ShowConnParms(nCtx)
 
   case BLE_EVBLEMSGID_CONN_PARMS_UPDATE_FAIL
-    DbgMsg(" ??? Conn Parm Negotiation FAILED")
+    print " ??? Conn Parm Negotiation FAILED"
 
   case else
-    DbgMsgVal("Unknown Ble Msg", nMsgId)
+    print "Unknown Ble Msg"; nMsgId
   endselect
 endfunc 1
 //==============================================================================
@@ -1251,13 +1229,12 @@ endfunc 1
 function HandlerAttrWrite(hConn,aHndl,nSts) as integer
     
 	if nSts == 0 then
-		print "Characteristic value was written successfully\n"
+		print "\nCharacteristic value was written successfully\n";pr$
 	else 
 		print "\nStatus  : ";integer.h' nSts
 		print "\nCharacteristic write failed: Attribute Can't be written\n";pr$		//Different error messages should be printed for different nSts
 	endif
 	
-	//"Characteristic value was written successfully" should be printed if sec level must be increased
 endfunc 1
 //==============================================================================
 // This handler is called when there is data notified or indicated
@@ -1266,12 +1243,14 @@ function HandlerAttrNtfyCmd() as integer
   
 	dim hConn,hAttr,att$,dscd
   
-	do
-		rc=BleGattcNotifyRead(hConn,hAttr,att$,dscd)
-		if rc==0 then
-			print "Indication handle = ";integer.h hAttr;" value: ";StrHexize$(att$)
-		endif
-	dowhile rc==0
+	if gattLsn == 1 then
+		do
+			rc=BleGattcNotifyRead(hConn,hAttr,att$,dscd)
+			if rc==0 then
+				print "\nNotification/Indication handle = ";integer.h hAttr;" value: ";StrHexize$(att$)
+			endif
+		dowhile rc==0
+	endif
 
 endfunc 1
 
@@ -1315,6 +1294,24 @@ endfunc 1
 //==============================================================================
 // This handler is called when data has arrived at the serial port
 //==============================================================================
+function HandlerUartRxLsn() as integer
+	dim nMatch
+	
+	nMatch=UartReadMatch(stRsp$,13)
+	if nMatch!=0 then
+		//CR exists in the input buffer
+		urtcmd$ = strsplitleft$(stRsp$, nMatch)
+		tlen = ExtractStrToken(urtcmd$,tkn$)
+		if strcmp(tkn$,"stop")==0 then 
+			gattLsn = 0
+			print pr$;"\n"
+			rc = SendMsgApp(0, NORMAL_MODE)
+		endif
+	endif
+endfunc 1
+//==============================================================================
+// This handler is called when data has arrived at the serial port
+//==============================================================================
 function HandlerUartRxCmd() as integer
 	dim nMatch
 	
@@ -1330,10 +1327,15 @@ endfunc 1
 '//==============================================================================
 function SetMode(msgID, cmd) as integer
 	if cmd == NORMAL_MODE then
-		OnEvent	 EVUARTRX				call HandlerUartRxCmd
+		OnEvent	 EVUARTRX					call HandlerUartRxCmd
 		carCnt=0
 	elseif cmd == RFCOMM_MODE then
-		OnEvent  EVUARTRX                call HandlerUartRxSpp
+		OnEvent	EVUARTRX					call HandlerUartRxSpp
+		
+	elseif cmd == GATTTOOL_LISTEN then	
+		print "\nListening for notifications/indications. For hangup, For hangup, type \22stop\22\n"
+		OnEvent	EVUARTRX					call HandlerUartRxLsn
+
 	endif
 endfunc 1
 //******************************************************************************
@@ -1376,10 +1378,11 @@ OnEvent  EVDISCCHAR               	call HandlerCharDisc
 OnEvent  EVDISCDESC               	call HandlerDescDisc
 OnEvent  EVATTRREAD 				call HandlerAttrRead
 OnEvent  EVATTRWRITE              	call HandlerAttrWrite
-OnEvent  EVATTRNOTIFY             	call HandlerAttrNtfyCmd
+
 
 // Called for rfcomm connect and hangup
 OnEvent  EVMSGAPP                 call SetMode
+OnEvent	EVATTRNOTIFY             	call HandlerAttrNtfyCmd
 
 
 //==============================================================================
