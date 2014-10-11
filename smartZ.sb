@@ -128,6 +128,9 @@ dim prAddr$              				// BT address of last device pairing requested from
 dim hcSpp                   			// handle of connection to use for VSP service
 
 dim command : command = 0				// Currently active BlueZ command
+dim nDiscv : nDiscv = 1					// The device is discoverable by default
+dim nConn : nConn = 1 					// The device is connectable by default
+dim nPair : nPair = 1					// The device is pairable by default					
 dim inqtype	: inqtype = 0				// Inquiry Type: 0 General, 1 Limited
 dim inqmode	: inqmode = 2				// Inquiry Mode: 0 for Standard, 1 for with RSSI, 2 for Extended)
 dim sspmode : sspmode = 1				// SSP Mode: 0 for disabled, 1 for enabled 
@@ -136,7 +139,7 @@ dim letpl : letpl = 4					// LE Tx Power level in dBm
 dim gattLsn : gattLsn = 0				// If Lsn = 1, notifications will be shown
 
 dim mjVersion : mjVersion=0			// Major version number
-dim mnVersion : mnVersion=89				// Minor version number
+dim mnVersion : mnVersion=9				// Minor version number
 dim conHdl								// global connection handle of the current connection being serviced
 dim chrHdl								// global characteristic handle of the current characteristic being serviced
 dim valHdl								// global characteristic value handle of the current characteristic value handle being serviced
@@ -249,10 +252,13 @@ sub InitBtDevice()
 	sspmode = 1
 	
 	//Configure LE radio
-	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	dim apprnce : apprnce = 768             //The device will appear as a Generic Thermometer
+	// Initialise Gap Service
+	rc=BleGapSvcInit(name$,1,apprnce,500000,1000000,4000000,0)
 	// Start advertising
 	dim a$
-	rc = BleAdvertStart(0,a$,25,6000,0)
+	rc = BleAdvertStart(0,a$,25,0,0)
 	AssertResCode(rc)
 	
 	
@@ -464,9 +470,9 @@ function _Hci()
 			command = BLUEZ_COMMAND_HCITOOL_UNPAIR
 			rc = _hciUnpair()
 	
-		elseif strcmp(tkn$, "auth")== 0 then
-			// Request authentication
-			rc = _hciAuth()
+		elseif strcmp(tkn$, "leadv")== 0 then
+			// LE advertise
+			rc = _hciLeAdv()
 			
 	
 		elseif strcmp(tkn$, "lescan")==0 then
@@ -576,29 +582,33 @@ function _HciCfg()
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"piscan")==0 then 
 			//Enable inquiry scan and page scan (default)
-			rc = BtcSetDiscoverable(1, 300)
+			nDiscv = 1 
+			rc = BtcSetDiscoverable(nDiscv, 300)
 			AssertResCode(rc)
-			rc = BtcSetConnectable(1)
+			rc = BtcSetConnectable(nConn)
 			AssertResCode(rc)
 	
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"pscan")==0 then 
 			//Enable page scan
-			rc = BtcSetConnectable(1)
+			nDiscv = 1 
+			rc = BtcSetDiscoverable(nDiscv, 300)
 			AssertResCode(rc)
 	
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"iscan")==0 then 
 			//Enable inquiry scan
-			rc = BtcSetDiscoverable(1, 300)
+			nDiscv = 1
+			rc = BtcSetDiscoverable(nDiscv, 300)
 			AssertResCode(rc)
 	
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"noscan")==0 then 
 			//The adapter in not detectable by other devices and will not accept any incoming connections
-			rc = BtcSetDiscoverable(0, 300)
+			nDiscv = 0 
+			rc = BtcSetDiscoverable(nDiscv, 300)
 			AssertResCode(rc)
-			rc = BtcSetConnectable(0)
+			rc = BtcSetConnectable(nConn)
 			AssertResCode(rc)
 		
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1043,9 +1053,7 @@ endfunc 1
 function HandlerBtcDiscTimOut() as integer
 	
 	//Enable inquiry scan and page scan (default)
-	rc = BtcSetDiscoverable(1, 300)
-	AssertResCode(rc)
-	rc = BtcSetConnectable(1)
+	rc = BtcSetDiscoverable(nDiscv, 300)
 	AssertResCode(rc)
 	
 endfunc 1
@@ -1145,6 +1153,25 @@ function HandlerAdvRpt() as integer
 	endwhile
 endfunc 1
 //==============================================================================
+// This handler is called when there is a Ble advert timeout
+//==============================================================================
+function HandlerBleAdvTimOut()
+	
+	print "advert timed out\n"
+	dim a$
+	rc = BleAdvertStart(0,a$,25,300000,0)
+	AssertResCode(rc)
+	
+endfunc 1
+//==============================================================================
+// This handler is called when there is a Ble connection timeout
+//==============================================================================
+function HandlerBleConnTimOut() as integer
+	
+	print "\nCould not create connection: Connection timed out\n";pr$
+
+endfunc 1
+//==============================================================================
 // This handler is called when there is a Ble scan timeout
 //==============================================================================
 function HandlerBlrScanTimOut() as integer 
@@ -1181,6 +1208,9 @@ function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as intege
     // here must get address from the handle
 	hz = RelConnHandle(nCtx)
     conns = conns - 1
+	dim a$
+	rc = BleAdvertStart(0,a$,25,300000,0)
+	AssertResCode(rc)
     print "\nDisconnected\n";pr$
 
   case BLE_EVBLEMSGID_DISPLAY_PASSKEY
@@ -1447,7 +1477,9 @@ OnEvent  EVBTC_PAIR_RESULT        	call HandlerPairRes
 // hcitool related events (BLE)
 OnEvent EVBLE_ADV_REPORT			call HandlerAdvRpt
 OnEvent  EVBLE_SCAN_TIMEOUT       	call HandlerBlrScanTimOut
+OnEvent	EVBLE_CONN_TIMEOUT			call HandlerBleConnTimOut
 OnEvent  EVBLEMSG                 	call HandlerBleMsg
+OnEvent	EVBLE_ADV_TIMEOUT			call HandlerBleAdvTimOut
 //OnEvent EvDiscon                    call HndlrDiscon
 
 // gatttool related events
