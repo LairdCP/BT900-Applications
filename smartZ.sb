@@ -120,7 +120,6 @@ dim conns                   // number of connections
 dim name$					// local device name
 dim addr$					// address of device being connected to
 
-dim hz						// this is the handle of the current connection (currently used by --primary)
 dim gcState                 // gatt client state, 0=IDLE, 1=TableMapping
 dim sAttr
 dim eAttr
@@ -129,7 +128,6 @@ dim prAddr$              				// BT address of last device pairing requested from
 dim hcSpp                   			// handle of connection to use for VSP service
 
 dim command : command = 0				// Currently active BlueZ command
-dim testhndl
 dim inqtype	: inqtype = 0				// Inquiry Type: 0 General, 1 Limited
 dim inqmode	: inqmode = 2				// Inquiry Mode: 0 for Standard, 1 for with RSSI, 2 for Extended)
 dim sspmode : sspmode = 1				// SSP Mode: 0 for disabled, 1 for enabled 
@@ -139,7 +137,9 @@ dim gattLsn : gattLsn = 0				// If Lsn = 1, notifications will be shown
 
 dim mjVersion : mjVersion=0			// Major version number
 dim mnVersion : mnVersion=89				// Minor version number
-dim hndl
+dim conHdl								// global connection handle of the current connection being serviced
+dim chrHdl								// global characteristic handle of the current characteristic being serviced
+dim valHdl								// global characteristic value handle of the current characteristic value handle being serviced
 
 dim carCnt                  //count variable for number of times '^' entered
 //******************************************************************************
@@ -149,7 +149,6 @@ dim carCnt                  //count variable for number of times '^' entered
 ok$    = "\nOK"
 er$    = "\nERROR "
 pr$    = "------->"
-
 urts = 0					// not suspended
 
 //==============================================================================
@@ -773,6 +772,9 @@ function _HciCfg()
 			print "Device Name: ";BleGetDeviceName$();"\n"
 			print "Firmware: ";W;".";X;".";Y;".";Z;"\n"
 			print "Manufacturer: Laird Technologies\n"
+			
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			
 		
 		endif
 	endwhile
@@ -841,6 +843,85 @@ function OnUartCmd() as integer
 
 	print pr$
 	
+endfunc 1
+
+//==============================================================================
+// gatt status error codes
+//==============================================================================
+function _gattStatus(status as integer)
+	
+	print "ATT Error: "
+	select status
+		
+		case H'0101
+			print "Invalid attribute handle\n"
+			
+		case H'0102
+			print "Read not permitted\n"
+			
+		case H'0103
+			print "Write not permitted\n"
+			
+		case H'0104
+			print "Used in ATT as invalid PDU\n"
+			
+		case H'0105
+			print "Authentication link required\n"
+			
+		case H'0106
+			print "Used in ATT as request not supported\n"
+			
+		case H'0107
+			print "Offset specified was past the end of the attribute\n"
+			
+		case H'0108
+			print "Used in ATT as insufficient authorisation\n"
+			
+		case H'0109
+			print "Used in ATT as prepare queue full\n"
+			
+		case H'010A
+			print "Used in ATT as attribute not found\n"
+			
+		case H'010B
+			print "Attribute cannot be read or written using read/write requests\n"
+			
+		case H'010C
+			print "Encryption key size used is insufficient\n"
+			
+		case H'010D
+			print "Invalid value size\n"
+			
+		case H'010E
+			print "Very unlikely error\n"
+			
+		case H'010F
+			print "Encrypted link required\n"
+			
+		case H'0110
+			print "Attribute type is not a supported grouping attribute\n"
+			
+		case H'0111
+			print "Encrypted link required\n"
+			
+		case H'0180
+			print "Application range begin\n"
+			
+		case H'019F
+			print "Application range end\n"
+			
+		case H'01FE
+			print "Profile and service error: Procedure already in progress\n"
+			
+		case H'01FF
+			print "Profile and service error: Out of range\n"
+			
+		case else
+			print "Unknown status\n"
+			
+		endselect
+	print pr$
+		
 endfunc 1
 
 //******************************************************************************
@@ -1075,7 +1156,7 @@ endfunc 1
 // This handler is called when there is a BLE message
 //==============================================================================
 function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as integer
-  dim az
+  dim hz
   
   select nMsgId
   case BLE_EVBLEMSGID_CONNECT
@@ -1142,7 +1223,7 @@ function HandlerPrimSvc(hConn,hUuid,hStart,hEnd) as integer
 		print "attr handle = 0x";integer.h' hStart
 		print ", end grp handle = 0x";integer.h' hEnd
 		print ", uuid = ";integer.h' hUuid
-		rc = BleDiscServiceNext(hz)
+		rc = BleDiscServiceNext(conHdl)
 		if rc != 0 then 
 			print "\n";pr$
 			BleGattcClose()
@@ -1150,7 +1231,7 @@ function HandlerPrimSvc(hConn,hUuid,hStart,hEnd) as integer
 		endif
 	
 	elseif command == BLUEZ_COMMAND_GATTTOOL_CHARACTERISTICS then
-		rc = BleDiscCharFirst(hz,0,sAttr,eAttr)
+		rc = BleDiscCharFirst(conHdl,0,sAttr,eAttr)
 		AssertResCode(rc)
 	endif
 	
@@ -1169,9 +1250,9 @@ function HandlerCharDisc(hConn,hUuid,cProp,hVal,hiUuid) as integer
 		print ", uuid = ";integer.h' hUuid
 	endif
 	
-	rc = BleDiscCharNext(hz)
+	rc = BleDiscCharNext(conHdl)
 	if rc != 0 then
-		rc = BleDiscServiceNext(hz)
+		rc = BleDiscServiceNext(conHdl)
 		if rc !=0 then
 			print "\n";pr$
 			BleGattcClose()
@@ -1203,7 +1284,7 @@ function HandlerAttrRead(hConn,hAttr,nSts) as integer
 
 	dim a$,ofst  
 	if nSts == 0 then
-		rc = BleGattcReadData(hConn,testhndl,ofst,a$)
+		rc = BleGattcReadData(hConn,valHdl,ofst,a$)
 		if rc==0 then
 			print "\nCharacteristic value/descriptor: "
 			print "";StrHexize$(a$)
@@ -1211,15 +1292,11 @@ function HandlerAttrRead(hConn,hAttr,nSts) as integer
 		else	
 			AssertResCode(rc)
 		endif
+	 
+	else 
+		rc = _gattStatus(nSts)
+	endif
 	
-	// instead of ifelse must use case here
-	elseif nSts == 258 then
-		print "ATT Error: Attribute cannot be read or written using read/write requests\n";pr$
-		
-	else
-		
-		print "nSts is not 0 ";nSts;"\n"
-	endif  
 	BleGattcClose()
 	
 endfunc 1
@@ -1230,9 +1307,10 @@ function HandlerAttrWrite(hConn,aHndl,nSts) as integer
     
 	if nSts == 0 then
 		print "\nCharacteristic value was written successfully\n";pr$
+	
 	else 
-		print "\nStatus  : ";integer.h' nSts
-		print "\nCharacteristic write failed: Attribute Can't be written\n";pr$		//Different error messages should be printed for different nSts
+		rc = _gattStatus(nSts)
+	
 	endif
 	
 endfunc 1

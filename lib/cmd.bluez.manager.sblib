@@ -330,15 +330,17 @@ function _hciLeDc() as integer
 			exitfunc 1
 		
 		else
-			hz = StrValDec(tkn$)
+			conHdl = StrValDec(tkn$)
 
 		endif
 	endwhile
 
 	// Do not store bonding information 
-	rc = bledisconnect(hz)						
+	rc = bledisconnect(conHdl)
 	if rc == 0 then 
 		print "Disconnecting...\n"
+	else	
+		AssertResCode(rc)
 	endif	
 	
 endfunc 1
@@ -377,7 +379,7 @@ endfunc 1
 //-------------------------------------------------------------------------
 function _rfcommWrite()
 
-	dim hndl, dta$, len
+	dim dta$, len
 		
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		
@@ -389,7 +391,7 @@ function _rfcommWrite()
 		elseif strcmp(tkn$,"handle")==0 then
 			strshiftleft(urtcmd$, 1)
 			rc = ExtractStrToken(urtcmd$, tkn$)
-			rc = ExtractIntToken(tkn$, hndl)
+			rc = ExtractIntToken(tkn$, conHdl)
 		
 		elseif strcmp(tkn$, "data")==0 then
 			strshiftleft(urtcmd$, 1)
@@ -399,7 +401,7 @@ function _rfcommWrite()
 	
 	endwhile
 	
-	rc = BtcSppWrite(hndl, dta$, len)
+	rc = BtcSppWrite(conHdl, dta$, len)
 	AssertResCode(rc)
 	
 endfunc 1
@@ -408,7 +410,7 @@ endfunc 1
 //-------------------------------------------------------------------------
 function _rfcommLsn()
 
-	dim hndl, dta$, len
+	dim dta$, len
 
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
@@ -420,12 +422,12 @@ function _rfcommLsn()
 		elseif strcmp(tkn$,"handle")==0 then
 			strshiftleft(urtcmd$, 1)
 			rc = ExtractStrToken(urtcmd$, tkn$)
-			rc = ExtractIntToken(tkn$, hndl)
+			rc = ExtractIntToken(tkn$, conHdl)
 			
 		endif
 	endwhile
 	
-	rc = BtcSppRead(hndl, dta$, len)
+	rc = BtcSppRead(conHdl, dta$, len)
 	AssertResCode(rc)
 	print "Incoming data: ";dta$;"\n"
 	
@@ -480,7 +482,7 @@ function _gattSecLvl() as integer
 		
 		elseif strcmp(tkn$,"medium")==0 || strcmp(tkn$,"high")==0 then
 			// pair with device after getting all tokens from command
-			rc = BlePair(hz, 0)
+			rc = BlePair(conHdl, 0)
 			AssertResCode(rc)
 		
 		endif
@@ -516,9 +518,11 @@ function _GattPrimary() as integer
 		endif
 	endwhile
 	
+	rc = BleGetConnHandleFromAddr(addr$, conHdl)
+	AssertResCode(rc)
 	rc = BleGattcOpen(0,0)
 	AssertResCode(rc)
-	rc = BleDiscServiceFirst(hz,0,0)
+	rc = BleDiscServiceFirst(conHdl,0,0)
 	AssertResCode(rc)
 	
 endfunc 1
@@ -549,9 +553,11 @@ function _GattChar() as integer
 		endif
 	endwhile
 	
+	rc = BleGetConnHandleFromAddr(addr$, conHdl)
+	AssertResCode(rc)
 	rc = BleGattcOpen(0,0)
 	AssertResCode(rc)
-	rc = BleDiscServiceFirst(hz,0,0)
+	rc = BleDiscServiceFirst(conHdl,0,0)
 	AssertResCode(rc)
 	
 endfunc 1
@@ -578,7 +584,7 @@ function _GattCharRead() as integer
 		elseif strcmp(tkn$,"handle")==0 then
 			strshiftleft(urtcmd$, 1)
 			rc = ExtractStrToken(urtcmd$, tkn$)
-			rc = ExtractIntToken(tkn$, hndl)
+			rc = ExtractIntToken(tkn$, valHdl)
 		
 		elseif strcmp(tkn$, "sec")==0 then
 			//call the sec-level function to piar or unpair with LE device
@@ -587,9 +593,11 @@ function _GattCharRead() as integer
 		endif 
 	endwhile
 	
+	rc = BleGetConnHandleFromAddr(addr$, conHdl)
+	AssertResCode(rc)
 	rc = BleGattcOpen(0,0)											//must check rc here
 	AssertResCode(rc)
-	rc = BleGattcRead(hz,hndl,0)
+	rc = BleGattcRead(conHdl,valHdl,0)
 	AssertResCode(rc)
 
 	
@@ -598,7 +606,9 @@ endfunc 1
 // gatttool -b <MAC Address> --char-write --handle=0x0000  --value=0000
 //-------------------------------------------------------------------------
 function _GattCharWrite() as integer
-	dim hndl, val$, val
+
+	dim val$								// value (string format)
+	dim val									// value (integer format)
 	
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
@@ -618,7 +628,7 @@ function _GattCharWrite() as integer
 		elseif strcmp(tkn$,"handle")==0 then
 			strshiftleft(urtcmd$, 1)
 			rc = ExtractStrToken(urtcmd$, tkn$)
-			rc = ExtractIntToken(tkn$, hndl)
+			rc = ExtractIntToken(tkn$, valHdl)
 		
 		elseif strcmp(tkn$,"value")==0 then
 			strshiftleft(urtcmd$, 1)
@@ -635,15 +645,12 @@ function _GattCharWrite() as integer
 		endif 
 	endwhile
 
-	//if strcmp(val$,"")==0 then
-	//	print "A value is required\n"
-	// exitfunc 1
-	// endif
-	
-	//val$="\02\00"
+
+	rc = BleGetConnHandleFromAddr(addr$, conHdl)
+	AssertResCode(rc)
 	rc = BleGattcOpen(0,0)
 	AssertResCode(rc)
-	rc = BleGattcWrite(hz,hndl,val$)
+	rc = BleGattcWrite(conHdl,valHdl,val$)
 	AssertResCode(rc)
 	
 	if gattLsn == 1 then
@@ -670,7 +677,7 @@ function _GattCharDesc()
 		elseif strcmp(tkn$,"handle")==0 then
 			strshiftleft(urtcmd$, 1)
 			rc = ExtractStrToken(urtcmd$, tkn$)
-			rc = ExtractIntToken(tkn$, hndl)
+			rc = ExtractIntToken(tkn$, chrHdl)
 			
 		elseif strcmp(tkn$, "sec")==0 then
 			//call the sec-level function to piar or unpair with LE device
@@ -680,9 +687,11 @@ function _GattCharDesc()
 		
 	endwhile
 	
+	rc = BleGetConnHandleFromAddr(addr$, conHdl)
+	AssertResCode(rc)
 	rc = BleGattcOpen(0,0)
 	AssertResCode(rc)
-	rc = BleDiscDescFirst(hz, 0, hndl)
+	rc = BleDiscDescFirst(conHdl, 0, chrHdl)
 	AssertResCode(rc)
 	
 endfunc 1
