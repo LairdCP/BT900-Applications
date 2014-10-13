@@ -896,7 +896,7 @@ endfunc 1
 //------------------------------------------------------------------------------
 // Called after a GATT Client operation timeout
 //------------------------------------------------------------------------------
-function HandlerGattcTout()
+function HandlerGattcTout(hC)
     rc=BleDisconnect(hC)
 endfunc 1
 
