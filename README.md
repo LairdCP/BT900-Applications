@@ -1,7 +1,7 @@
-smartBASIC-Applications
-=======================
+BT900 smartBASIC-Applications
+=============================
 
-A repository for smartBASIC applications
+A repository for smartBASIC applications that run on the Laird BT900
 
 
 Notes

@@ -99,9 +99,10 @@
 #define BLUEZ_COMMAND_RFCOMM_CONNECT					60
 
 // APP RUN MODES
-#define NORMAL_MODE                                 0
-#define RFCOMM_MODE                          		1
-#define GATTTOOL_INTERACTIVE_MODE					2
+#define NORMAL_MODE                                 	0
+#define RFCOMM_MODE                          			1
+#define GATTTOOL_INTERACTIVE_MODE						2
+#define GATTTOOL_LISTEN									3
 
 
 
@@ -119,7 +120,6 @@ dim conns                   // number of connections
 dim name$					// local device name
 dim addr$					// address of device being connected to
 
-dim hz						// this is the handle of the current connection (currently used by --primary)
 dim gcState                 // gatt client state, 0=IDLE, 1=TableMapping
 dim sAttr
 dim eAttr
@@ -128,15 +128,21 @@ dim prAddr$              				// BT address of last device pairing requested from
 dim hcSpp                   			// handle of connection to use for VSP service
 
 dim command : command = 0				// Currently active BlueZ command
-dim testhndl
+dim nDiscv : nDiscv = 1					// The device is discoverable by default
+dim nConn : nConn = 1 					// The device is connectable by default
+dim nPair : nPair = 1					// The device is pairable by default					
 dim inqtype	: inqtype = 0				// Inquiry Type: 0 General, 1 Limited
 dim inqmode	: inqmode = 2				// Inquiry Mode: 0 for Standard, 1 for with RSSI, 2 for Extended)
 dim sspmode : sspmode = 1				// SSP Mode: 0 for disabled, 1 for enabled 
-
 dim inqtpl : inqtpl=4						// Inquiry transmit power level
+dim letpl : letpl = 4					// LE Tx Power level in dBm
+dim gattLsn : gattLsn = 0				// If Lsn = 1, notifications will be shown
+
 dim mjVersion : mjVersion=0			// Major version number
-dim mnVersion : mnVersion=89				// Minor version number
-dim hndl
+dim mnVersion : mnVersion=9				// Minor version number
+dim conHdl								// global connection handle of the current connection being serviced
+dim chrHdl								// global characteristic handle of the current characteristic being serviced
+dim valHdl								// global characteristic value handle of the current characteristic value handle being serviced
 
 dim carCnt                  //count variable for number of times '^' entered
 //******************************************************************************
@@ -146,7 +152,6 @@ dim carCnt                  //count variable for number of times '^' entered
 ok$    = "\nOK"
 er$    = "\nERROR "
 pr$    = "------->"
-
 urts = 0					// not suspended
 
 //==============================================================================
@@ -156,34 +161,6 @@ sub AssertResCode(resCode)
 		print "error: ";integer.h' rc;"\n"
 	endif
 endsub 
-//==============================================================================
-//==============================================================================
-sub DbgMsg(byval msg$ as string)
-  if (ENABLE_DEBUG_PRINTS!=0) then
-    print "\n";msg$
-  endif
-endsub
-
-//==============================================================================
-//==============================================================================
-sub DbgMsgVal(byval msg$ as string, byval vl as integer)
-  if (ENABLE_DEBUG_PRINTS!=0) then
-    print "\n";msg$;" ";vl
-  endif
-endsub
-
-//==============================================================================
-//==============================================================================
-sub ShowConnParms(nCtx as integer)
-  dim intrvl,sprvto,slat
-  rc= BleGetCurConnParms(nCtx,intrvl,sprvto,slat)
-  //AssertResCode(rc,1240)
-  if rc==0 then
-    DbgMsgVal("Conn Interval",intrvl)
-    DbgMsgVal("Conn Supervision Timeout",sprvto)
-    DbgMsgVal("Conn Slave Latency",slat)
-  endif
-endsub
 //==============================================================================
 // Initialise all connection handles
 //==============================================================================
@@ -275,10 +252,13 @@ sub InitBtDevice()
 	sspmode = 1
 	
 	//Configure LE radio
-	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	dim apprnce : apprnce = 768             //The device will appear as a Generic Thermometer
+	// Initialise Gap Service
+	rc=BleGapSvcInit(name$,1,apprnce,500000,1000000,4000000,0)
 	// Start advertising
 	dim a$
-	rc = BleAdvertStart(0,a$,25,6000,0)
+	rc = BleAdvertStart(0,a$,25,0,0)
 	AssertResCode(rc)
 	
 	
@@ -346,7 +326,7 @@ function _GattHelp()
 	print "	--characteristics						Characteristics Discovery\n"
 	print "	--char-read      						Characteristics Value/Descriptor Read\n"
 	print "	--char-write    						Characteristics Value Write Without Response\n"
-	print "	--char-write-req						Characteristics Value Write \n"
+	//print "	--char-write-req						Characteristics Value Write \n"
 	print "	--char-desc     						Characteristics Descriptor Discovery\n"
 	print "	--listen        						Listen for notifications and indications\n"
 	//print "	-I, --interactive                         Use interactive mode\n"
@@ -490,13 +470,10 @@ function _Hci()
 			command = BLUEZ_COMMAND_HCITOOL_UNPAIR
 			rc = _hciUnpair()
 	
-		elseif strcmp(tkn$, "auth")== 0 then
-			// Request authentication
-			rc = _hciAuth()
-			
 		elseif strcmp(tkn$, "leadv")== 0 then
-			// Start LE adverts
-			rc = _hciAdv()
+			// LE advertise
+			rc = _hciLeAdv()
+			
 	
 		elseif strcmp(tkn$, "lescan")==0 then
 			// Start LE scan
@@ -605,29 +582,33 @@ function _HciCfg()
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"piscan")==0 then 
 			//Enable inquiry scan and page scan (default)
-			rc = BtcSetDiscoverable(1, 300)
+			nDiscv = 1 
+			rc = BtcSetDiscoverable(nDiscv, 300)
 			AssertResCode(rc)
-			rc = BtcSetConnectable(1)
+			rc = BtcSetConnectable(nConn)
 			AssertResCode(rc)
 	
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"pscan")==0 then 
 			//Enable page scan
-			rc = BtcSetConnectable(1)
+			nDiscv = 1 
+			rc = BtcSetDiscoverable(nDiscv, 300)
 			AssertResCode(rc)
 	
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"iscan")==0 then 
 			//Enable inquiry scan
-			rc = BtcSetDiscoverable(1, 300)
+			nDiscv = 1
+			rc = BtcSetDiscoverable(nDiscv, 300)
 			AssertResCode(rc)
 	
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"noscan")==0 then 
 			//The adapter in not detectable by other devices and will not accept any incoming connections
-			rc = BtcSetDiscoverable(0, 300)
+			nDiscv = 0 
+			rc = BtcSetDiscoverable(nDiscv, 300)
 			AssertResCode(rc)
-			rc = BtcSetConnectable(0)
+			rc = BtcSetConnectable(nConn)
 			AssertResCode(rc)
 		
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -777,19 +758,19 @@ function _HciCfg()
 				if strcmp(tkn$,"-")==0 then
 					rc = ExtractStrToken(s$, tkn$)
 					val = StrValDec(tkn$)
-					if (val > 55) then
-						print "Invalid power value. Valid range is from -55 to 4 dBm\n"
+					if (val > 20) then
+						print "Invalid power value. Valid range is from -20 to 8 dBm\n"
 					else
 						letpl = val*-1
 					endif
 				else
-					if (val > 4) then
-						print "Invalid power value. Valid range is from -70 to 20 dBm\n"
+					if (val > 8) then
+						print "Invalid power value. Valid range is from -20 to 8 dBm\n"
 					else
 						letpl =  val
 					endif
 				endif
-				rc = BtcInquiryConfig(3,inqtpl)
+				rc = BleTxPowerSet(letpl)
 				AssertResCode(rc)
 			endif
 		
@@ -801,6 +782,9 @@ function _HciCfg()
 			print "Device Name: ";BleGetDeviceName$();"\n"
 			print "Firmware: ";W;".";X;".";Y;".";Z;"\n"
 			print "Manufacturer: Laird Technologies\n"
+			
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			
 		
 		endif
 	endwhile
@@ -869,6 +853,85 @@ function OnUartCmd() as integer
 
 	print pr$
 	
+endfunc 1
+
+//==============================================================================
+// gatt status error codes
+//==============================================================================
+function _gattStatus(status as integer)
+	
+	print "ATT Error: "
+	select status
+		
+		case H'0101
+			print "Invalid attribute handle\n"
+			
+		case H'0102
+			print "Read not permitted\n"
+			
+		case H'0103
+			print "Write not permitted\n"
+			
+		case H'0104
+			print "Used in ATT as invalid PDU\n"
+			
+		case H'0105
+			print "Authentication link required\n"
+			
+		case H'0106
+			print "Used in ATT as request not supported\n"
+			
+		case H'0107
+			print "Offset specified was past the end of the attribute\n"
+			
+		case H'0108
+			print "Used in ATT as insufficient authorisation\n"
+			
+		case H'0109
+			print "Used in ATT as prepare queue full\n"
+			
+		case H'010A
+			print "Used in ATT as attribute not found\n"
+			
+		case H'010B
+			print "Attribute cannot be read or written using read/write requests\n"
+			
+		case H'010C
+			print "Encryption key size used is insufficient\n"
+			
+		case H'010D
+			print "Invalid value size\n"
+			
+		case H'010E
+			print "Very unlikely error\n"
+			
+		case H'010F
+			print "Encrypted link required\n"
+			
+		case H'0110
+			print "Attribute type is not a supported grouping attribute\n"
+			
+		case H'0111
+			print "Encrypted link required\n"
+			
+		case H'0180
+			print "Application range begin\n"
+			
+		case H'019F
+			print "Application range end\n"
+			
+		case H'01FE
+			print "Profile and service error: Procedure already in progress\n"
+			
+		case H'01FF
+			print "Profile and service error: Out of range\n"
+			
+		case else
+			print "Unknown status\n"
+			
+		endselect
+	print pr$
+		
 endfunc 1
 
 //******************************************************************************
@@ -988,7 +1051,11 @@ endfunc 1
 // This handler is called when there is an inquiry timeout
 //==============================================================================
 function HandlerBtcDiscTimOut() as integer
-	print "\nDiscoverability timed out\n";pr$
+	
+	//Enable inquiry scan and page scan (default)
+	rc = BtcSetDiscoverable(nDiscv, 300)
+	AssertResCode(rc)
+	
 endfunc 1
 //==============================================================================
 // Called when data is received via SPP
@@ -1086,6 +1153,25 @@ function HandlerAdvRpt() as integer
 	endwhile
 endfunc 1
 //==============================================================================
+// This handler is called when there is a Ble advert timeout
+//==============================================================================
+function HandlerBleAdvTimOut()
+	
+	print "advert timed out\n"
+	dim a$
+	rc = BleAdvertStart(0,a$,25,300000,0)
+	AssertResCode(rc)
+	
+endfunc 1
+//==============================================================================
+// This handler is called when there is a Ble connection timeout
+//==============================================================================
+function HandlerBleConnTimOut() as integer
+	
+	print "\nCould not create connection: Connection timed out\n";pr$
+
+endfunc 1
+//==============================================================================
 // This handler is called when there is a Ble scan timeout
 //==============================================================================
 function HandlerBlrScanTimOut() as integer 
@@ -1097,7 +1183,7 @@ endfunc 1
 // This handler is called when there is a BLE message
 //==============================================================================
 function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as integer
-  dim az
+  dim hz
   
   select nMsgId
   case BLE_EVBLEMSGID_CONNECT
@@ -1122,16 +1208,19 @@ function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as intege
     // here must get address from the handle
 	hz = RelConnHandle(nCtx)
     conns = conns - 1
+	dim a$
+	rc = BleAdvertStart(0,a$,25,300000,0)
+	AssertResCode(rc)
     print "\nDisconnected\n";pr$
 
   case BLE_EVBLEMSGID_DISPLAY_PASSKEY
-    DbgMsgVal("Display Pairing Passkey ",nCtx)
+    print "Display Pairing Passkey ";nCtx
 
   case BLE_EVBLEMSGID_NEW_BOND
     //DbgMsg(" +++ New Bond")
 
   case BLE_EVBLEMSGID_UPDATED_BOND
-    DbgMsg(" +++ Updated Bond")
+    print " +++ Updated Bond"
 
   case BLE_EVBLEMSGID_ENCRYPTED
     //DbgMsg(" +++ Encrypted Connection")
@@ -1140,16 +1229,16 @@ function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as intege
     //DbgMsgVal(" -- Conn to Bonded Master ",nCtx)
 
   case BLE_EVBLEMSGID_AUTH_KEY_REQUEST
-    DbgMsgVal(" +++ Auth Key Request, type=",nCtx)
+    print " +++ Auth Key Request, type=";nCtx
 
   case BLE_EVBLEMSGID_CONN_PARMS_UPDATE
     //ShowConnParms(nCtx)
 
   case BLE_EVBLEMSGID_CONN_PARMS_UPDATE_FAIL
-    DbgMsg(" ??? Conn Parm Negotiation FAILED")
+    print " ??? Conn Parm Negotiation FAILED"
 
   case else
-    DbgMsgVal("Unknown Ble Msg", nMsgId)
+    print "Unknown Ble Msg"; nMsgId
   endselect
 endfunc 1
 //==============================================================================
@@ -1164,7 +1253,7 @@ function HandlerPrimSvc(hConn,hUuid,hStart,hEnd) as integer
 		print "attr handle = 0x";integer.h' hStart
 		print ", end grp handle = 0x";integer.h' hEnd
 		print ", uuid = ";integer.h' hUuid
-		rc = BleDiscServiceNext(hz)
+		rc = BleDiscServiceNext(conHdl)
 		if rc != 0 then 
 			print "\n";pr$
 			BleGattcClose()
@@ -1172,7 +1261,7 @@ function HandlerPrimSvc(hConn,hUuid,hStart,hEnd) as integer
 		endif
 	
 	elseif command == BLUEZ_COMMAND_GATTTOOL_CHARACTERISTICS then
-		rc = BleDiscCharFirst(hz,0,sAttr,eAttr)
+		rc = BleDiscCharFirst(conHdl,0,sAttr,eAttr)
 		AssertResCode(rc)
 	endif
 	
@@ -1191,9 +1280,9 @@ function HandlerCharDisc(hConn,hUuid,cProp,hVal,hiUuid) as integer
 		print ", uuid = ";integer.h' hUuid
 	endif
 	
-	rc = BleDiscCharNext(hz)
+	rc = BleDiscCharNext(conHdl)
 	if rc != 0 then
-		rc = BleDiscServiceNext(hz)
+		rc = BleDiscServiceNext(conHdl)
 		if rc !=0 then
 			print "\n";pr$
 			BleGattcClose()
@@ -1225,7 +1314,7 @@ function HandlerAttrRead(hConn,hAttr,nSts) as integer
 
 	dim a$,ofst  
 	if nSts == 0 then
-		rc = BleGattcReadData(hConn,testhndl,ofst,a$)
+		rc = BleGattcReadData(hConn,valHdl,ofst,a$)
 		if rc==0 then
 			print "\nCharacteristic value/descriptor: "
 			print "";StrHexize$(a$)
@@ -1233,15 +1322,11 @@ function HandlerAttrRead(hConn,hAttr,nSts) as integer
 		else	
 			AssertResCode(rc)
 		endif
+	 
+	else 
+		rc = _gattStatus(nSts)
+	endif
 	
-	// instead of ifelse must use case here
-	elseif nSts == 258 then
-		print "ATT Error: Attribute cannot be read or written using read/write requests\n";pr$
-		
-	else
-		
-		print "nSts is not 0 ";nSts;"\n"
-	endif  
 	BleGattcClose()
 	
 endfunc 1
@@ -1251,13 +1336,13 @@ endfunc 1
 function HandlerAttrWrite(hConn,aHndl,nSts) as integer
     
 	if nSts == 0 then
-		print "Characteristic value was written successfully\n"
+		print "\nCharacteristic value was written successfully\n";pr$
+	
 	else 
-		print "\nStatus  : ";integer.h' nSts
-		print "\nCharacteristic write failed: Attribute Can't be written\n";pr$		//Different error messages should be printed for different nSts
+		rc = _gattStatus(nSts)
+	
 	endif
 	
-	//"Characteristic value was written successfully" should be printed if sec level must be increased
 endfunc 1
 //==============================================================================
 // This handler is called when there is data notified or indicated
@@ -1266,12 +1351,14 @@ function HandlerAttrNtfyCmd() as integer
   
 	dim hConn,hAttr,att$,dscd
   
-	do
-		rc=BleGattcNotifyRead(hConn,hAttr,att$,dscd)
-		if rc==0 then
-			print "Indication handle = ";integer.h hAttr;" value: ";StrHexize$(att$)
-		endif
-	dowhile rc==0
+	if gattLsn == 1 then
+		do
+			rc=BleGattcNotifyRead(hConn,hAttr,att$,dscd)
+			if rc==0 then
+				print "\nNotification/Indication handle = ";integer.h hAttr;" value: ";StrHexize$(att$)
+			endif
+		dowhile rc==0
+	endif
 
 endfunc 1
 
@@ -1315,6 +1402,24 @@ endfunc 1
 //==============================================================================
 // This handler is called when data has arrived at the serial port
 //==============================================================================
+function HandlerUartRxLsn() as integer
+	dim nMatch
+	
+	nMatch=UartReadMatch(stRsp$,13)
+	if nMatch!=0 then
+		//CR exists in the input buffer
+		urtcmd$ = strsplitleft$(stRsp$, nMatch)
+		tlen = ExtractStrToken(urtcmd$,tkn$)
+		if strcmp(tkn$,"stop")==0 then 
+			gattLsn = 0
+			print pr$;"\n"
+			rc = SendMsgApp(0, NORMAL_MODE)
+		endif
+	endif
+endfunc 1
+//==============================================================================
+// This handler is called when data has arrived at the serial port
+//==============================================================================
 function HandlerUartRxCmd() as integer
 	dim nMatch
 	
@@ -1330,10 +1435,15 @@ endfunc 1
 '//==============================================================================
 function SetMode(msgID, cmd) as integer
 	if cmd == NORMAL_MODE then
-		OnEvent	 EVUARTRX				call HandlerUartRxCmd
+		OnEvent	 EVUARTRX					call HandlerUartRxCmd
 		carCnt=0
 	elseif cmd == RFCOMM_MODE then
-		OnEvent  EVUARTRX                call HandlerUartRxSpp
+		OnEvent	EVUARTRX					call HandlerUartRxSpp
+		
+	elseif cmd == GATTTOOL_LISTEN then	
+		print "\nListening for notifications/indications. For hangup, For hangup, type \22stop\22\n"
+		OnEvent	EVUARTRX					call HandlerUartRxLsn
+
 	endif
 endfunc 1
 //******************************************************************************
@@ -1367,7 +1477,9 @@ OnEvent  EVBTC_PAIR_RESULT        	call HandlerPairRes
 // hcitool related events (BLE)
 OnEvent EVBLE_ADV_REPORT			call HandlerAdvRpt
 OnEvent  EVBLE_SCAN_TIMEOUT       	call HandlerBlrScanTimOut
+OnEvent	EVBLE_CONN_TIMEOUT			call HandlerBleConnTimOut
 OnEvent  EVBLEMSG                 	call HandlerBleMsg
+OnEvent	EVBLE_ADV_TIMEOUT			call HandlerBleAdvTimOut
 //OnEvent EvDiscon                    call HndlrDiscon
 
 // gatttool related events
@@ -1376,10 +1488,11 @@ OnEvent  EVDISCCHAR               	call HandlerCharDisc
 OnEvent  EVDISCDESC               	call HandlerDescDisc
 OnEvent  EVATTRREAD 				call HandlerAttrRead
 OnEvent  EVATTRWRITE              	call HandlerAttrWrite
-OnEvent  EVATTRNOTIFY             	call HandlerAttrNtfyCmd
+
 
 // Called for rfcomm connect and hangup
 OnEvent  EVMSGAPP                 call SetMode
+OnEvent	EVATTRNOTIFY             	call HandlerAttrNtfyCmd
 
 
 //==============================================================================
