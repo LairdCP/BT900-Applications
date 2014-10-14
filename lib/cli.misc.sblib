@@ -475,17 +475,17 @@ function OnUartCmd(stData$,datalen) as integer
       vl = GpioRead(sio)
       print integer.h' vl;" = GpioRead(";sio;")\n"
 
-    elseif strcmp(stRS$,"gS ")==0 then   //gS nnnn   - Invoke _gpiowrite(nnnn,1)
+    elseif strcmp(stRS$,"gS ")==0 then   //gS nnnn   - Invoke GpioWrite(nnnn,1)
       sio = strvaldec(stData$)
-      _gpiowrite(sio,1)
+      GpioWrite(sio,1)
 
-    elseif strcmp(stRS$,"gC ")==0 then   //gC nnnn   - Invoke _gpiowrite(nnnn,0)
+    elseif strcmp(stRS$,"gC ")==0 then   //gC nnnn   - Invoke GpioWrite(nnnn,0)
       sio = strvaldec(stData$)
-      _gpiowrite(sio,0)
+      GpioWrite(sio,0)
 
-    elseif strcmp(stRS$,"gw ")==0 then   //gW nnnn   - Invoke _gpiowrite(nSioWr,nnnn)
+    elseif strcmp(stRS$,"gw ")==0 then   //gW nnnn   - Invoke GpioWrite(nSioWr,nnnn)
       vl = strvaldec(stData$)
-      _gpiowrite(nSioWr,vl)
+      GpioWrite(nSioWr,vl)
 
     elseif strcmp(stRS$,"efs")==0 then   //efs       - calls EraseFileSystem(1)
       rc = EraseFileSystem(1)

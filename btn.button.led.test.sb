@@ -63,13 +63,13 @@ function handlerbutton0()
     
     '//if button 0 was pressed
     if i==0 then
-        _gpiowrite(GPIO_LED0,1)                         '// turns LED 0 on
+        GpioWrite(GPIO_LED0,1)                         '// turns LED 0 on
         // print "Button 0 has been pressed \n"            '//these lines are printed to the UART when the button is pressed
         // print "LED 0 will light while the button is pressed \n"
         print "\nButton 0 Pressed  : LED 0 ON"
     '//if button 0 was released
     elseif i==1 then
-        _gpiowrite(GPIO_LED0,0)                         '//turns LED 1 off
+        GpioWrite(GPIO_LED0,0)                         '//turns LED 1 off
         // print "Button 0 has been released \n"           '//these lines are printed to the UART when the button is released
         // print "LED 0 should now go out \n\n"
         print "\nButton 0 Released : LED 0 OFF"
@@ -82,13 +82,13 @@ function handlerbutton1()
     
     '//if button 1 was pressed
     if i==0 then
-        _gpiowrite(GPIO_LED1,1)                         '// turns LED 0 on
+        GpioWrite(GPIO_LED1,1)                         '// turns LED 0 on
         // print "Button 1 has been pressed \n"            '//these lines are printed to the UART when the button is pressed
         // print "LED 1 will light while the button is pressed \n"
         print "\nButton 1 Pressed  : LED 1 ON"
     '//if button 1 was pressed
     elseif i==1 then
-        _gpiowrite(GPIO_LED1,0)                         '//turns LED 1 off
+        GpioWrite(GPIO_LED1,0)                         '//turns LED 1 off
         // print "Button 1 has been released \n"           '//these lines are printed to the UART when the button is released
         // print "LED 1 should now go out \n\n"
         print "\nButton 1 Released : LED 1 OFF"

@@ -38,7 +38,7 @@ ENDSUB
 
 FUNCTION StartBuzzer()
 	//Starts the buzzing for the alarm wakeup
-	rc = GpioWrite(12, 5000)
+	GpioWrite(12, 5000)
 	BuzzerFunc = 0
 	TimerStart(1, 200, 1)
 	
@@ -46,7 +46,7 @@ ENDFUNC 1
 
 FUNCTION StopBuzzer()
 	//Stops the buzzer from making a noise
-	rc = GpioWrite(12, 0)
+	GpioWrite(12, 0)
 ENDFUNC 1
 
 FUNCTION HndlrTmr0()
@@ -109,16 +109,16 @@ ENDFUNC 1
 FUNCTION HndlrTmr1()
 	//Stops the buzzer
 	IF BuzzerFunc == 0 THEN
-		rc = GpioWrite(12, 2000)
+		GpioWrite(12, 2000)
 		//TimerStart(1, 200, 0)
 	ELSEIF BuzzerFunc == 1 THEN
-		rc = GpioWrite(12, 6000)
+		GpioWrite(12, 6000)
 		//TimerStart(1, 200, 0)
 	ELSEIF BuzzerFunc == 2 THEN
-		rc = GpioWrite(12, 3000)
+		GpioWrite(12, 3000)
 		//TimerStart(1, 200, 0)
 	ELSEIF BuzzerFunc == 3 THEN
-		rc = GpioWrite(12, 12000)
+		GpioWrite(12, 12000)
 		//TimerStart(1, 200, 0)
 	ELSE
 		rc = StopBuzzer()

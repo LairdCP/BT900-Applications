@@ -84,13 +84,13 @@ rc=GpioSetFunc(GPIO_BUZZER,2,0)  '// configure the SIO for the buzzer
 for n = 1 to 10000000
  rc=gpioread(GPIO_BTN0)    '// reads the state of button 0
  IF rc==1 then
-  _gpiowrite(GPIO_BUZZER,1)
-  _gpiowrite(GPIO_BUZZER,0)
+  GpioWrite(GPIO_BUZZER,1)
+  GpioWrite(GPIO_BUZZER,0)
  ELSE
-  _gpiowrite(GPIO_BUZZER,1)
-  _gpiowrite(GPIO_BUZZER,1)
-  _gpiowrite(GPIO_BUZZER,0)
-  _gpiowrite(GPIO_BUZZER,0)
+  GpioWrite(GPIO_BUZZER,1)
+  GpioWrite(GPIO_BUZZER,1)
+  GpioWrite(GPIO_BUZZER,0)
+  GpioWrite(GPIO_BUZZER,0)
  endif
 next
 

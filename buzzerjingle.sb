@@ -47,12 +47,12 @@ text$[6] = "Si"
 rc=GpioSetFunc(GPIO_BUZZER,2,3)  '// configure the SIO for the buzzer
 
 sub sound()
- _gpiowrite(GPIO_BUZZER,scale[n])
+ GpioWrite(GPIO_BUZZER,scale[n])
 endsub
 
 sub quit()
  timercancel(0)
- _gpiowrite(GPIO_BUZZER,0)
+ GpioWrite(GPIO_BUZZER,0)
 endsub
 
 

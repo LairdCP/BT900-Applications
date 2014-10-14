@@ -32,12 +32,12 @@ ENDSUB
 '//******************************************************************************
 SUB WaitWrite()
 	DO
-		rc = GpioWrite(8,0)
+		GpioWrite(8,0)
 		wr$ = "\05\00"
 		rd$ = ""
 		rc=SpiReadWrite(wr$,rd$)
 		AssertRC(rc, 22)
-		rc = GpioWrite(8,1)
+		GpioWrite(8,1)
 	UNTIL ((StrGetChr(rd$,1)&1) == 0)
 ENDSUB
 
@@ -45,7 +45,7 @@ ENDSUB
 '// Enable(1)/Disable(0) write mode
 '//******************************************************************************
 SUB SPIWrites(WriteMode)
-	rc = GpioWrite(8,0)
+	GpioWrite(8,0)
 	IF WriteMode == 0 THEN
 		//Disable
 		wr$ = "\04"
@@ -54,7 +54,7 @@ SUB SPIWrites(WriteMode)
 		wr$ = "\06"
 	ENDIF
 	rc = SpiWrite(wr$)
-	rc = GpioWrite(8,1)
+	GpioWrite(8,1)
 ENDSUB
 
 FUNCTION BleEvent(BYVAL msgID, BYVAL msgCtx)
@@ -102,10 +102,10 @@ ELSE
 ENDIF
 
 		//Read 8 bytes into the buffer
-		rc = GpioWrite(8,0)
+		GpioWrite(8,0)
 		attr$ = RIGHT$(MemLoc$, 2)
 		wr$ ="\03" + attr$ + "\00\00\00\00\00\00\00\00" : rd$ = "" : rc=SpiReadWrite(wr$,rd$)
-		rc = GpioWrite(8,1)
+		GpioWrite(8,1)
 		rd$ = right$(rd$, 8)
 		rc = BleCharValueWrite(Char2, rd$)
 		assertRC(rc, 111)
@@ -119,7 +119,7 @@ ENDIF
 		waitWrite()
 
 		//Write 8 bytes into memory
-		rc = GpioWrite(8,0)
+		GpioWrite(8,0)
 		TmpStr$ = RIGHT$(MemLoc$, 2)
 		wr$ = "\02" + TmpStr$ + attr$
 		rc = SpiWrite(wr$)
@@ -131,10 +131,10 @@ ENDIF
 		SPIWrites(0)
 
 		//Read 8 bytes into the buffer
-		rc = GpioWrite(8,0)
+		GpioWrite(8,0)
 		attr$ = RIGHT$(MemLoc$, 2)
 		wr$ ="\03" + attr$ + "\00\00\00\00\00\00\00\00" : rd$ = "" : rc=SpiReadWrite(wr$,rd$)
-		rc = GpioWrite(8,1)
+		GpioWrite(8,1)
 		rd$ = right$(rd$, 8)
 		rc = BleCharValueWrite(Char2, rd$)
 	ELSEIF charHandle == Char4 THEN
@@ -185,10 +185,10 @@ assertrc(rc,1411)
 rc = BleCharNew(0x2, BleHandleUuid16(0x2AAB), BleAttrMetadata(1,0,8,0,rc), 0, 0) //Memory Read (read)
 assertrc(rc,127)
 //Read 8 bytes into the buffer
-rc = GpioWrite(8,0)
+GpioWrite(8,0)
 wr$ ="\03\00\00\00\00\00\00\00\00\00\00"
 rc = SpiReadWrite(wr$, hrs$)
-rc = GpioWrite(8,1)
+GpioWrite(8,1)
 hrs$ = right$(hrs$, 8)
 rc = BleCharCommit(Service1, hrs$, Char2)
 assertrc(rc,1412)
@@ -234,12 +234,12 @@ AssertRC(rc,354)
 'dim bbb$ : bbb$ = "\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF\FF"
 'while abc < 4000
 	//Read 8 bytes from memory at location 0x0123 and should be DEADBEEF
-'	rc = GpioWrite(8,0)
+'	GpioWrite(8,0)
 '	SPRINT #attr$, INTEGER.H'abc
 '	attr$ = RIGHT$(attr$, 4)
 '	attr$ = StrDehexize$(attr$)
 '	wr$ ="\03" + attr$ + "\00\00\00\00\00\00\00\00" : rd$ = "" : rc=SpiReadWrite(wr$,rd$)
-'	rc = GpioWrite(8,1)
+'	GpioWrite(8,1)
 '	rc = BleCharValueWrite(Char2, rd$)
 'if (strcmp(bbb$, rd$) != 0) then
 '	print "\nRead from ";abc;" (";attr$;") : ";rd$

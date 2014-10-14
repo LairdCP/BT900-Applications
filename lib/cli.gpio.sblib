@@ -380,13 +380,13 @@ function OnUartCmd(stData$,datalen) as integer
       vl = GpioRead(sio)
       print "GpioRead(";sio;") = ";vl;"\n"
 
-    elseif strcmp(stRS$,"gS ")==0 then   //gS nnnn   - Invoke _gpiowrite(nnnn,1)
+    elseif strcmp(stRS$,"gS ")==0 then   //gS nnnn   - Invoke GpioWrite(nnnn,1)
       sio = strvaldec(stData$)
-      _gpiowrite(sio,1)
+      GpioWrite(sio,1)
 
-    elseif strcmp(stRS$,"gC ")==0 then   //gC nnnn   - Invoke _gpiowrite(nnnn,0)
+    elseif strcmp(stRS$,"gC ")==0 then   //gC nnnn   - Invoke GpioWrite(nnnn,0)
       sio = strvaldec(stData$)
-      _gpiowrite(sio,0)
+      GpioWrite(sio,0)
 
 
     '//************ GAP service related commands ****************************

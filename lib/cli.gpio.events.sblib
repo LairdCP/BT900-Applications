@@ -32,9 +32,9 @@
 '//     gp nnnn           - Invoke GpioConfigPwm(nMinFreq,nnnn)
 '//     gr nnnn           - Invoke GpioRead(nnnn) and output in decimal
 '//     gR nnnn           - Invoke GpioRead(nnnn) and output in 8 digit hex
-'//     gS nnnn           - Invoke _gpiowrite(nnnn,1)
-'//     gC nnnn           - Invoke _gpiowrite(nnnn,0)
-'//     gw nnnn           - Invoke _gpiowrite(nSioWr,nnnn)
+'//     gS nnnn           - Invoke GpioWrite(nnnn,1)
+'//     gC nnnn           - Invoke GpioWrite(nnnn,0)
+'//     gw nnnn           - Invoke GpioWrite(nSioWr,nnnn)
 '//     be nnnn           - Invoke GpioBindEvent(nnnn,nSigNum,nPolarity[0/1/2])
 '//     ue nnnn           - Invoke GpioUnbindEvent(nnnn)
 '//     de nnnn           - Invoke GpioAssignEvent(nnnn,nSigNum,nPolarity[0/1])
@@ -472,17 +472,17 @@ function OnUartCmd(stData$,datalen) as integer
       vl = GpioRead(sio)
       print integer.h' vl;" = GpioRead(";sio;")\n"
 
-    elseif strcmp(stRS$,"gS ")==0 then   //gS nnnn   - Invoke _gpiowrite(nnnn,1)
+    elseif strcmp(stRS$,"gS ")==0 then   //gS nnnn   - Invoke GpioWrite(nnnn,1)
       sio = strvaldec(stData$)
-      _gpiowrite(sio,1)
+      GpioWrite(sio,1)
 
-    elseif strcmp(stRS$,"gC ")==0 then   //gC nnnn   - Invoke __gpiowrite(nnnn,0)
+    elseif strcmp(stRS$,"gC ")==0 then   //gC nnnn   - Invoke _GpioWrite(nnnn,0)
       sio = strvaldec(stData$)
-      _gpiowrite(sio,0)
+      GpioWrite(sio,0)
 
-    elseif strcmp(stRS$,"gw ")==0 then   //gW nnnn   - Invoke __gpiowrite(nSioWr,nnnn)
+    elseif strcmp(stRS$,"gw ")==0 then   //gW nnnn   - Invoke _GpioWrite(nSioWr,nnnn)
       vl = strvaldec(stData$)
-      _gpiowrite(nSioWr,vl)
+      GpioWrite(nSioWr,vl)
 
     elseif strcmp(stRS$,"prg")==0 then   //prg       - print current states of the 4 gpio pins (5,17,19,30)
       PrnGpioStates()

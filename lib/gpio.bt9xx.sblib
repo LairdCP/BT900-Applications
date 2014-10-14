@@ -59,14 +59,6 @@ function Mv2Temperature(mv)
 endfunc ((1864-mV) * 160)/189
 
 
-//-----------------------------------------------------------------------------
-// GpioWrite -> Function in BT900
-//-----------------------------------------------------------------------------
-sub _gpiowrite(nSig, nVal)
-    dim rc
-    rc=GpioWrite(nSig, nVal)
-endsub
-
 
 
 

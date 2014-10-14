@@ -13,8 +13,8 @@
 '// Module: BL6xx
 '//
 '//******************************************************************************
-GpioWrite(18,0)     //this is to make sure the application doesn't compile if this 
-                        //sblib file is #included for the wrong module
+dim z : z = ReadPwrSupplyMv()   //this is to make sure the application doesn't compile if this 
+                                //sblib file is #included for the wrong module
 '//******************************************************************************
 '// Definitions
 '//******************************************************************************
@@ -72,12 +72,5 @@ function Mv2Temperature(mv)
   mv = ((1864-mV) * 160)/189
 endfunc mv
 
-
-//-----------------------------------------------------------------------------
-// GpioWrite -> Subroutine in BL600
-//-----------------------------------------------------------------------------
-sub _gpiowrite(nSig, nVal)
-    GpioWrite(nSig, nVal)
-endsub
 
 
