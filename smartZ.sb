@@ -10,6 +10,54 @@
 //
 // This app provides for a command interface over the uart similar to the BlueZ
 // commands for Linux as follows
+//		
+//		hcitool dev 		Display local devices
+//		hcitool inq 		Inquire remote devices
+//		hcitool scan		Scan for remote devices
+//		hcitool name		Get name from remote device
+//		hcitool con 		Display active connection handles
+//		hcitool pair		Pair with remote device
+//		hcitool unpair  	Unpair from remote device
+//		hcitool auth		Request authentication
+//		hcitool leadv		Start LE advertisement
+//		hcitool noleadv		Stop LE advertisement
+//		hcitool lescan      Start LE scan
+//		hcitool lecc        Create a LE Connection
+//		hcitool ledc        Disconnect a LE Connection
+//		hcitool lecup       LE Connection Update
+//
+//
+//		gatttool 
+//		gatttool --primary        	Primary Service Discovery
+//		gatttool --characteristics	Characteristics Discovery
+//		gatttool --char-read      	Characteristics Value/Descriptor Read
+//		gatttool --char-write    	Characteristics Value Write Without Response
+//		gatttool --char-desc     	Characteristics Descriptor Discovery
+//		gatttool --listen        	Listen for notifications and indications
+//
+//		Options:
+//		-b, --device=MAC	Specify remote Bluetooth address
+//		-l, --sec-level		Set security level. Default: low
+//
+//
+//
+//		hciconfig auth  				Enable Authentication
+//		hciconfig noauth				Disable Authentication
+//		hciconfig piscan				Enable Page and Inquiry scan
+//		hciconfig noscan				Disable scan
+//		hciconfig iscan 				Enable Inquiry scan
+//		hciconfig pscan 				Enable Page scan
+//		hciconfig name   	[name]		Get/Set local name
+//		hciconfig inqtpl	[level]		Get/Set inquiry transmit power level
+//		hciconfig inqmode	[mode]		Get/Set inquiry mode
+//		hciconfig inqtype	[type]		Get/Set inquiry scan type
+//		hciconfig sspmode	[mode]		Get/Set Simple Pairing Mode
+//		hciconfig putkey	<bdaddr>		Store link key on the device
+//		hciconfig delkey	<bdaddr>		Delete link key from the device
+//		hciconfig version				Display version information
+//		hciconfig leadv  				Enable LE advertising
+//		hciconfig noleadv				Disable LE advertising
+//		hciconfig letpl	[level]		Get/Set LE transmit power level
 //
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
@@ -253,13 +301,14 @@ sub InitBtDevice()
 	
 	//Configure LE radio
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	dim apprnce : apprnce = 768             //The device will appear as a Generic Thermometer
+	//dim apprnce : apprnce = 768             //The device will appear as a Generic Thermometer
 	// Initialise Gap Service
-	rc=BleGapSvcInit(name$,1,apprnce,500000,1000000,4000000,0)
+	//rc=BleGapSvcInit(name$,1,apprnce,500000,1000000,4000000,0)
+	//AssertResCode(rc)
 	// Start advertising
-	dim a$
-	rc = BleAdvertStart(0,a$,25,0,0)
-	AssertResCode(rc)
+	//dim a$
+	//rc = BleAdvertStart(0,a$,25,0,0)
+	//AssertResCode(rc)
 	
 	
 	
@@ -304,10 +353,11 @@ function _HciHelp()
 	print "	unpair  	Unpair from remote device\n"
 	print "	auth		Request authentication\n"
 	print "	leadv		Start LE advertisement\n"
+	print "	noleadv		Stop LE advertisement\n"
 	print "	lescan      Start LE scan\n"
 	print "	lecc        Create a LE Connection\n"
 	print "	ledc        Disconnect a LE Connection\n"
-//	print "	lecup       LE Connection Update\n"
+	print "	lecup       LE Connection Update\n"
 	print "\n"
 	print "For more information on the usage of each command use:\n"
 	print "	hcitool <command> --help\n\n"
@@ -326,15 +376,11 @@ function _GattHelp()
 	print "	--characteristics						Characteristics Discovery\n"
 	print "	--char-read      						Characteristics Value/Descriptor Read\n"
 	print "	--char-write    						Characteristics Value Write Without Response\n"
-	//print "	--char-write-req						Characteristics Value Write \n"
 	print "	--char-desc     						Characteristics Descriptor Discovery\n"
 	print "	--listen        						Listen for notifications and indications\n"
-	//print "	-I, --interactive                         Use interactive mode\n"
 	print "\n"
 	print "Options:\n"
-	//print "	-i, --adapter=hciX                        Specify local adapter interface\n"
 	print "	-b, --device=MAC						Specify remote Bluetooth address\n"
-	//print "	-t, --addr-type=[public | random]         Set LE address type. Default: public\n"
 	print "	-l, --sec-level=[low | medium | high]		Set security level. Default: low\n"	
 	print "\nFor more information on the usage of each command use:\n"
 	print "	gatttool <command> --help\n\n"
@@ -347,50 +393,23 @@ endfunc 1
 function _HciCfgHelp() as integer
 	
 	print "Commands:\n"
-	//print "	up                 	Open and initialize HCI device\n"
-	//print "	down               	Close HCI device\n"
-	//print "	reset              	Reset HCI device\n"
-	//print "	rstat              	Reset statistic counters\n"
 	print "	auth  				Enable Authentication\n"
 	print "	noauth				Disable Authentication\n"
-	//print "	encrypt            	Enable Encryption\n"
-	//print "	noencrypt          	Disable Encryption\n"
 	print "	piscan				Enable Page and Inquiry scan\n"
 	print "	noscan				Disable scan\n"
 	print "	iscan 				Enable Inquiry scan\n"
 	print "	pscan 				Enable Page scan\n"
-	//print "	ptype      [type]  	Get/Set default packet type\n"
-	//print "	lm         [mode]  	Get/Set default link mode\n"
-	//print "	lp         [policy]	Get/Set default link policy\n"
 	print "	name   	[name]		Get/Set local name\n"
-	//print "	class      [class] 	Get/Set class of device\n"
-	//print "	voice      [voice] 	Get/Set voice setting\n"
-	//print "	iac        [iac]   	Get/Set inquiry access code\n"
 	print "	inqtpl	[level]		Get/Set inquiry transmit power level\n"
 	print "	inqmode	[mode]		Get/Set inquiry mode\n"
-	//print "	inqdata    [data]  	Get/Set inquiry data\n"
 	print "	inqtype	[type]		Get/Set inquiry scan type\n"
-	//print "		inqparms   [win:int]	Get/Set inquiry scan window and interval\n"
-	//print "		pageparms  [win:int]	Get/Set page scan window and interval\n"
-	//print "		pageto     [to]    	Get/Set page timeout\n"
-	//print "		afhmode    [mode]  	Get/Set AFH mode\n"
 	print "	sspmode	[mode]		Get/Set Simple Pairing Mode\n"
-	//print "		aclmtu     <mtu:pkt>	Set ACL MTU and number of packets\n"
-	//print "		scomtu     <mtu:pkt>	Set SCO MTU and number of packets\n"
 	print "	putkey	<bdaddr>		Store link key on the device\n"
 	print "	delkey	<bdaddr>		Delete link key from the device\n"
-	//print "		oobdata            	Display local OOB data\n"
-	//print "		commands           	Display supported commands\n"
-	//print "		features           	Display device features\n"
 	print "	version				Display version information\n"
-	//print "		revision           	Display revision information\n"
-	//print "		block      <bdaddr>	Add a device to the blacklist\n"
-	//print "		unblock    <bdaddr>	Remove a device from the blacklist\n"
-	//print "		lerandaddr <bdaddr>	Set LE Random Address\n"
 	print "	leadv  				Enable LE advertising\n"
 	print "	noleadv				Disable LE advertising\n"
 	print "	letpl	[level]		Get/Set LE transmit power level\n"
-	//print "		lestates           	Display the supported LE states\n\n"
 	print "\n"
 
 endfunc 1
@@ -474,6 +493,11 @@ function _Hci()
 			// LE advertise
 			rc = _hciLeAdv()
 			
+		
+		elseif strcmp(tkn$, "noleadv")== 0 then
+			// LE advertise
+			rc = _hciNoLeAdv()
+			
 	
 		elseif strcmp(tkn$, "lescan")==0 then
 			// Start LE scan
@@ -487,6 +511,9 @@ function _Hci()
 			// Disconnect a LE Connection
 			rc = _hciLeDc()
 			
+		elseif strcmp(tkn$, "lecup")==0 then
+			// Update connection parameters
+			rc = _hciLecUp()
 		endif
 		
 	endwhile
@@ -876,7 +903,7 @@ function _gattStatus(status as integer)
 			print "Used in ATT as invalid PDU\n"
 			
 		case H'0105
-			print "Authentication link required\n"
+			print "Authenticated link required\n"
 			
 		case H'0106
 			print "Used in ATT as request not supported\n"
@@ -1157,7 +1184,7 @@ endfunc 1
 //==============================================================================
 function HandlerBleAdvTimOut()
 	
-	print "advert timed out\n"
+	print "\nadvert timed out\n";pr$
 	dim a$
 	rc = BleAdvertStart(0,a$,25,300000,0)
 	AssertResCode(rc)
@@ -1209,8 +1236,8 @@ function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as intege
 	hz = RelConnHandle(nCtx)
     conns = conns - 1
 	dim a$
-	rc = BleAdvertStart(0,a$,25,300000,0)
-	AssertResCode(rc)
+	//rc = BleAdvertStart(0,a$,25,300000,0)
+	//AssertResCode(rc)
     print "\nDisconnected\n";pr$
 
   case BLE_EVBLEMSGID_DISPLAY_PASSKEY
