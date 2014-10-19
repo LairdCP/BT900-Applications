@@ -24,7 +24,6 @@
 //		hcitool lescan      Start LE scan
 //		hcitool lecc        Create a LE Connection
 //		hcitool ledc        Disconnect a LE Connection
-//		hcitool lecup       LE Connection Update
 //
 //
 //		gatttool 
@@ -353,11 +352,10 @@ function _HciHelp()
 	print "	unpair  	Unpair from remote device\n"
 	print "	auth		Request authentication\n"
 	print "	leadv		Start LE advertisement\n"
-	print "	noleadv		Stop LE advertisement\n"
+	print "	noleadv 	Stop LE advertisement\n"
 	print "	lescan      Start LE scan\n"
 	print "	lecc        Create a LE Connection\n"
 	print "	ledc        Disconnect a LE Connection\n"
-	print "	lecup       LE Connection Update\n"
 	print "\n"
 	print "For more information on the usage of each command use:\n"
 	print "	hcitool <command> --help\n\n"
@@ -511,9 +509,6 @@ function _Hci()
 			// Disconnect a LE Connection
 			rc = _hciLeDc()
 			
-		elseif strcmp(tkn$, "lecup")==0 then
-			// Update connection parameters
-			rc = _hciLecUp()
 		endif
 		
 	endwhile
@@ -1275,21 +1270,26 @@ function HandlerPrimSvc(hConn,hUuid,hStart,hEnd) as integer
 
 	sAttr = hStart
 	eAttr = hEnd
-	if command == BLUEZ_COMMAND_GATTTOOL_PRIMARY then
-		print "\n" 
-		print "attr handle = 0x";integer.h' hStart
-		print ", end grp handle = 0x";integer.h' hEnd
-		print ", uuid = ";integer.h' hUuid
-		rc = BleDiscServiceNext(conHdl)
-		if rc != 0 then 
-			print "\n";pr$
-			BleGattcClose()
-			exitfunc 1 
-		endif
+	if hUuid != 0 then
+		if command == BLUEZ_COMMAND_GATTTOOL_PRIMARY then
+			print "\n" 
+			print "attr handle = 0x";integer.h' hStart
+			print ", end grp handle = 0x";integer.h' hEnd
+			print ", uuid = ";integer.h' hUuid
+			rc = BleDiscServiceNext(hConn)
 	
-	elseif command == BLUEZ_COMMAND_GATTTOOL_CHARACTERISTICS then
-		rc = BleDiscCharFirst(conHdl,0,sAttr,eAttr)
-		AssertResCode(rc)
+	
+	
+		elseif command == BLUEZ_COMMAND_GATTTOOL_CHARACTERISTICS then
+			rc = BleDiscCharFirst(hConn,0,sAttr,eAttr)
+		
+		endif
+		
+	else
+		BleGattcClose()
+		print "\n";pr$
+		exitfunc 1
+		
 	endif
 	
 	
@@ -1298,7 +1298,7 @@ endfunc 1
 // This handler is called when a BLE characteristic is discovered
 //==============================================================================
 function HandlerCharDisc(hConn,hUuid,cProp,hVal,hiUuid) as integer
-
+	
 	if hUuid != 0 then
 		print "\n"
 		print "handle = 0x";integer.h' hVal-1
@@ -1307,9 +1307,9 @@ function HandlerCharDisc(hConn,hUuid,cProp,hVal,hiUuid) as integer
 		print ", uuid = ";integer.h' hUuid
 	endif
 	
-	rc = BleDiscCharNext(conHdl)
+	rc = BleDiscCharNext(hConn)
 	if rc != 0 then
-		rc = BleDiscServiceNext(conHdl)
+		rc = BleDiscServiceNext(hConn)
 		if rc !=0 then
 			print "\n";pr$
 			BleGattcClose()
@@ -1397,19 +1397,30 @@ function HandlerUartRxSpp()
     WHILE uLen != 0
         //read data that has arrived through via the UART
         uLen = UartRead(u$)
-    
         if uLen > 0 then
-            if StrCmp(u$,"^")==0 then
+			
+			if uLen == 4 then
+			// Check if received ^^^ in Line mode
+				dim i$, j$
+				i$ = u$
+				rc = ExtractStrToken(i$,j$)
+				if strcmp(j$,"^^^")==0 then 
+					rc = BtcSppDisconnect(hcSpp)
+					AssertResCode(rc)
+				endif 
+				STRSHIFTLEFT(u$, nLen)
+				
+            elseif StrCmp(u$,"^")==0 then
 				carCnt = carCnt + 1
 				if carCnt<3 then
 					exitfunc 1
 				else
-				//* Using this for switching between bridge and cmd mode
 					carCnt = 0
 					rc = BtcSppDisconnect(hcSpp)
 					AssertResCode(rc)
 				endif
-            else
+            
+			else
 				carCnt = 0
                 //write data to most recent spp connection
                 nLen2 = 0

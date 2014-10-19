@@ -4,7 +4,7 @@
 //-------------------------------------------------------------------------
 function _hciInq()  
 	
-	DIM inqLen : inqLen = 10
+	DIM inqLen : inqLen = 5
 	DIM numRsp : numRsp = 50
 		
 	//Extract all parameters to understand function before processing
@@ -43,7 +43,7 @@ endfunc 1
 //-------------------------------------------------------------------------
 function _hciScan()
 	
-	DIM inqLen : inqLen = 15
+	DIM inqLen : inqLen = 5
 	DIM numRsp : numRsp = 50
 	
 	while ExtractStrToken(urtcmd$, tkn$)!=0
@@ -81,7 +81,7 @@ endfunc 1
 //-------------------------------------------------------------------------
 function _hciName()
 	
-	DIM inqLen : inqLen = 10
+	DIM inqLen : inqLen = 5
 	DIM numRsp : numRsp = 30
 	DIM num_of_params : num_of_params = 0
 	
@@ -390,35 +390,6 @@ function _hciLeDc() as integer
 	endif	
 	
 endfunc 1
-//-------------------------------------------------------------------------
-// hcitool lecup <handle> <min> <max> <latency> <timeout>
-//-------------------------------------------------------------------------
-function _hciLecUp() as integer
-	
-	dim hCon, mn, mx, lat, timOut
-	while ExtractStrToken(urtcmd$, tkn$)!=0
-		if strcmp(tkn$,"help")==0 then
-			print "Usage:\n"
-			print "		lecup <handle> <min> <max> <latency> <timeout>\n"
-			print "		Options:\n"
-			print "			-H, --handle <0xXXXX>  LE connection handle\n"
-			print "			-m, --min <interval>   Range: 0x0006 to 0x0C80\n"
-			print "			-M, --max <interval>   Range: 0x0006 to 0x0C80\n"
-			print "			-l, --latency <range>  Slave latency. Range: 0x0000 to 0x03E8\n"
-			print "			-t, --timeout  <time>  N * 10ms. Range: 0x000A to 0x0C80\n"
-			print "\n"
-			print "		min/max range: 7.5ms to 4s. Multiply factor: 1.25ms\n"
-			print "		timeout range: 100ms to 32.0s. Larger than max interval\n"
-			
-			exitfunc 1
-			
-		elseif strcmp(tkn$,"handle")==0 || strcmp(tkn$,"H")==0 then
-			rc = extractStrToken(
-			
-		endif
-	endwhile
-	
-endfunc 1
 //=========================================================================
 //						RFCOMM
 //=========================================================================
@@ -447,6 +418,9 @@ function _rfcommConnect()
 	addr$ = strdehexize$(addr$)
 	rc = BtcSppConnect(addr$)
 	AssertResCode(rc)
+	if rc == 0 then
+		print "connecting ... \n"
+	endif
 	
 endfunc 1 
 //-------------------------------------------------------------------------
@@ -594,7 +568,6 @@ function _GattPrimary() as integer
 	endwhile
 	
 	rc = BleGetConnHandleFromAddr(addr$, conHdl)
-	print "at this point, the conHdl is : ";conHdl;"\n"
 	AssertResCode(rc)
 	rc = BleGattcOpen(0,0)
 	AssertResCode(rc)
