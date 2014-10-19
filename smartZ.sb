@@ -186,7 +186,7 @@ dim letpl : letpl = 4					// LE Tx Power level in dBm
 dim gattLsn : gattLsn = 0				// If Lsn = 1, notifications will be shown
 
 dim mjVersion : mjVersion=0			// Major version number
-dim mnVersion : mnVersion=9				// Minor version number
+dim mnVersion : mnVersion=91				// Minor version number
 dim conHdl								// global connection handle of the current connection being serviced
 dim chrHdl								// global characteristic handle of the current characteristic being serviced
 dim valHdl								// global characteristic value handle of the current characteristic value handle being serviced
@@ -272,7 +272,7 @@ sub InitBtDevice()
 	name$ = SYSINFO$(4)
 	name$ = right$(name$, 6)
 	name$ = StrHexize$(name$)
-	name$ = "bluez-" + name$
+	name$ = "cmdZ-" + name$
 	rc = BTCSETFRIENDLYNAME (name$)
 	AssertResCode(rc)
 	
@@ -297,22 +297,6 @@ sub InitBtDevice()
 	rc = btcSppOpen(nHandle)
 	AssertResCode(rc)
 	sspmode = 1
-	
-	//Configure LE radio
-	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	//dim apprnce : apprnce = 768             //The device will appear as a Generic Thermometer
-	// Initialise Gap Service
-	//rc=BleGapSvcInit(name$,1,apprnce,500000,1000000,4000000,0)
-	//AssertResCode(rc)
-	// Start advertising
-	//dim a$
-	//rc = BleAdvertStart(0,a$,25,0,0)
-	//AssertResCode(rc)
-	
-	
-	
-	
-	
 	
 endsub											
 //==============================================================================
@@ -390,6 +374,8 @@ endfunc 1
 //==============================================================================
 function _HciCfgHelp() as integer
 	
+	print "Usage:\n"
+	print "	hciconfig <command> [command parameters]\n"
 	print "Commands:\n"
 	print "	auth  				Enable Authentication\n"
 	print "	noauth				Disable Authentication\n"
@@ -407,7 +393,7 @@ function _HciCfgHelp() as integer
 	print "	version				Display version information\n"
 	print "	leadv  				Enable LE advertising\n"
 	print "	noleadv				Disable LE advertising\n"
-	print "	letpl	[level]		Get/Set LE transmit power level\n"
+	print "	letpl		[level]		Get/Set LE transmit power level\n"
 	print "\n"
 
 endfunc 1
@@ -419,13 +405,8 @@ function _rfcommHelp()
 	print "Usage:\n"
 	print "		rfcomm [options] <command> <dev>\n"
 	print "\nCommands:\n"
-	//print " 	release  <dev>                   	Release device\n"
-	//print " 	show     <dev>                   	Show device\n"
 	print "		connect     Connect device\n"
-	//print " 	listen   <dev> [channel [cmd]]   	Listen\n"
-	//print " 	watch    <dev> [channel [cmd]]   	Watch\n"
 	print "		write       Write data to device\n"
-	//print "      bind        Bind device\n"
 	print "\nOptions:\n"
 	//print " 	-i [hciX|bdaddr]      Local HCI device or BD Address\n"
 	//print " 	-r, --raw             Switch TTY into raw mode\n"
@@ -798,11 +779,14 @@ function _HciCfg()
 		
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$, "version")==0 then
-			dim fw, W, X, Y, Z
+			dim fw, X, Y, Z
 			fw = SYSINFO(3)
-			print "\nApp Version: BlueZ Version ";mjVersion;".";mnVersion;"\n"
+			X = (fw >> 24) & 0xFF
+			Y = (fw >>  8) & 0xFFFF
+			Z = (fw      ) & 0xFF
+			print "\nApp Version: cmdZ Version ";mjVersion;".";mnVersion;"\n"
 			print "Device Name: ";BleGetDeviceName$();"\n"
-			print "Firmware: ";W;".";X;".";Y;".";Z;"\n"
+			print "Firmware: 9.";X;".";Y;".";Z;"\n"
 			print "Manufacturer: Laird Technologies\n"
 			
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1156,21 +1140,16 @@ function HandlerAdvRpt() as integer
 	while rc==0
 		ad$ = right$(ad$,8)
 		print "\n		";strhexize$(ad$)
-		//;"  ";StrEscape$(dta$)
-		//;" ";strhexize$(dta$);" ";ndisc;" ";rsi
 		tag = 0x09
 		rc = BLEGETADBYTAG(dta$, tag, nm$)
 		if rc == 0x6060 then
 			tag = 0x08
 			rc = BLEGETADBYTAG(dta$, tag, nm$)
-			AssertResCode(rc)
 		endif
 				
 		if rc == 0 then
 			print "  ";nm$
 		endif
-		//else
-		//	print "  n/a"
 		rc = BleScanGetAdvReport(ad$,dta$,ndisc,rsi)
 	endwhile
 endfunc 1
@@ -1540,7 +1519,7 @@ sub Initialise()
 	InitConnHandles()
 	
 	print "\n-----------------------\n"
-	print " BLUEZ EXPLORER v";mjVersion;".";mnVersion;"\n"
+	print " CMDZ EXPLORER v";mjVersion;".";mnVersion;"\n"
 	print "-----------------------\n"
 	print "\nType \22help\22 or \22<command> help\22\n"
 	print pr$
