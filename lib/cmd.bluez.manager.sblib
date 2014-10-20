@@ -217,40 +217,6 @@ function _hciUnpair()
 endfunc 1
 
 //-------------------------------------------------------------------------
-// hcitool auth	<bdaddr>
-//-------------------------------------------------------------------------
-function _hciAuth()
-	
-	DIM num_of_params : num_of_params = 0
-	
-	while ExtractStrToken(urtcmd$, tkn$)!=0
-		if strcmp(tkn$,"help")==0 then
-			//print the hcitool auth help menu
-			print "Usage:\n"
-			print "		hcitool auth <bdaddr>\n"
-			exitfunc 1
-		
-		else
-			tkn$ = strdehexize$(tkn$)
-			num_of_params = num_of_params + 1
-		
-		endif
-	endwhile
-	
-	
-	if num_of_params != 1 then
-		print "name: too few arguments (minimal: 1)\n"
-		print "Usage:\n"
-		print "		name <bdaddr>\n"
-		exitfunc 1
-	endif
-	
-	//pair with bluetooth device 
-	rc = BtcPair(tkn$, 0)						
-	AssertResCode(rc)
-			
-endfunc 1
-//-------------------------------------------------------------------------
 // hcitool leadv	[--timeout]
 //-------------------------------------------------------------------------
 function _hciLeAdv()
@@ -330,7 +296,7 @@ function _hciLeScan()
 		
 	rc = BleScanStart(scnLen, 0)							//Scan for 30 seconds. No filtering of adverts.	
 	if rc == 0 then 
-		print "LE Scan...\n"
+		print "LE Scan ...\n"
 	endif
 		
 endfunc 1

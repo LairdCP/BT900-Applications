@@ -18,7 +18,6 @@
 //		hcitool con 		Display active connection handles
 //		hcitool pair		Pair with remote device
 //		hcitool unpair  	Unpair from remote device
-//		hcitool auth		Request authentication
 //		hcitool leadv		Start LE advertisement
 //		hcitool noleadv		Stop LE advertisement
 //		hcitool lescan      Start LE scan
@@ -116,7 +115,6 @@
 #define BLUEZ_COMMAND_HCITOOL_AFH						19
 #define BLUEZ_COMMAND_HCITOOL_LP						20
 #define BLUEZ_COMMAND_HCITOOL_LST						21
-#define BLUEZ_COMMAND_HCITOOL_AUTH						22
 #define BLUEZ_COMMAND_HCITOOL_ENC						23
 #define BLUEZ_COMMAND_HCITOOL_KEY						24
 #define BLUEZ_COMMAND_HCITOOL_CLKOFF					25
@@ -186,7 +184,7 @@ dim letpl : letpl = 4					// LE Tx Power level in dBm
 dim gattLsn : gattLsn = 0				// If Lsn = 1, notifications will be shown
 
 dim mjVersion : mjVersion=0			// Major version number
-dim mnVersion : mnVersion=91				// Minor version number
+dim mnVersion : mnVersion=92				// Minor version number
 dim conHdl								// global connection handle of the current connection being serviced
 dim chrHdl								// global characteristic handle of the current characteristic being serviced
 dim valHdl								// global characteristic value handle of the current characteristic value handle being serviced
@@ -334,7 +332,6 @@ function _HciHelp()
 	print "	con 		Display active connection handles\n"
 	print "	pair		Pair with remote device\n"
 	print "	unpair  	Unpair from remote device\n"
-	print "	auth		Request authentication\n"
 	print "	leadv		Start LE advertisement\n"
 	print "	noleadv 	Stop LE advertisement\n"
 	print "	lescan      Start LE scan\n"
@@ -403,24 +400,7 @@ endfunc 1
 function _rfcommHelp()
 
 	print "Usage:\n"
-	print "		rfcomm [options] <command> <dev>\n"
-	print "\nCommands:\n"
-	print "		connect     Connect device\n"
-	print "		write       Write data to device\n"
-	print "\nOptions:\n"
-	//print " 	-i [hciX|bdaddr]      Local HCI device or BD Address\n"
-	//print " 	-r, --raw             Switch TTY into raw mode\n"
-	//print " 	-A, --auth            Enable authentication\n"
-	//print " 	-E, --encrypt         Enable encryption\n"
-	//print " 	-S, --secure          Secure connection\n"
-	//print " 	-M, --master          Become the master of a piconet\n"
-	//print " 	-f, --config [file]   Specify alternate config file\n"
-	//print " 	-a                    Show all devices (default)\n"
-	//print "		--handle    Connection Handle\n"
-	//print "		--data      Data to write\n"
-	print "\nFor more information on the usage of each command use:\n"
-	print "	rfcomm <command> --help\n\n"
-	print "\n"
+	print "		rfcomm connect <bdaddr>\n"
 
 endfunc 1
 //==============================================================================
@@ -556,7 +536,6 @@ function _HciCfg()
 	
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"auth")==0 then 
-			print "Set the device to be pairable\n" 
 			rc = BtcSetConnectable(1)
 			AssertResCode(rc)
 			rc = BtcSetPairable(1)
@@ -564,7 +543,6 @@ function _HciCfg()
 		
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~		
 		elseif strcmp(tkn$,"noauth")==0 then
-			print "Set the device to be unpairable\n"
 			rc = BtcSetPairable(0)
 			AssertResCode(rc)
 	
@@ -574,7 +552,7 @@ function _HciCfg()
 			if tlen == 0 then
 				rc = BtcGetFriendlyName(s$)
 				AssertResCode(rc)
-				print "\n";s$;"\n"
+				print s$;"\n"
 			else
 				name$ = tkn$ + s$
 				rc = BtcSetFriendlyName(name$)
@@ -722,9 +700,9 @@ function _HciCfg()
 			if ExtractStrToken(s$, tkn$) == 0 then
 				print "MAC address not supplied\n"
 			else
-				print "Save key \n"
 				tkn$ = strdehexize$(tkn$)
 				rc = BtcBondingPersistKey(tkn$)
+				AssertResCode(rc)
 			endif
 		
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -733,9 +711,9 @@ function _HciCfg()
 			if ExtractStrToken(s$, tkn$) == 0 then
 				print "MAC address not supplied\n"
 			else
-				print "Delete key \n"
 				tkn$ = strdehexize$(tkn$)
 				rc = BtcBondingEraseKey(tkn$)
+				AssertResCode(rc)
 			endif
 			
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
