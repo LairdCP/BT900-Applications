@@ -22,9 +22,9 @@ DIM Char7 //Characteristic 7 (Version)
 DIM Timezone : Timezone = 0 //Hours off from UTC, see https://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.time_zone.xml
 DIM DST : DST = 0 //0 for no DST, 4 for +1 hour DST, see https://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.dst_offset.xml
 DIM SendNotify : SendNotify = 0 //Set to 1 when notifications are enabled
-dim APP_VERSION$ : APP_VERSION$ = "0.7"
+dim APP_VERSION$ : APP_VERSION$ = "0.8"
 dim BuzzerFunc : BuzzerFunc = 0 //Which function to do with the buzzer next
-dim I2CSpeed : I2CSpeed = 250000 //250KHz#
+dim I2CSpeed : I2CSpeed = 250000 //250KHz
 dim RTCAddr : RTCAddr = 111 //I2C Address of RTC
 
 '//******************************************************************************
@@ -74,10 +74,10 @@ FUNCTION HndlrTmr0()
 	PRINT Hours;":";Minutes;":";Seconds;" on ";Day;"/";Month;"/";Year;"\n"
 	
 	//Encode data
-	dim TmpStr$ : TmpStr$ = ""	
+	dim TmpStr$ : TmpStr$ = ""
 	rc = BleEncode8(TmpStr$, 0, 0) //Adjust reason
 	rc = BleEncode8(TmpStr$, 0, 1) //1/256 seconds
-	rc = BleEncode8(TmpStr$, 0, 2) //Day of week
+	rc = BleEncode8(TmpStr$, 0, 2) //Day of week	
 	rc = BleEncode8(TmpStr$, Seconds, 3)
 	rc = BleEncode8(TmpStr$, Minutes, 4)
 	rc = BleEncode8(TmpStr$, Hours, 5)
@@ -145,6 +145,7 @@ FUNCTION BleEvent(BYVAL msgID, BYVAL msgCtx)
 		//Disconnection
 		PRINT "End!\n"
 		
+		//Stop notifications
 		SendNotify = 0
 		
 		//Restart BLE adverts
@@ -266,7 +267,7 @@ FUNCTION HndlrCharVal(BYVAL charHandle, BYVAL offset, BYVAL len)
 			TmpVal2 = TmpVal2 + 10
 			TmpVal = TmpVal - 10
 		ENDWHILE
-		TmpVal2 = (((TmpVal2/10)<<4) + (TmpVal & 15)) | 128
+		TmpVal2 = (((TmpVal2/10)<<4) + (TmpVal & 15))
 		rc = I2CWriteReg8(RTCAddr, 0x0a, TmpVal2) //Seconds
 
 		//Minutes
@@ -330,6 +331,17 @@ FUNCTION GetAlarmTime()
 	
 	//Close I2C
 	I2CClose(I2Ch)
+	
+	//Write this to the characteristic
+	dim TmpStr$ : TmpStr$ = ""
+	rc = BleEncode8(TmpStr$, AlmSec, 0) //Seconds
+	rc = BleEncode8(TmpStr$, AlmMin, 1) //Minutes
+	rc = BleEncode8(TmpStr$, AlmHour, 2) //Hours
+	rc = BleEncode8(TmpStr$, AlmDate, 3) //Day
+	rc = BleEncode8(TmpStr$, AlmMonth, 4) //Month
+
+	//Update GATT information
+	rc = BleCharValueWrite(Char6, TmpStr$)
 ENDFUNC 1
 
 FUNCTION GetAlarmMode()
@@ -352,7 +364,7 @@ FUNCTION GetAlarmMode()
 ENDFUNC 1
 
 FUNCTION GetAlarmMatch()
-	//Checks if the alarm is set or unset
+	//Gets the alarm match data
 	dim AlmMat
 	
 	//Open I2C
@@ -361,7 +373,7 @@ FUNCTION GetAlarmMatch()
 	//Check alarm match
 	rc = I2CReadReg8(RTCAddr, 0x0d, AlmMat)
 	
-	//Shift to proper positoin
+	//Shift to proper position
 	AlmMat = (AlmMat >> 4) & 7
 	
 	//Close I2C
@@ -414,47 +426,53 @@ rc = BleServiceNew(BLE_SERVICE_PRIMARY, Service1UUID, Service1)
 AssertRC(rc,53)
 
 //Add first characteristics (all read only)
-dim hrs$ : hrs$ = ""
+dim hrs$ : hrs$ = "          "
 rc = BleCharNew(0x12, BleHandleUuid16(0x2A2B), BleAttrMetadata(1,0,10,0,rc), BleAttrMetadata(1,1,2,0,rc),0) //Current time (Read & Notify) with CCCD
 assertrc(rc,127)
 rc = BleCharCommit(Service1, hrs$, Char1)
-assertrc(rc,141)
+assertrc(rc,1411)
 
 //Second characteristic
+hrs$ = "00"
 rc = BleCharNew(0x2, BleHandleUuid16(0x2A0F), BleAttrMetadata(1,0,2,0,rc), 0, 0) //Local time (Read)
 assertrc(rc,127)
 rc = BleCharCommit(Service1, hrs$, Char2)
-assertrc(rc,141)
+assertrc(rc,1412)
 
 //Third characteristic
+hrs$ = "0000"
 rc = BleCharNew(0x2, BleHandleUuid16(0x2A14), BleAttrMetadata(1,0,4,0,rc), 0, 0) //Reference time (Read)
 assertrc(rc,127)
 rc = BleCharCommit(Service1, hrs$, Char3)
-assertrc(rc,141)
+assertrc(rc,1413)
 
 //Fourth characteristic
+hrs$ = "          "
 rc = BleCharNew(0x8, BleHandleUuid16(0x2B00), BleAttrMetadata(0,1,10,0,rc), 0, 0) //Update time (Write)
 assertrc(rc,127)
 rc = BleCharCommit(Service1, hrs$, Char4)
-assertrc(rc,141)
+assertrc(rc,1414)
 
 //Fifth characteristic
+hrs$ = "00"
 rc = BleCharNew(0xA, BleHandleUuid16(0x2B02), BleAttrMetadata(1,1,2,0,rc), 0, 0) //Alarm mode control [on/off and match] (Read & Write)
 assertrc(rc,127)
 rc = BleCharCommit(Service1, hrs$, Char5)
-assertrc(rc,141)
+assertrc(rc,1415)
 
 //Sixth characteristic
+hrs$ = "0000000"
 rc = BleCharNew(0xA, BleHandleUuid16(0x2B03), BleAttrMetadata(1,1,7,0,rc), 0, 0) //Alarm time control (Read & Write)
 assertrc(rc,127)
 rc = BleCharCommit(Service1, hrs$, Char6)
-assertrc(rc,141)
+assertrc(rc,1416)
 
 //Seventh (and final) characteristic
+hrs$ = "000"
 rc = BleCharNew(0x2, BleHandleUuid16(0x2B04), BleAttrMetadata(1,0,3,0,rc), 0, 0) //Version (Read)
 assertrc(rc,127)
 rc = BleCharCommit(Service1, APP_VERSION$, Char7)
-assertrc(rc,141)
+assertrc(rc,1417)
 
 //Commit services
 rc = BleServiceCommit(Service1)
@@ -490,13 +508,16 @@ ENDIF
 rc = BleEncode8(TmpStr$, GetAlarmMatch(), 1)
 rc = BleCharValueWrite(Char5, TmpStr$)
 
+//Update alarm time in characteristic
+rc = GetAlarmTime()
+
 //Enable timer to run every seconds
 TimerStart(0, 1000, 1)
 
 //Start BLE adverts
 dim addr$ : addr$ = ""
 rc = BleAdvertStart(0,addr$,500,0,0)
-AssertRC(rc,355)
+AssertRC(rc,354)
 
 //Run initial time send
 rc = HndlrTmr0()
@@ -537,6 +558,11 @@ ENDFUNC 1
 
 //Configure buzzer
 rc = GpioSetFunc(12, 2, 3)
+
+//Startup message
+DIM BTAddr$
+BTAddr$ = SysInfo$(4)
+PRINT "\nrtcs.erver running with Bluetooth address: ";STRHEXIZE$(BTAddr$);"\nNow accepting connections...\n\n"
 
 //Events
 ONEVENT EVTMR0 CALL HndlrTmr0 //Runs when timer0 expires
