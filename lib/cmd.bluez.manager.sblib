@@ -4,7 +4,7 @@
 //-------------------------------------------------------------------------
 function _hciInq()  
 	
-	DIM inqLen : inqLen = 5
+	DIM inqLen : inqLen = 10
 	DIM numRsp : numRsp = 50
 		
 	//Extract all parameters to understand function before processing
@@ -43,7 +43,7 @@ endfunc 1
 //-------------------------------------------------------------------------
 function _hciScan()
 	
-	DIM inqLen : inqLen = 5
+	DIM inqLen : inqLen = 10
 	DIM numRsp : numRsp = 50
 	
 	while ExtractStrToken(urtcmd$, tkn$)!=0
@@ -81,7 +81,7 @@ endfunc 1
 //-------------------------------------------------------------------------
 function _hciName()
 	
-	DIM inqLen : inqLen = 5
+	DIM inqLen : inqLen = 10
 	DIM numRsp : numRsp = 30
 	DIM num_of_params : num_of_params = 0
 	
@@ -133,7 +133,7 @@ function _hciDev()
 	
 	str$ = SYSINFO$(4)
 	str$ = right$(str$, 6)
-	print "Device: \n     ";name$;"    ";StrHexize$(str$);"\n"
+	print "Device: \n	";name$;"    ";StrHexize$(str$);"\n"
 			
 endfunc 1
 //-------------------------------------------------------------------------
@@ -150,10 +150,18 @@ function _hciCon()
 		endif
 	endwhile
 	
+	dim conAddr$
+	
 	print "Connections:\n"
 	dim z
 	for z=1 to conns
-		print "    ";hc[z];"\n"
+		//print "    ";hc[z];"\n"
+		rc = BleGetAddrFromConnHandle(hc[z],conAddr$)
+		if rc!=0 then
+			rc = BtcGetBDAddrFromHandle(hc[z],conAddr$)
+		endif
+		//conAddr$ = strdehexize$(conAddr$)
+		print "	> ";strhexize$(conAddr$);" handle ";hc[z];"\n"
 	next
 
 endfunc 1 
@@ -181,11 +189,10 @@ function _hciPair()
 	rc = BtcPair(addr$, 0)
 	AssertResCode(rc)
 	if rc == 0 then 
-		print "Pairing...\n"
+		print "Pairing ...\n"
 	endif
 			
 endfunc 1
-
 //-------------------------------------------------------------------------
 // hcitool dc <bdaddr>
 //-------------------------------------------------------------------------
@@ -215,7 +222,6 @@ function _hciUnpair()
 	endif
 			
 endfunc 1
-
 //-------------------------------------------------------------------------
 // hcitool leadv	[--timeout]
 //-------------------------------------------------------------------------
@@ -324,7 +330,7 @@ function _hciLeCc() as integer
 	rc = BleConnect(addr$, 5000, 20000, 75000, 5000000)						// ConnectionTimeoutms, minConIntervalus, maxConIntervalus, nSupervisionTimeoutus
 	AssertResCode(rc)
 	if rc == 0 then
-		print "Connecting... \n"
+		print "Connecting ... \n"
 	endif
 	
 endfunc 1
@@ -350,7 +356,7 @@ function _hciLeDc() as integer
 	// Do not store bonding information 
 	rc = bledisconnect(conHdl)
 	if rc == 0 then 
-		print "Disconnecting...\n"
+		print "Disconnecting ...\n"
 	else	
 		AssertResCode(rc)
 	endif	
@@ -385,7 +391,7 @@ function _rfcommConnect()
 	rc = BtcSppConnect(addr$)
 	AssertResCode(rc)
 	if rc == 0 then
-		print "connecting ... \n"
+		print "Connecting ... \n"
 	endif
 	
 endfunc 1 

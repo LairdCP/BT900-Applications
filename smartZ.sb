@@ -184,7 +184,7 @@ dim letpl : letpl = 4					// LE Tx Power level in dBm
 dim gattLsn : gattLsn = 0				// If Lsn = 1, notifications will be shown
 
 dim mjVersion : mjVersion=0			// Major version number
-dim mnVersion : mnVersion=92				// Minor version number
+dim mnVersion : mnVersion=93				// Minor version number
 dim conHdl								// global connection handle of the current connection being serviced
 dim chrHdl								// global characteristic handle of the current characteristic being serviced
 dim valHdl								// global characteristic value handle of the current characteristic value handle being serviced
@@ -372,7 +372,7 @@ endfunc 1
 function _HciCfgHelp() as integer
 	
 	print "Usage:\n"
-	print "	hciconfig <command> [command parameters]\n"
+	print "	hciconfig <command> [command parameters]\n\n"
 	print "Commands:\n"
 	print "	auth  				Enable Authentication\n"
 	print "	noauth				Disable Authentication\n"
@@ -982,9 +982,11 @@ function HandlerInqResp(respType) as integer
 			else
 				print "  n/a"
 			endif
-		// Found the device so cancel inquiry
-		rc = BtcInquiryCancel()
-		AssertResCode(rc)
+			// Found the device so cancel inquiry
+			rc = BtcInquiryCancel()
+			AssertResCode(rc)
+			print "\n";pr$
+		
 		endif
 	endif
 	
@@ -1027,9 +1029,7 @@ endfunc 1
 // This handler is called when there is an inquiry timeout
 //==============================================================================
 function HandlerBtcInqTimOut() as integer 
-	//print "\nInquiry stopped via timeout\n"
 	print "\n";pr$
-	//UartRsp(0)
 endfunc 1
 //==============================================================================
 // This handler is called when there is an inquiry timeout
@@ -1170,7 +1170,7 @@ function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as intege
 	rc = AcqConnHandle(hz)
 	conns = conns + 1
     //print "\nConnected\n";pr$
-	print "\nhandle : ";hz;"\n";pr$
+	print "\nConnection handle ";hz;"\n";pr$
 	
     if hz == 0 then
       //Could not store the handle so drop the connection
