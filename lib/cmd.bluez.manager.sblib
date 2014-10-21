@@ -171,14 +171,21 @@ endfunc 1
 function _hciPair()
 	
 	DIM str$
+	DIM nBnd : nBnd = 0
 	
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 			//print the  hcitool cc help menu
 			print "Usage:\n"
-			print "		hcitool pair <bdaddr>\n"
+			print "		hcitool pair <bdaddr> [--bond]\n"
 			exitfunc 1
 		
+		elseif strcmp(tkn$,"bond")==0 then
+			nBnd = 1
+		
+		elseif strcmp(tkn$,"-")==0 then
+			//do nothing
+			
 		else
 			addr$ = tkn$
 		
@@ -186,7 +193,7 @@ function _hciPair()
 	endwhile
 	
 	addr$ = strdehexize$(addr$)
-	rc = BtcPair(addr$, 0)
+	rc = BtcPair(addr$, nBnd)
 	AssertResCode(rc)
 	if rc == 0 then 
 		print "Pairing ...\n"
@@ -610,6 +617,10 @@ function _GattCharRead() as integer
 		elseif strcmp(tkn$, "sec")==0 then
 			//call the sec-level function to piar or unpair with LE device
 			rc = _gattSecLvl()
+			
+		elseif strcmp(tkn$, "l")==0 then
+			//call the sec-level function to piar or unpair with LE device
+			rc = _gattSecLvl()
 		
 		endif 
 	endwhile
@@ -683,6 +694,8 @@ endfunc 1
 // gatttool -b <MAC Address> --char-desc  --handle=0x0000
 //-------------------------------------------------------------------------
 function _GattCharDesc()
+	
+	chrHdl = 0
 	
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then

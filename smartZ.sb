@@ -15,7 +15,7 @@
 //		hcitool inq 		Inquire remote devices
 //		hcitool scan		Scan for remote devices
 //		hcitool name		Get name from remote device
-//		hcitool con 		Display active connection handles
+//		hcitool con 		Display active connections
 //		hcitool pair		Pair with remote device
 //		hcitool unpair  	Unpair from remote device
 //		hcitool leadv		Start LE advertisement
@@ -184,7 +184,7 @@ dim letpl : letpl = 4					// LE Tx Power level in dBm
 dim gattLsn : gattLsn = 0				// If Lsn = 1, notifications will be shown
 
 dim mjVersion : mjVersion=0			// Major version number
-dim mnVersion : mnVersion=93				// Minor version number
+dim mnVersion : mnVersion=94				// Minor version number
 dim conHdl								// global connection handle of the current connection being serviced
 dim chrHdl								// global characteristic handle of the current characteristic being serviced
 dim valHdl								// global characteristic value handle of the current characteristic value handle being serviced
@@ -609,6 +609,7 @@ function _HciCfg()
 						inqtpl = val*-1
 					endif
 				else
+					val = StrValDec(tkn$)
 					if (val > 20) then
 						print "Invalid power value. Valid range is from -70 to 20 dBm\n"
 					else
@@ -703,6 +704,9 @@ function _HciCfg()
 				tkn$ = strdehexize$(tkn$)
 				rc = BtcBondingPersistKey(tkn$)
 				AssertResCode(rc)
+				if rc == 0 then
+					print "Link key made persistent\n"
+				endif
 			endif
 		
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -714,6 +718,9 @@ function _HciCfg()
 				tkn$ = strdehexize$(tkn$)
 				rc = BtcBondingEraseKey(tkn$)
 				AssertResCode(rc)
+				if rc == 0 then
+					print "Link key erased\n"
+				endif
 			endif
 			
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -745,6 +752,7 @@ function _HciCfg()
 						letpl = val*-1
 					endif
 				else
+					val = StrValDec(tkn$)
 					if (val > 8) then
 						print "Invalid power value. Valid range is from -20 to 8 dBm\n"
 					else
@@ -762,7 +770,7 @@ function _HciCfg()
 			X = (fw >> 24) & 0xFF
 			Y = (fw >>  8) & 0xFFFF
 			Z = (fw      ) & 0xFF
-			print "\nApp Version: cmdZ Version ";mjVersion;".";mnVersion;"\n"
+			print "\nApp Version: cmdZ Manager Version ";mjVersion;".";mnVersion;"\n"
 			print "Device Name: ";BleGetDeviceName$();"\n"
 			print "Firmware: 9.";X;".";Y;".";Z;"\n"
 			print "Manufacturer: Laird Technologies\n"
@@ -996,13 +1004,15 @@ endfunc 1
 //==============================================================================
 function HandlerSppCon(hConn, res) as integer
 	
-	dim hz, az
+	dim hz, az, conAddr$
     //if connected successfully
 	if res == 0 then
 		hcSpp = hConn
 		hz = AcqConnHandle(hConn)
 		conns = conns + 1
-		print "\nRFCOMM connected. For hangup, type \22^^^\22\n"
+		rc = BtcGetBDAddrFromHandle(hConn,conAddr$)
+		print "\nConnected to ";strhexize$(conAddr$)
+		print "\nType \22^^^\22 for hangup\n"
 		rc=SendMsgApp(0,RFCOMM_MODE)
 	else
 		print "\nconnection failed: ";res;"\n";pr$
@@ -1407,7 +1417,7 @@ function HandlerUartRxLsn() as integer
 		tlen = ExtractStrToken(urtcmd$,tkn$)
 		if strcmp(tkn$,"stop")==0 then 
 			gattLsn = 0
-			print pr$;"\n"
+			print pr$
 			rc = SendMsgApp(0, NORMAL_MODE)
 		endif
 	endif
@@ -1436,7 +1446,7 @@ function SetMode(msgID, cmd) as integer
 		OnEvent	EVUARTRX					call HandlerUartRxSpp
 		
 	elseif cmd == GATTTOOL_LISTEN then	
-		print "\nListening for notifications/indications. For hangup, For hangup, type \22stop\22\n"
+		print "\nListening for notifications/indications. For hangup, type \22stop\22\n"
 		OnEvent	EVUARTRX					call HandlerUartRxLsn
 
 	endif
@@ -1497,7 +1507,7 @@ sub Initialise()
 	InitConnHandles()
 	
 	print "\n-----------------------\n"
-	print " CMDZ EXPLORER v";mjVersion;".";mnVersion;"\n"
+	print " CMDZ MANAGER v";mjVersion;".";mnVersion;"\n"
 	print "-----------------------\n"
 	print "\nType \22help\22 or \22<command> help\22\n"
 	print pr$
