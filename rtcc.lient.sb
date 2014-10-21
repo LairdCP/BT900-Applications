@@ -1,21 +1,21 @@
  // Commands:
  //
- // show time                   : Shows the time
- // show alarm time             : Shows the alarm time
- // show alarm mode             : Shows what mode the alarm is in
- // show version                : Shows the version of the BT900 host device
- // show addr                   : Shows the target Bluetooth address
- // scan                        : Listens for RTC packets from devices
- // set time <timestamp>        : Sets the RTC time
- // set alarm time <timestamp>  : Sets the alarm time
- // set alarm mode <mode>       : Sets the alarm mode
- // set addr <btaddr>           : Changes the target Bluetooth address to connect to
- // connect                     : Connects to the host BT900
- // disconnect                  : Disconnects from the BT900
- // help                        : Shows list of commands
- // timestamp                   : Shows format of timestamp
- // version                     : Shows the version
- // quit/exit                   : Exits the application
+ // show time                       : Shows the time
+ // show alarm time                 : Shows the alarm time
+ // show alarm mode                 : Shows what mode the alarm is in
+ // show version                    : Shows the version of the BT900 host device
+ // show addr                       : Shows the target Bluetooth address
+ // scan                            : Listens for RTC packets from devices
+ // set time <timestamp>            : Sets the RTC time
+ // set alarm time <timestamp>      : Sets the alarm time
+ // set alarm mode <on/off> <match> : Sets the alarm mode
+ // set addr <btaddr>               : Changes the target Bluetooth address to connect to
+ // connect                         : Connects to the host BT900
+ // disconnect                      : Disconnects from the BT900
+ // help                            : Shows list of commands
+ // timestamp                       : Shows format of timestamp
+ // version                         : Shows the version
+ // quit/exit                       : Exits the application
  // 
 
  //Defines for the DoFunc variable
@@ -32,7 +32,7 @@
  dim Status : Status = 0 //0 = waiting for user input, 1 = scanning, 2 = ?, 3 = ?, 4 = ?
  dim ConnectionStatus : ConnectionStatus = 0 //0 = disconnected, 1 = connected
  dim nCtxG //Global BLE handler
- dim APP_VERSION$ : APP_VERSION$ = "0.1" //Version of client program
+ dim APP_VERSION$ : APP_VERSION$ = "0.9" //Version of client program
  dim TmpStr$ : TmpStr$ = "" //Temporary string for inter-function passing
  
  //List of UUID's
@@ -196,8 +196,8 @@ dim tlen, tkn$, Buf$
                                 IF strcmp(tkn$, "addr")==0 THEN
                                         //Show target Bluetooth address
                                         PRINT "\nTarget Bluetooth address: ";STRHEXIZE$(TargetBT$)
-					EXITFUNC 1
-				ENDIF
+                                        EXITFUNC 1
+                                ENDIF
                         IF IsConnected() == 1 THEN
                                 IF strcmp(tkn$, "time")==0 THEN
                                         //Show remote BT900 time
@@ -243,15 +243,15 @@ dim tlen, tkn$, Buf$
                                 //Change BT address to connect to
                                 tlen = ExtractStrToken(urtcmd$,tkn$) //get next token
                                 IF (strlen(tkn$) == 14) THEN
-					//Update BT addr
-					TargetBT$ = STRDEHEXIZE$(tkn$)
-					PRINT "\nTarget Bluetooth address updated to ";tkn$
-				ELSE
-					//Invalid address
-					PRINT "\nInvalid Bluetooth address provided."
+                                        //Update BT addr
+                                        TargetBT$ = STRDEHEXIZE$(tkn$)
+                                        PRINT "\nTarget Bluetooth address updated to ";tkn$
+                                ELSE
+                                        //Invalid address
+                                        PRINT "\nInvalid Bluetooth address provided."
                                 ENDIF
-				urtcmd$ = ""
-				EXITFUNC 1
+                                urtcmd$ = ""
+                                EXITFUNC 1
                         ENDIF
 
                         IF IsConnected() == 1 THEN
@@ -271,10 +271,9 @@ dim tlen, tkn$, Buf$
                                                                 rc = BleEncode16(Buf$, TS_YYYY, 5)
                                                                 rc = BleGATTCWrite(nCtxG, UpdateTimeUUID, Buf$)
                                                         ELSE
-                                                                DoFunc = WRITE_ALARMTIME
+                                                                DoFunc = WRITE_TIME
                                                                 rc = BleGattCFindChar(nCtxG, BleHandleUuid16(0x1805), 0, BleHandleUuid16(UpdateTimeHID), 0)
                                                         ENDIF
-                                                        PRINT "\nSENT: ";Buf$
                                                 ELSE
                                                         //Invalid timestamp
                                                         PRINT "Error: Provided timestamp is not valid\n"
@@ -299,7 +298,7 @@ dim tlen, tkn$, Buf$
                                                                         rc = BleEncode8(Buf$, TS_DD, 3)
                                                                         rc = BleEncode8(Buf$, TS_MM2, 4)
                                                                         rc = BleGATTCWrite(nCtxG, AlarmTimeUUID, Buf$)
-                                                                        PRINT "Set alarm time to ";TS_HH;":";TS_MM1;":";TS_SS;" ";TS_DD;"/";TS_MM2;"\n"
+                                                                        PRINT "Setting alarm time to ";TS_HH;":";TS_MM1;":";TS_SS;" ";TS_DD;"/";TS_MM2;"...\n"
                                                                 ELSE
                                                                         DoFunc = WRITE_ALARMTIME
                                                                         rc = BleGattCFindChar(nCtxG, BleHandleUuid16(0x1805), 0, BleHandleUuid16(AlarmTimeHID), 0)
@@ -536,17 +535,38 @@ FUNCTION HndlrFindCh(nCtx, cP, hCv, sH)
         ENDIF
 ENDFUNC 1
 
+FUNCTION HndlrWrtnCh(nCtx, hCv, nStat)
+        //Runs when a charteristic was written
+        IF (hCv == AlarmTimeUUID) THEN
+                PRINT "Alarm Time"
+        ELSEIF (hCv == AlarmModeUUID) THEN
+                PRINT "Alarm Mode"
+        ELSEIF (hCv == UpdateTimeUUID) THEN
+                PRINT "Time"
+        ENDIF
+
+        IF (nStat == 0) THEN
+                //Written successfully
+                PRINT " Updated successfully!"
+        ELSE
+                //Error
+                PRINT " was not updated, error code: ";INTEGER.H'nStat
+        ENDIF
+        PRINT "\n"
+ENDFUNC 1
+
 //Open GATT Client
 rc = BleGattcOpen(0,0)
 PRINT "RTC Client ready!\n"
 
 //Events 
-ONEVENT EVUARTRX                        CALL HndlrUartRx //Runs when UART gets data
-ONEVENT EVBLE_SCAN_TIMEOUT        CALL HndlrScanTO //Runs when BLE scan times out
-ONEVENT EVBLE_ADV_REPORT        CALL HndlrAdvRpt //Runs when a BLE scan report is ready
-ONEVENT EVBLE_CONN_TIMEOUT        CALL HndlrCnTOut //Runs on connection timeout
-ONEVENT EVBLEMSG                        CALL HndlrBleMsg //Runs on BLE message
-ONEVENT EVATTRREAD                        CALL HndlrGCData //Runs on GATT Client data ready for reading
-ONEVENT EVFINDCHAR                        CALL HndlrFindCh //Runs on characteristic found
+ONEVENT EVUARTRX               CALL HndlrUartRx //Runs when UART gets data
+ONEVENT EVBLE_SCAN_TIMEOUT     CALL HndlrScanTO //Runs when BLE scan times out
+ONEVENT EVBLE_ADV_REPORT       CALL HndlrAdvRpt //Runs when a BLE scan report is ready
+ONEVENT EVBLE_CONN_TIMEOUT     CALL HndlrCnTOut //Runs on connection timeout
+ONEVENT EVBLEMSG               CALL HndlrBleMsg //Runs on BLE message
+ONEVENT EVATTRREAD             CALL HndlrGCData //Runs on GATT Client data ready for reading
+ONEVENT EVFINDCHAR             CALL HndlrFindCh //Runs on characteristic found
+ONEVENT EVATTRWRITE            CALL HndlrWrtnCh //Runs on characteristic written
 
 WAITEVENT
