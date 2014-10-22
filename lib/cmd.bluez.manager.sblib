@@ -703,6 +703,12 @@ function _GattCharWrite() as integer
 	if secPair == 1 then
 		rc = BlePair(conHdl, 0)
 		AssertResCode(rc)
+		DIM tm
+		tm = gettickcount()
+		while (gettickcount()-tm) <5000
+			//wait for 5 seconds
+		endwhile
+		
 	endif
 	
 	rc = BleGattcOpen(0,0)
