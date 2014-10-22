@@ -505,13 +505,11 @@ function _gattSecLvl() as integer
 		
 		if strcmp(tkn$,"low")==0 then
 			// unpair with device after getting all tokens from command
-			rc = BleBondingEraseKey(addr$)
-			AssertResCode(rc)
+			secPair = 0
 		
 		elseif strcmp(tkn$,"medium")==0 || strcmp(tkn$,"high")==0 then
 			// pair with device after getting all tokens from command
-			rc = BlePair(conHdl, 0)
-			AssertResCode(rc)
+			secPair = 1
 		
 		endif
 	endif
@@ -546,8 +544,16 @@ function _GattPrimary() as integer
 		endif
 	endwhile
 	
+	
+	
 	rc = BleGetConnHandleFromAddr(addr$, conHdl)
 	AssertResCode(rc)
+	
+	if secPair == 1 then
+		rc = BlePair(conHdl, 0)
+		AssertResCode(rc)
+	endif
+	
 	rc = BleGattcOpen(0,0)
 	AssertResCode(rc)
 	rc = BleDiscServiceFirst(conHdl,0,0)
@@ -583,6 +589,12 @@ function _GattChar() as integer
 	
 	rc = BleGetConnHandleFromAddr(addr$, conHdl)
 	AssertResCode(rc)
+		
+	if secPair == 1 then
+		rc = BlePair(conHdl, 0)
+		AssertResCode(rc)
+	endif
+	
 	rc = BleGattcOpen(0,0)
 	AssertResCode(rc)
 	rc = BleDiscServiceFirst(conHdl,0,0)
@@ -627,6 +639,12 @@ function _GattCharRead() as integer
 	
 	rc = BleGetConnHandleFromAddr(addr$, conHdl)
 	AssertResCode(rc)
+		
+	if secPair == 1 then
+		rc = BlePair(conHdl, 0)
+		AssertResCode(rc)
+	endif
+	
 	rc = BleGattcOpen(0,0)											//must check rc here
 	AssertResCode(rc)
 	rc = BleGattcRead(conHdl,valHdl,0)
@@ -642,7 +660,8 @@ function _GattCharWrite() as integer
 	dim val$								// value (string format)
 	dim val									// value (integer format)
 	
-	while ExtractStrToken(urtcmd$, tkn$)!=0
+	
+	while ExtractStrToken(urtcmd$, tkn$)!=0 
 		if strcmp(tkn$,"help")==0 then
 			//print the gatttool help menu
 			print "Usage:\n"
@@ -680,6 +699,12 @@ function _GattCharWrite() as integer
 
 	rc = BleGetConnHandleFromAddr(addr$, conHdl)
 	AssertResCode(rc)
+		
+	if secPair == 1 then
+		rc = BlePair(conHdl, 0)
+		AssertResCode(rc)
+	endif
+	
 	rc = BleGattcOpen(0,0)
 	AssertResCode(rc)
 	rc = BleGattcWrite(conHdl,valHdl,val$)
@@ -723,92 +748,16 @@ function _GattCharDesc()
 	
 	rc = BleGetConnHandleFromAddr(addr$, conHdl)
 	AssertResCode(rc)
+		
+	if secPair == 1 then
+		rc = BlePair(conHdl, 0)
+		AssertResCode(rc)
+	endif
+	
 	rc = BleGattcOpen(0,0)
 	AssertResCode(rc)
 	rc = BleDiscDescFirst(conHdl, 0, chrHdl)
 	AssertResCode(rc)
 	
-endfunc 1
-//------------------------------------------------------------------------
-// interactive mode
-//------------------------------------------------------------------------
-//function OnUartCmdInt()
-	
-	//[CON][00:16:A4:09:3A:64][LE]> 
-	//[CON][00:16:A4:09:3A:64][LE]> 
-	//[CON][00:16:A4:09:3A:64][LE]> 
-	//[CON][00:16:A4:09:3A:64][LE]> help
-	//help                                           Show this help
-	//exit                                           Exit interactive mode
-	//quit                                           Exit interactive mode
-	//connect         [address [address type]]       Connect to a remote device
-	//disconnect                                     Disconnect from a remote device
-	//primary         [UUID]                         Primary Service Discovery
-	//characteristics [start hnd [end hnd [UUID]]]   Characteristics Discovery
-	//char-desc       [start hnd] [end hnd]          Characteristics Descriptor Discovery
-	//char-read-hnd   <handle> [offset]              Characteristics Value/Descriptor Read by handle
-	//char-read-uuid  <UUID> [start hnd] [end hnd]   Characteristics Value/Descriptor Read by UUID
-	//char-write-req  <handle> <new value>           Characteristic Value Write (Write Request)
-	//char-write-cmd  <handle> <new value>           Characteristic Value Write (No response)
-	//sec-level       [low | medium | high]          Set security level. Default: low
-	//mtu             <value>                        Exchange MTU for GATT/ATT
-	//[CON][00:16:A4:09:3A:64][LE]> disconnect
-	//[   ][00:16:A4:09:3A:64][LE]> primary
-	//Command failed: disconnected
-	//[   ][00:16:A4:09:3A:64][LE]>
-	
-	//tlen = ExtractStrToken(urtcmd$, tkn$)
-	
-	//if strcmp(tkn$,"quit")==0 || strcmp(tkn$,"exit")==0 then
-	//		sendmsgapp
-		
-	//elseif strcmp(tkn$,"connect")==0 then
-		
-	//elseif strcmp(tkn$,"connect")==0 then
-	//elseif strcmp(tkn$,"connect")==0 then
-	//elseif strcmp(tkn$,"connect")==0 then
-	//elseif strcmp(tkn$,"connect")==0 then
-	//elseif strcmp(tkn$,"connect")==0 then
-	//elseif strcmp(tkn$,"connect")==0 then
-	//elseif strcmp(tkn$,"connect")==0 then
-	//elseif strcmp(tkn$,"connect")==0 then
-	//elseif strcmp(tkn$,"help)"==0
-	//endif
-	
-
-//endfunc 1
-//------------------------------------------------------------------------
-// gatt server adding
-//-------------------------------------------------------------------------
-function GattSrverAdding()
-	
-	dim nMatch
-	print "entered gatt\n"
-	
-	nMatch=UartReadMatch(stRsp$,13)
-	if nMatch!=0 then
-		//CR exists in the input buffer
-		urtcmd$ = strsplitleft$(stRsp$, nMatch)
-	endif	
-
-endfunc 1
-//-------------------------------------------------------------------------
-// gatttool server
-// - Create a uuid handle for the service
-// - commit the service
-// - Create a uuid handle for the characteristic
-// - Create a metadata that defines the permissions for the characteristics
-// - Choose properties of characteristics (readable, writable, writable no request, notifiable, indicatable, broadcastable, etc)
-// - 
-//-------------------------------------------------------------------------
-function _GattSrvr()
-
-	print "Enter the uuid\n"
-	waitevent
-	
-	OnEvent  EVUARTRX					call GattSrverAdding
-	//rc = BleSvcCommit(BLE_SERVICE_PRIMARY,BleHandleUuid16(0x180D),shHrs)
-	//AssertResCode(rc)
-
 endfunc 1
 	

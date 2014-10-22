@@ -190,6 +190,7 @@ dim chrHdl								// global characteristic handle of the current characteristic 
 dim valHdl								// global characteristic value handle of the current characteristic value handle being serviced
 
 dim carCnt                  //count variable for number of times '^' entered
+dim secPair								// If 1, it means sec-level is medium or high and therefore should pair
 //******************************************************************************
 // Initialise Global Variable
 //******************************************************************************
@@ -480,7 +481,9 @@ endfunc 1
 //==============================================================================
 function _Gatt()
 	
-	while ExtractStrToken(urtcmd$, tkn$)!= 0
+	dim s$
+	s$ = urtcmd$
+	while ExtractStrToken(s$, tkn$)!= 0
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		if strcmp(tkn$,"help")==0 then
 			rc = _GattHelp()
@@ -498,8 +501,8 @@ function _Gatt()
 	
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$, "char")==0 then 
-			strshiftleft(urtcmd$, 1)
-			rc = ExtractStrToken(urtcmd$, tkn$)
+			strshiftleft(s$, 1)
+			rc = ExtractStrToken(s$, tkn$)
 			if strcmp(tkn$, "read")==0 then
 				command = BLUEZ_COMMAND_GATTTOOL_CHAR_READ
 				rc = _GattCharRead()
@@ -510,12 +513,6 @@ function _Gatt()
 				command = BLUEZ_COMMAND_GATTTOOL_CHAR_DESC
 				rc = _GattCharDesc()
 			endif
-			
-		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-		elseif strcmp(tkn$, "server")==0 then 
-			//create gatt server
-			rc = _GattSrvr()
-			AssertResCode(rc)
 			
 		endif
 	endwhile
@@ -554,7 +551,10 @@ function _HciCfg()
 				AssertResCode(rc)
 				print s$;"\n"
 			else
+				DIM len
 				name$ = tkn$ + s$
+				len = strlen(name$)
+				name$ = left$(name$, len-1)
 				rc = BtcSetFriendlyName(name$)
 				AssertResCode(rc)
 				exitfunc 1
@@ -852,7 +852,7 @@ endfunc 1
 //==============================================================================
 function _gattStatus(status as integer)
 	
-	print "ATT Error: "
+	print "\nATT Error: "
 	select status
 		
 		case H'0101
@@ -1111,9 +1111,9 @@ endfunc 1
 function HandlerPairRes(res)
 	
 	if res == 0 then
-		print "\npaired\n";pr$
+		print "\nPaired\n";pr$
 	else
-		print "\npairing attempt failed : ";res;"\n";pr$
+		print "\nPairing attempt failed : ";res;"\n";pr$
 	endif
 endfunc 1
 //==============================================================================
@@ -1349,7 +1349,7 @@ function HandlerAttrNtfyCmd() as integer
 		do
 			rc=BleGattcNotifyRead(hConn,hAttr,att$,dscd)
 			if rc==0 then
-				print "\nNotification/Indication handle = ";integer.h hAttr;" value: ";StrHexize$(att$)
+				print "\nNotification/Indication handle = 0x";integer.h' hAttr;" value: ";StrHexize$(att$)
 			endif
 		dowhile rc==0
 	endif
