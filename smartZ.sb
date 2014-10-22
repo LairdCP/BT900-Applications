@@ -184,7 +184,7 @@ dim letpl : letpl = 4					// LE Tx Power level in dBm
 dim gattLsn : gattLsn = 0				// If Lsn = 1, notifications will be shown
 
 dim mjVersion : mjVersion=0			// Major version number
-dim mnVersion : mnVersion=94				// Minor version number
+dim mnVersion : mnVersion=95				// Minor version number
 dim conHdl								// global connection handle of the current connection being serviced
 dim chrHdl								// global characteristic handle of the current characteristic being serviced
 dim valHdl								// global characteristic value handle of the current characteristic value handle being serviced
@@ -487,17 +487,19 @@ function _Gatt()
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		if strcmp(tkn$,"help")==0 then
 			rc = _GattHelp()
-			exitfunc 1
+			break
 
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"primary")==0 then
 			command = BLUEZ_COMMAND_GATTTOOL_PRIMARY
 			rc = _GattPrimary()
+			break
 
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"characteristics")==0 then
 			command = BLUEZ_COMMAND_GATTTOOL_CHARACTERISTICS
 			rc = _GattChar()
+			break
 	
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$, "char")==0 then 
@@ -506,12 +508,15 @@ function _Gatt()
 			if strcmp(tkn$, "read")==0 then
 				command = BLUEZ_COMMAND_GATTTOOL_CHAR_READ
 				rc = _GattCharRead()
+				break
 			elseif strcmp(tkn$, "write")==0 then
 				command = BLUEZ_COMMAND_GATTTOOL_CHAR_WRITE
 				rc = _GattCharWrite()
+				break
 			elseif strcmp(tkn$, "desc")==0 then
 				command = BLUEZ_COMMAND_GATTTOOL_CHAR_DESC
 				rc = _GattCharDesc()
+				break
 			endif
 			
 		endif
@@ -1124,7 +1129,6 @@ function HandlerAdvRpt() as integer
 	
 	dim ad$,dta$,ndisc,rsi,tag, nm$
 	rc = BleScanGetAdvReport(ad$,dta$,ndisc,rsi)
-	AssertResCode(rc)
 	while rc==0
 		ad$ = right$(ad$,8)
 		print "\n		";strhexize$(ad$)
@@ -1140,6 +1144,7 @@ function HandlerAdvRpt() as integer
 		endif
 		rc = BleScanGetAdvReport(ad$,dta$,ndisc,rsi)
 	endwhile
+	
 endfunc 1
 //==============================================================================
 // This handler is called when there is a Ble advert timeout

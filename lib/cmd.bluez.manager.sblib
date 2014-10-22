@@ -373,7 +373,7 @@ endfunc 1
 //						RFCOMM
 //=========================================================================
 //-------------------------------------------------------------------------
-// rfcomm connect <MAC Address> 
+// rfcomm connect <bdaddr> 
 //-------------------------------------------------------------------------
 function _rfcommConnect()
 	
@@ -381,7 +381,7 @@ function _rfcommConnect()
 		if strcmp(tkn$,"help")==0 then
 			//print the gatttool help menu
 			print "Usage:\n"
-			print "		rfcomm connect <MAC Address>\n"
+			print "		rfcomm connect <bdaddr>\n"
 			exitfunc 1
 			
 		else
@@ -493,7 +493,7 @@ endfunc 1
 //						GATTTOOL
 //=========================================================================
 //-------------------------------------------------------------------------
-// gatttool -b <MAC Address> --primary
+// gatttool -b <bdaddr> --primary
 //-------------------------------------------------------------------------
 function _gattSecLvl() as integer
 
@@ -516,7 +516,7 @@ function _gattSecLvl() as integer
 	
 endfunc 1 
 //-------------------------------------------------------------------------
-// gatttool -b <MAC Address> --primary
+// gatttool -b <bdaddr> --primary
 //-------------------------------------------------------------------------
 function _GattPrimary() as integer
 
@@ -524,8 +524,7 @@ function _GattPrimary() as integer
 		if strcmp(tkn$,"help")==0 then
 			//print the gatttool help menu
 			print "Usage:\n"
-			print "		gatttool -b <MAC Address> --primary\n"
-			print urtcmd$;"\n"
+			print "		gatttool -b <bdaddr> --primary\n"
 			exitfunc 1
 			
 		elseif strcmp(tkn$,"b")==0 then
@@ -561,7 +560,7 @@ function _GattPrimary() as integer
 	
 endfunc 1
 //-------------------------------------------------------------------------
-// gatttool -b <MAC Address> --characteristics
+// gatttool -b <bdaddr> --characteristics
 //-------------------------------------------------------------------------
 function _GattChar() as integer
 	
@@ -569,7 +568,7 @@ function _GattChar() as integer
 		if strcmp(tkn$,"help")==0 then
 			//print the gatttool help menu
 			print "Usage:\n"
-			print "		gatttool -b <MAC Address> --characteristics\n"
+			print "		gatttool -b <bdaddr> --characteristics\n"
 			exitfunc 1
 			
 		elseif strcmp(tkn$,"b")==0 then
@@ -602,7 +601,7 @@ function _GattChar() as integer
 	
 endfunc 1
 //-------------------------------------------------------------------------
-// gatttool -b <MAC Address> --char-read --handle=0x0000
+// gatttool -b <bdaddr> --char-read --handle=0x0000
 //-------------------------------------------------------------------------
 function _GattCharRead() as integer
 	
@@ -610,7 +609,7 @@ function _GattCharRead() as integer
 		if strcmp(tkn$,"help")==0 then
 			//print the gatttool help menu
 			print "Usage:\n"
-			print "		gatttool -b <MAC Address> --char-read --handle=0x0000 \n"
+			print "		gatttool -b <bdaddr> --char-read --handle=0x0000 \n"
 			exitfunc 1
 		
 		elseif strcmp(tkn$,"b")==0 then
@@ -653,7 +652,7 @@ function _GattCharRead() as integer
 	
 endfunc 1
 //-------------------------------------------------------------------------
-// gatttool -b <MAC Address> --char-write --handle=0x0000  --value=0000
+// gatttool -b <bdaddr> --char-write --handle=0x0000  --value=0000
 //-------------------------------------------------------------------------
 function _GattCharWrite() as integer
 
@@ -665,7 +664,7 @@ function _GattCharWrite() as integer
 		if strcmp(tkn$,"help")==0 then
 			//print the gatttool help menu
 			print "Usage:\n"
-			print "		gatttool -b <MAC Address> --char-write --handle=0x0000 --value=0000 \n"
+			print "		gatttool -b <bdaddr> --char-write --handle=0x0000 --value=0000 \n"
 			exitfunc 1
 		
 		elseif strcmp(tkn$,"b")==0 then
@@ -722,7 +721,7 @@ function _GattCharWrite() as integer
 	
 endfunc 1
 //-------------------------------------------------------------------------
-// gatttool -b <MAC Address> --char-desc  --handle=0x0000
+// gatttool -b <bdaddr> --char-desc  --handle=0x0000
 //-------------------------------------------------------------------------
 function _GattCharDesc()
 	
@@ -732,7 +731,7 @@ function _GattCharDesc()
 		if strcmp(tkn$,"help")==0 then
 			//print the gatttool help menu
 			print "Usage:\n"
-			print "		gatttool -b <MAC Address> --char-desc --handle=0x0000\n"
+			print "		gatttool -b <bdaddr> --char-desc --handle=0x0000\n"
 			exitfunc 1
 		
 		elseif strcmp(tkn$,"b")==0 then
