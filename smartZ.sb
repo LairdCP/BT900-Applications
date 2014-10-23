@@ -157,8 +157,8 @@ dim inqtpl : inqtpl=4			// Inquiry transmit power level
 dim letpl : letpl = 4			// LE Tx Power level in dBm
 dim gattLsn : gattLsn = 0		// If Lsn = 1, notifications will be shown
 
-dim mjVersion : mjVersion=0		// Major version number
-dim mnVersion : mnVersion=99	// Minor version number
+dim mjVersion : mjVersion=1		// Major version number
+dim mnVersion : mnVersion=0	// Minor version number
 dim conHdl						// global connection handle of the current connection being serviced
 dim chrHdl						// global characteristic handle of the current characteristic being serviced
 dim valHdl						// global characteristic value handle of the current characteristic value handle being serviced
