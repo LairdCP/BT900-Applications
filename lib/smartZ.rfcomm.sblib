@@ -1,0 +1,207 @@
+//******************************************************************************
+// Laird Technologies (c) 2014
+//
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// +++++                                                                      ++
+// +++++  When UwTerminal downloads the app it will store it as a filenname   ++
+// +++++  which consists of all characters up to the first . and excluding it ++
+// +++++                                                                      ++
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//
+// This library file provides rfcomm commands to be used by smartZ and should be
+// #included into the file 'smartZ.sb' if running on a dual mode module
+// e.g. BT900.
+//
+//******************************************************************************
+// Function and Subroutine definitions
+//******************************************************************************
+//
+//
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//		rfcomm connect <bdaddr>
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+//
+//******************************************************************************
+// Function and Subroutine definitions
+//******************************************************************************
+//
+//==============================================================================
+// Print the rfcomm help menu
+//==============================================================================
+sub _rfcommHelp()
+
+	print "Usage:\n"
+	print "		rfcomm connect <bdaddr>\n"
+
+endsub
+//-------------------------------------------------------------------------
+// rfcomm connect <bdaddr> 
+//-------------------------------------------------------------------------
+function _rfcommConnect()
+
+'--- Extract all strings in command ---'
+'--------------------------------------'
+	while ExtractStrToken(urtcmd$, tkn$)!=0
+		if strcmp(tkn$,"help")==0 then
+			//print the gatttool help menu
+			print "Usage:\n"
+			print "		rfcomm connect <bdaddr>\n"
+			exitfunc 1
+
+		else
+			if strcmp(tkn$,"")==0 then
+				print "A valid Bluetooth address is required\n"
+			else
+				addr$ = tkn$
+			endif
+		endif
+	endwhile
+'--------------------------------------'
+
+	addr$ = strdehexize$(addr$)
+	rc = BtcSppConnect(addr$)
+	AssertResCode(rc)
+	if rc == 0 then
+		print "Connecting ... \n"
+	endif
+
+endfunc 1 
+//==============================================================================
+// Extract the rfcomm command
+//==============================================================================
+sub _rfcomm()
+
+	while ExtractStrToken(urtcmd$, tkn$)!= 0
+		if strcmp(tkn$, "help")==0 then
+			_rfcommHelp()
+			break
+
+		elseif strcmp(tkn$, "connect")==0 then
+			command = SMARTZ_COMMAND_RFCOMM_CONNECT
+			rc = _rfcommConnect()
+
+		endif
+	endwhile
+
+endsub
+
+//******************************************************************************
+// Handler definitions
+//******************************************************************************
+
+//==============================================================================
+// Called after an SPP connection attempt
+//==============================================================================
+function HandlerSppCon(hConn, res) as integer
+
+	dim hz, conAddr$
+    //if connected successfully
+	if res == 0 then
+		hcSpp = hConn
+		hz = AcqConnHandle(hConn)
+		conns = conns + 1
+		rc = BtcGetBDAddrFromHandle(hConn,conAddr$)
+		AssertResCode(rc)
+		print "\nConnected to ";strhexize$(conAddr$)
+		print "\nType \22^^^\22 for hangup\n"
+		rc=SendMsgApp(0,RFCOMM_MODE)
+		AssertResCode(rc)
+	else
+		print "\nConnection failed: ";res;"\n";pr$
+    endif        
+
+endfunc 1
+//==============================================================================
+// Called when a connection attempt to an SPP device times out
+//==============================================================================
+function HandlerSppConnTimOut() as integer
+
+    print "\nCould not create connection: Connection timed out\n";pr$
+
+endfunc 1
+//==============================================================================
+// Called when an SPP disconnection occurs
+//==============================================================================
+function HandlerSppDiscon(hConn)
+
+    dim hz
+    hz = RelConnHandle(hConn)
+    conns = conns - 1
+    print "\nDisconnected\n";pr$ 
+	rc=SendMsgApp(0,NORMAL_MODE)
+	AssertResCode(rc)
+
+endfunc 1
+//==============================================================================
+// Called when data is received via SPP
+//==============================================================================
+function HandlerSppData()
+
+    dim hPort, data$, rLen
+    '//read and print data while there is data available to read
+	while BtcSppRead(hPort, data$, rLen) == 0    
+        if rLen>0 then
+			print data$
+        endif
+    endwhile
+
+endfunc 1
+//==============================================================================
+// Called when data is received via UART when bridged to SPP
+//==============================================================================
+function HandlerUartRxSpp()
+
+	dim uLen, u$, nLen, nLen2 : uLen = 1
+    while uLen != 0
+        //read data that has arrived through via the UART
+        uLen = UartRead(u$)
+        if uLen > 0 then
+			if uLen == 4 then
+				// Check if received ^^^ in Line mode
+				dim i$, j$
+				i$ = u$
+				rc = ExtractStrToken(i$,j$)
+				if strcmp(j$,"^^^")==0 then 
+					rc = BtcSppDisconnect(hcSpp)
+					AssertResCode(rc)
+				endif 
+				STRSHIFTLEFT(u$, nLen)
+
+            elseif StrCmp(u$,"^")==0 then
+				carCnt = carCnt + 1
+				if carCnt<3 then
+					exitfunc 1
+				else
+					carCnt = 0
+					rc = BtcSppDisconnect(hcSpp)
+					AssertResCode(rc)
+				endif
+
+			else
+				carCnt = 0
+                //write data to most recent spp connection
+                nLen2 = 0
+                while nLen2 != uLen
+                    rc = BtcSPPWrite(hcSpp, u$, nLen)
+                    if rc != 0 then
+                        //Assume problem with the SPP connection
+                        exitfunc rc
+                    endif
+                    STRSHIFTLEFT(u$, nLen)
+                    nLen2 = nLen2 + nLen
+                endwhile
+            endif
+        endif
+
+    endwhile
+
+endfunc 1
+//------------------------------------------------------------------------------
+// Enable synchronous event handlers
+//------------------------------------------------------------------------------
+// rfcomm related events
+OnEvent  EVSPPCONN                	call HandlerSppCon
+OnEvent  EVBTC_SPP_CONN_TIMEOUT   	call HandlerSppConnTimOut
+OnEvent  EVSPPDISCON              	call HandlerSppDiscon
+OnEvent  EVBTC_SPP_DATA_RECEIVED  	call HandlerSppData

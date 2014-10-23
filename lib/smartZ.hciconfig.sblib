@@ -1,0 +1,339 @@
+//******************************************************************************
+// Laird Technologies (c) 2014
+//
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// +++++                                                                      ++
+// +++++  When UwTerminal downloads the app it will store it as a filenname   ++
+// +++++  which consists of all characters up to the first . and excluding it ++
+// +++++                                                                      ++
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//
+// This library file provides hciconfig commands to be used by smartZ and should be
+// #included into the file 'smartZ.sb' if running on a dual mode module
+// e.g. BT900.
+//
+//******************************************************************************
+// Function and Subroutine definitions
+//******************************************************************************
+//
+//
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//		hciconfig auth  				Enable Authentication
+//		hciconfig noauth				Disable Authentication
+//		hciconfig piscan				Enable Page and Inquiry scan
+//		hciconfig noscan				Disable scan
+//		hciconfig iscan 				Enable Inquiry scan
+//		hciconfig pscan 				Enable Page scan
+//		hciconfig name   	[name]		Get/Set local name
+//		hciconfig inqmode	[mode]		Get/Set inquiry mode
+//		hciconfig inqtype	[type]		Get/Set inquiry scan type
+//		hciconfig inqtpl	[level]		Get/Set inquiry transmit power level
+//		hciconfig letpl		[level]		Get/Set LE transmit power level
+//		hciconfig sspmode	[mode]		Get/Set Simple Pairing Mode
+//		hciconfig putkey	<bdaddr>	Store link key on the device
+//		hciconfig delkey	<bdaddr>	Delete link key from the device
+//		hciconfig version				Display version information
+//		hciconfig leadv  				Enable LE advertising
+//		hciconfig noleadv				Disable LE advertising
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+//
+//******************************************************************************
+// Function and Subroutine definitions
+//******************************************************************************
+//
+//==============================================================================
+// Print the hciconfig help menu
+//==============================================================================
+sub _hciCfgHelp()
+
+	print "Usage:\n"
+	print "	hciconfig <command> [command parameters]\n\n"
+	print "Commands:\n"
+	print "	auth  				Enable Authentication\n"
+	print "	noauth				Disable Authentication\n"
+	print "	piscan				Enable Page and Inquiry scan\n"
+	print "	noscan				Disable scan\n"
+	print "	iscan 				Enable Inquiry scan\n"
+	print "	pscan 				Enable Page scan\n"
+	print "	name   	[name]		Get/Set local name\n"
+	print "	inqtpl	[level]		Get/Set inquiry transmit power level\n"
+	print "	inqmode	[mode]		Get/Set inquiry mode\n"
+	print "	inqtype	[type]		Get/Set inquiry scan type\n"
+	print "	sspmode	[mode]		Get/Set Simple Pairing Mode\n"
+	print "	putkey	<bdaddr>		Store link key on the device\n"
+	print "	delkey	<bdaddr>		Delete link key from the device\n"
+	print "	version				Display version information\n"
+	print "	leadv  				Enable LE advertising\n"
+	print "	noleadv				Disable LE advertising\n"
+	print "	letpl		[level]		Get/Set LE transmit power level\n"
+	print "\n"
+
+endsub
+//==============================================================================
+// Extract the hciconfig command
+//==============================================================================
+sub _hciCfg()
+
+	dim s$, val
+	s$ = urtcmd$
+	while ExtractStrToken(s$, tkn$)!= 0
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		if strcmp(tkn$,"help")==0 then
+			_hciCfgHelp()
+			break
+
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		elseif strcmp(tkn$,"auth")==0 then 
+			rc = BtcSetConnectable(1)
+			AssertResCode(rc)
+			rc = BtcSetPairable(1)
+			AssertResCode(rc)
+	
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~		
+		elseif strcmp(tkn$,"noauth")==0 then
+			rc = BtcSetPairable(0)
+			AssertResCode(rc)
+
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		elseif strcmp(tkn$,"name")==0 then 
+			tlen = ExtractStrToken(s$,tkn$)
+			if tlen == 0 then
+				rc = BtcGetFriendlyName(s$)
+				AssertResCode(rc)
+				print s$;"\n"
+			
+			else
+				DIM len
+				name$ = tkn$ + s$
+				len = strlen(name$)
+				name$ = left$(name$, len-1)
+				rc = BtcSetFriendlyName(name$)
+				AssertResCode(rc)
+				exitsub
+			endif
+
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		elseif strcmp(tkn$,"piscan")==0 then 
+			//Enable inquiry scan and page scan (default)
+			nDiscv = 1 
+			rc = BtcSetDiscoverable(nDiscv, 300)
+			AssertResCode(rc)
+			rc = BtcSetConnectable(nConn)
+			AssertResCode(rc)
+
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		elseif strcmp(tkn$,"pscan")==0 then 
+			//Enable page scan
+			nDiscv = 1 
+			rc = BtcSetDiscoverable(nDiscv, 300)
+			AssertResCode(rc)
+
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		elseif strcmp(tkn$,"iscan")==0 then 
+			//Enable inquiry scan
+			nDiscv = 1
+			rc = BtcSetDiscoverable(nDiscv, 300)
+			AssertResCode(rc)
+
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		elseif strcmp(tkn$,"noscan")==0 then 
+			//The adapter in not detectable by other devices and will not accept any incoming connections
+			nDiscv = 0 
+			rc = BtcSetDiscoverable(nDiscv, 300)
+			AssertResCode(rc)
+			rc = BtcSetConnectable(nConn)
+			AssertResCode(rc)
+	
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		elseif strcmp(tkn$, "inqtpl")==0 then
+			// Get/set the transmit power level
+			if ExtractStrToken(s$, tkn$) == 0  then
+				// Get the transmit power level
+				print "Inquiry transmit power level : ";inqtpl;"\n"
+			else 
+				// Set the transmit power level
+				if strcmp(tkn$,"-")==0 then
+					rc = ExtractStrToken(s$, tkn$)
+					val = StrValDec(tkn$)
+					if (val > 70) then
+						print "Invalid power value. Valid range is from -70 to 20 dBm\n"
+					else
+						inqtpl = val*-1
+					endif
+				else
+					val = StrValDec(tkn$)
+					if (val > 20) then
+						print "Invalid power value. Valid range is from -70 to 20 dBm\n"
+					else
+						inqtpl =  val
+					endif
+				endif
+				rc = BtcInquiryConfig(3,inqtpl)
+				AssertResCode(rc)
+			endif
+	
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		elseif strcmp(tkn$,"inqmode")==0 then 
+			//Get/Set Inquiry mode
+			if ExtractStrToken(s$, tkn$) == 0  then
+				// Get inquiry mode
+				if inqmode == 0 then
+					print "Inquiry mode: Standard Inquiry\n"
+				elseif inqmode == 1 then
+					print "Inquiry mode: Inquiry with RSSI\n"
+				elseif inqmode == 2 then
+					print "Inquiry mode: Inquiry with RSSI or Extended Inquiry\n"
+				else
+					print "Invalid inquiry mode detected. Please set inquiry mode to 0, 1, or 2\n"
+				endif
+			else
+				val = StrValDec(tkn$)
+				if val >= 0 && val < 3 then
+					inqmode = val
+					rc = BtcInquiryConfig(1, inqmode)
+					AssertResCode(rc)
+				else 
+					print "Invalid inquiry mode. Valid values are 0, 1, and 2\n"
+				endif
+			endif
+	
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		elseif strcmp(tkn$,"inqtype")==0 then 
+			//Get/Set Inquiry type
+			if ExtractStrToken(s$, tkn$) == 0  then
+				// Get inquiry type
+				if inqtype == 0 then
+					print "Inquiry scan type: General Inquiry Scan\n"
+				elseif inqtype == 1 then
+					print "Inquiry scan type: Limited Inquiry Scan\n"
+				else
+					print "Invalid inquiry type detected. Please set inquiry type to 0, or 1\n"
+				endif
+			else
+				val = StrValDec(tkn$)
+				if val >= 0 && val < 2 then
+					inqtype = val
+					rc = BtcInquiryConfig(0, inqtype)
+					AssertResCode(rc)
+				else 
+					print "Invalid inquiry type. Valid values are 0 and 1\n"
+				endif
+			endif
+
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		elseif strcmp(tkn$, "sspmode")==0 then
+			// Get/Set Simple Pairing Mode
+			if ExtractStrToken(s$, tkn$) == 0  then
+			// Get Simple Pairing Mode
+				print "Simple Pairing Mode: "
+				if sspmode == 0 then 
+					print "Disabled\n"
+				else 
+					print "Enabled\n"
+				endif
+			else
+				dim hn
+				val = StrValDec(tkn$)
+				if val == 0 then
+					rc = BtcSppClose(hn)
+					AssertResCode(rc)
+					sspmode = 0
+				elseif val == 1 then
+					rc = BtcSppOpen(hn)
+					AssertResCode(rc)
+					sspmode = 1
+				else
+					print "Invalid ssp mode. Valid values are 0 and 1\n"
+				endif
+			endif
+
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		elseif strcmp(tkn$, "putkey")==0 then
+			//store link key on the device
+			if ExtractStrToken(s$, tkn$) == 0 then
+				print "MAC address not supplied\n"
+			else
+				tkn$ = strdehexize$(tkn$)
+				rc = BtcBondingPersistKey(tkn$)
+				AssertResCode(rc)
+				if rc == 0 then
+					print "Link key made persistent\n"
+				endif
+			endif
+
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		elseif strcmp(tkn$, "delkey")==0 then
+			//delete link key on the device
+			if ExtractStrToken(s$, tkn$) == 0 then
+				print "MAC address not supplied\n"
+			else
+				tkn$ = strdehexize$(tkn$)
+				rc = BtcBondingEraseKey(tkn$)
+				AssertResCode(rc)
+				if rc == 0 then
+					print "Link key erased\n"
+				endif
+			endif
+
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		elseif strcmp(tkn$, "leadv")==0 then
+			dim a$
+			rc = BleAdvertStart(0,a$,25,0,0)
+			AssertResCode(rc)
+
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		elseif strcmp(tkn$, "noleadv")==0 then
+			rc = BleAdvertStop()
+			AssertResCode(rc)
+
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		elseif strcmp(tkn$, "letpl")==0 then
+			// Get/set the LE transmit power level
+			if ExtractStrToken(s$, tkn$) == 0  then
+				// Get the LE transmit power level
+				print "LE transmit power level : ";letpl;"\n"
+			else 
+				// Set the LE transmit power level
+				if strcmp(tkn$,"-")==0 then
+					rc = ExtractStrToken(s$, tkn$)
+					val = StrValDec(tkn$)
+					if (val > 20) then
+						print "Invalid power value. Valid range is from -20 to 8 dBm\n"
+					else
+						letpl = val*-1
+					endif
+				else
+					val = StrValDec(tkn$)
+					if (val > 8) then
+						print "Invalid power value. Valid range is from -20 to 8 dBm\n"
+					else
+						letpl =  val
+					endif
+				endif
+				rc = BleTxPowerSet(letpl)
+				AssertResCode(rc)
+			endif
+
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		elseif strcmp(tkn$, "version")==0 then
+			dim fw, X, Y, Z
+			fw = SYSINFO(3)
+			X = (fw >> 24) & 0xFF
+			Y = (fw >>  8) & 0xFFFF
+			Z = (fw      ) & 0xFF
+			print "\nApp Version: smartZ Version ";mjVersion;".";mnVersion;"\n"
+			print "Device Name: ";BleGetDeviceName$();"\n"
+			print "Firmware: 9.";X;".";Y;".";Z;"\n"
+			print "Manufacturer: Laird Technologies\n"
+
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+		endif
+	endwhile
+
+endsub
+
+//******************************************************************************
+// Handler definitions
+//******************************************************************************
