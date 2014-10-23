@@ -9,7 +9,7 @@
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
 //
-//	cmdZ.manager
+//	smartZ.manager
 //
 //
 //	This app provides for a command interface to the BT900 devkit over the UART. The
@@ -158,7 +158,7 @@ dim letpl : letpl = 4			// LE Tx Power level in dBm
 dim gattLsn : gattLsn = 0		// If Lsn = 1, notifications will be shown
 
 dim mjVersion : mjVersion=0		// Major version number
-dim mnVersion : mnVersion=96	// Minor version number
+dim mnVersion : mnVersion=97	// Minor version number
 dim conHdl						// global connection handle of the current connection being serviced
 dim chrHdl						// global characteristic handle of the current characteristic being serviced
 dim valHdl						// global characteristic value handle of the current characteristic value handle being serviced
@@ -181,6 +181,18 @@ sub AssertResCode(resCode)
 		print "error: ";integer.h' rc;"\n"
 	endif
 endsub 
+//==============================================================================
+//==============================================================================
+sub delay(t as integer)
+
+		t = t*1000
+		DIM tm
+		tm = gettickcount()
+		while (gettickcount()-tm) < t
+			//wait for t*1000 milliseconds
+		endwhile
+		
+endsub
 //==============================================================================
 // Initialise all connection handles
 //==============================================================================
@@ -238,7 +250,7 @@ sub InitBtDevice()
 	name$ = SYSINFO$(4)
 	name$ = right$(name$, 6)
 	name$ = StrHexize$(name$)
-	name$ = "cmdZ-" + name$
+	name$ = "smartZ-" + name$
 	rc = BTCSETFRIENDLYNAME (name$)
 	AssertResCode(rc)
 
@@ -736,7 +748,7 @@ function _hciCfg()
 			X = (fw >> 24) & 0xFF
 			Y = (fw >>  8) & 0xFFFF
 			Z = (fw      ) & 0xFF
-			print "\nApp Version: cmdZ Manager Version ";mjVersion;".";mnVersion;"\n"
+			print "\nApp Version: smartZ Version ";mjVersion;".";mnVersion;"\n"
 			print "Device Name: ";BleGetDeviceName$();"\n"
 			print "Firmware: 9.";X;".";Y;".";Z;"\n"
 			print "Manufacturer: Laird Technologies\n"
@@ -1405,7 +1417,7 @@ sub Initialise()
 	InitConnHandles()
 	
 	print "\n-----------------------\n"
-	print " CMDZ MANAGER v";mjVersion;".";mnVersion;"\n"
+	print " smartZ v";mjVersion;".";mnVersion;"\n"
 	print "-----------------------\n"
 	print "\nType \22help\22 or \22<command> help\22\n"
 	print pr$

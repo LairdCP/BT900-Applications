@@ -1,13 +1,14 @@
 
 //-------------------------------------------------------------------------
-// hcitool inq [--length=N] [--numrsp=N]				// [] denotes optional parameters
+// hcitool inq [--length=N] [--numrsp=N]
 //-------------------------------------------------------------------------
 function _hciInq()  
-	
+
 	DIM inqLen : inqLen = 10
 	DIM numRsp : numRsp = 50
-		
-	//Extract all parameters to understand function before processing
+	
+'--- Extract all strings in command ---'
+'--------------------------------------'
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 			// print the inquiry help menu
@@ -15,12 +16,12 @@ function _hciInq()
 			print "		hcitool inq	[--length=t] maximum inquiry duration in seconds\n"
 			print " 				[--numrsp=N] specify maximum number of inquiry responses\n"
 			exitfunc 1
-			
+
 		elseif strcmp(tkn$,"length")==0 then
 			strshiftleft(urtcmd$, 1)					//discard the = sign
 			rc = extractStrToken(urtcmd$, tkn$)			//take the next string from the command
 			rc = extractInttoken(tkn$,inqLen)			//extract the integer value of the string	
-		
+
 		elseif strcmp(tkn$,"numrsp")==0 then
 			strshiftleft(urtcmd$, 1)					//discard the = sign
 			rc = extractStrToken(urtcmd$, tkn$)			//take the next string from the command
@@ -28,7 +29,8 @@ function _hciInq()
 
 		endif
 	endwhile
-	
+'--------------------------------------'
+
 	print "Inquiring ...\n"
 	// specify maximum number of responses
 	rc = btcInquiryConfig(2, numRsp)
@@ -36,16 +38,18 @@ function _hciInq()
 	// start inquiry
 	rc =  btcinquirystart(inqLen)
 	AssertResCode(rc)
-		
+
 endfunc 1
 //-------------------------------------------------------------------------
-// hcitool scan [--length=N] [--numrsp=N]				// [] denotes optional parameters
+// hcitool scan [--length=N] [--numrsp=N]
 //-------------------------------------------------------------------------
 function _hciScan()
-	
+
 	DIM inqLen : inqLen = 10
 	DIM numRsp : numRsp = 50
-	
+
+'--- Extract all strings in command ---'
+'--------------------------------------'	
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 			// print the scan help menu
@@ -53,19 +57,20 @@ function _hciScan()
 			print "		hcitool scan [--length=t] maximum inquiry duration in seconds\n"
 			print " 				 [--numrsp=N] specify maximum number of inquiry responses\n"
 			exitfunc 1
-		
+
 		elseif strcmp(tkn$,"length")==0 then
 			strshiftleft(urtcmd$, 1)					//discard the = sign
 			rc = extractStrToken(urtcmd$, tkn$)			//take the next string from the command
 			rc = extractInttoken(tkn$,inqLen)			//extract the integer value of the string	
-		
+
 		elseif strcmp(tkn$,"numrsp")==0 then
 			strshiftleft(urtcmd$, 1)					//discard the = sign
 			rc = extractStrToken(urtcmd$, tkn$)			//take the next string from the command
 			rc = extractInttoken(tkn$,numRsp)			//extract the integer value of the string
-	
+
 		endif
 	endwhile
+'--------------------------------------'	
 	
 	print "Scanning ...\n"
 	// specify maximum number of responses
@@ -80,48 +85,52 @@ endfunc 1
 // hcitool name <bdaddr>
 //-------------------------------------------------------------------------
 function _hciName()
-	
+
 	DIM inqLen : inqLen = 10
 	DIM numRsp : numRsp = 30
 	DIM num_of_params : num_of_params = 0
-	
+
+'--- Extract all strings in command ---'
+'--------------------------------------'
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 			// print the name help menu
 			print "Usage:\n"
 			print "		hcitool name <bdaddr>\n"
 			exitfunc 1
-		
+
 		else
 			addr$ = strdehexize$(tkn$)
 			num_of_params = num_of_params + 1
-		
+
 		endif
 	endwhile
-	
+'--------------------------------------'
+
 	if num_of_params != 1 then
 		print "name: too few arguments (minimal: 1)\n"
 		print "Usage:\n"
 		print "		name <bdaddr>\n"
 		exitfunc 1
 	endif
-	
+
 	// specify maximum number of responses
 	rc = btcInquiryConfig(2, numRsp)
 	AssertResCode(rc)
 	// start inquiry
 	rc =  btcinquirystart(inqLen)
 	AssertResCode(rc)
-	
-endfunc 1 
-	
+
+endfunc 1 	
 //-------------------------------------------------------------------------
 // hcitool dev
 //-------------------------------------------------------------------------
 function _hciDev()
-	
+
 	DIM str$
-	
+
+'--- Extract all strings in command ---'
+'--------------------------------------'
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 			//print the dev help menu
@@ -130,17 +139,20 @@ function _hciDev()
 			exitfunc 1
 		endif
 	endwhile
-	
+'--------------------------------------'
+
 	str$ = SYSINFO$(4)
 	str$ = right$(str$, 6)
 	print "Device: \n	";name$;"    ";StrHexize$(str$);"\n"
-			
+		
 endfunc 1
 //-------------------------------------------------------------------------
-// hcitool cc [--role=m|s] [--ptype=pkt_types] <bdaddr>				//[] denotes optional fields
+// hcitool con
 //-------------------------------------------------------------------------
 function _hciCon()
-	
+
+'--- Extract all strings in command ---'
+'--------------------------------------'
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 			//print the dev help menu
@@ -149,94 +161,98 @@ function _hciCon()
 			exitfunc 1
 		endif
 	endwhile
-	
-	dim conAddr$
-	
+'--------------------------------------'
+
+	dim conAddr$, z
+
 	print "Connections:\n"
-	dim z
 	for z=1 to conns
-		//print "    ";hc[z];"\n"
 		rc = BleGetAddrFromConnHandle(hc[z],conAddr$)
 		if rc!=0 then
 			rc = BtcGetBDAddrFromHandle(hc[z],conAddr$)
 		endif
-		//conAddr$ = strdehexize$(conAddr$)
 		print "	> ";strhexize$(conAddr$);" handle ";hc[z];"\n"
 	next
 
 endfunc 1 
 //-------------------------------------------------------------------------
-// hcitool cc [--role=m|s] [--ptype=pkt_types] <bdaddr>				//[] denotes optional fields
+// hcitool pair <bdaddr>
 //-------------------------------------------------------------------------
 function _hciPair()
-	
+
 	DIM str$
 	DIM nBnd : nBnd = 0
-	
+
+'--- Extract all strings in command ---'
+'--------------------------------------'
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
-			//print the  hcitool cc help menu
+			//print the  hcitool pair help menu
 			print "Usage:\n"
 			print "		hcitool pair <bdaddr> [--bond]\n"
 			exitfunc 1
-		
+
 		elseif strcmp(tkn$,"bond")==0 then
 			nBnd = 1
-		
+
 		elseif strcmp(tkn$,"-")==0 then
 			//do nothing
-			
+	
 		else
 			addr$ = tkn$
-		
+
 		endif
 	endwhile
-	
+'--------------------------------------'
+
 	addr$ = strdehexize$(addr$)
 	rc = BtcPair(addr$, nBnd)
 	AssertResCode(rc)
 	if rc == 0 then 
 		print "Pairing ...\n"
 	endif
-			
+		
 endfunc 1
 //-------------------------------------------------------------------------
-// hcitool dc <bdaddr>
+// hcitool unpair <bdaddr>
 //-------------------------------------------------------------------------
 function _hciUnpair()
-	
+
 	DIM str$
-	
+
+'--- Extract all strings in command ---'
+'--------------------------------------'
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 			//print the hcitool dc help menu
 			print "Usage:\n"
 			print "		hcitool unpair <bdaddr>\n"
 			exitfunc 1
-		
+
 		else
 			addr$ = tkn$
 		endif
 	endwhile
-	
+'--------------------------------------'
+
 	addr$ = strdehexize$(addr$)
-	//rc = BtcGetHandleFromBDAddr(tkn$,hcSpp)
-	//AssertResCode(rc)
 	rc = BtcBondingEraseKey(addr$)
 	AssertResCode(rc)
 	if rc == 0 then 
 		print "Unpaired\n"
 	endif
-			
+		
 endfunc 1
 //-------------------------------------------------------------------------
 // hcitool leadv	[--timeout]
 //-------------------------------------------------------------------------
 function _hciLeAdv()
-	
+
 	dim a$
 	dim timOut	: timOut = 0
-	
+
+'--- Extract all strings in command ---'
+'--------------------------------------'
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 		//print the leadv help menu
@@ -244,29 +260,31 @@ function _hciLeAdv()
 			print "		hcitool leadv [--timeout=t] advert time-out in seconds\n"
 			print ""
 			exitfunc 1
-		
+
 		elseif strcmp(tkn$,"timeout")==0 then
 		// modify the timeout variable
 			strshiftleft(urtcmd$, 1)					//discard the = sign
 			rc = extractStrToken(urtcmd$, tkn$)			//take the next string from the command
 			rc = extractInttoken(tkn$,timOut)			//extract the integer value of the string
-		
+
 		endif
 	endwhile
-					
+'--------------------------------------'					
 
 	rc = BleAdvertStart(0,a$,25,timOut,0)
 	AssertResCode(rc)
-				
+			
 endfunc 1
 //-------------------------------------------------------------------------
 // hcitool noleadv
 //-------------------------------------------------------------------------
 function _hciNoLeAdv()
-	
+
 	dim a$
 	dim timOut	: timOut = 0
-	
+
+'--- Extract all strings in command ---'
+'--------------------------------------'
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 		//print the leadv help menu
@@ -274,22 +292,24 @@ function _hciNoLeAdv()
 			print "		hcitool noleadv\n"
 			print ""
 			exitfunc 1
-		
+
 		endif
 	endwhile
-					
+'--------------------------------------'					
 
 	rc = BleAdvertStop()
 	AssertResCode(rc)
-				
+
 endfunc 1
 //-------------------------------------------------------------------------
-// hcitool lescan [--privacy] [--passive] [--discovery=g|l] [--duplicates]			//[] denotes optional fields
+// hcitool lescan [--length]
 //-------------------------------------------------------------------------
 function _hciLeScan()
-	
+
 	dim scnLen : scnLen = 5000
-	
+
+'--- Extract all strings in command ---'
+'--------------------------------------'
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 		// print the lescan help menu
@@ -297,68 +317,75 @@ function _hciLeScan()
 			print "		hcitool lescan [--length=N] maximum scan duration in seconds\n"
 			print ""
 			exitfunc 1
-			
+
 		elseif strcmp(tkn$,"length")==0 then
 			strshiftleft(urtcmd$, 1)					//discard the = sign
 			rc = extractStrToken(urtcmd$, tkn$)			//take the next string from the command
 			rc = extractInttoken(tkn$,scnLen)			//extract the integer value of the string
 			scnLen = scnLen*1000
-					
+
 		endif
 	endwhile
-		
+'--------------------------------------'
+
 	rc = BleScanStart(scnLen, 0)							//Scan for 30 seconds. No filtering of adverts.	
+	AssertResCode(rc)
 	if rc == 0 then 
 		print "LE Scan ...\n"
 	endif
-		
+
 endfunc 1
 //-------------------------------------------------------------------------
 // hcitool lecc [--random] <bdaddr>							// [] denotes optional fields
 //-------------------------------------------------------------------------
 function _hciLeCc() as integer
-	
+
+'--- Extract all strings in command ---'
+'--------------------------------------'
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 			//print the hcitool lecc help menu
 			print "Usage:\n"
 			print "		hcitool lecc <bdaddr>\n"
-			//print "		lecc --whitelist\n"
-		
+
 			exitfunc 1
-		
+
 		else
 			addr$ = tkn$
-		
+
 		endif
 	endwhile
-	
+'--------------------------------------'
+
 	addr$ = strdehexize$(addr$)
 	rc = BleConnect(addr$, 5000, 20000, 75000, 5000000)						// ConnectionTimeoutms, minConIntervalus, maxConIntervalus, nSupervisionTimeoutus
 	AssertResCode(rc)
 	if rc == 0 then
 		print "Connecting ... \n"
 	endif
-	
+
 endfunc 1
 //-------------------------------------------------------------------------
 // hcitool ledc <handle>
 //-------------------------------------------------------------------------
 function _hciLeDc() as integer
-	
+
+'--- Extract all strings in command ---'
+'--------------------------------------'
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 			//print the hcitool ledc help menu
 			print "Usage:\n"
 			print "		hcitool ledc <handle>\n"
-		
+
 			exitfunc 1
-		
+
 		else
 			conHdl = StrValDec(tkn$)
 
 		endif
 	endwhile
+'--------------------------------------'
 
 	// Do not store bonding information 
 	rc = bledisconnect(conHdl)
@@ -367,7 +394,7 @@ function _hciLeDc() as integer
 	else	
 		AssertResCode(rc)
 	endif	
-	
+
 endfunc 1
 //=========================================================================
 //						RFCOMM
@@ -376,14 +403,16 @@ endfunc 1
 // rfcomm connect <bdaddr> 
 //-------------------------------------------------------------------------
 function _rfcommConnect()
-	
+
+'--- Extract all strings in command ---'
+'--------------------------------------'
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 			//print the gatttool help menu
 			print "Usage:\n"
 			print "		rfcomm connect <bdaddr>\n"
 			exitfunc 1
-			
+
 		else
 			if strcmp(tkn$,"")==0 then
 				print "A valid Bluetooth address is required\n"
@@ -392,109 +421,19 @@ function _rfcommConnect()
 			endif
 		endif
 	endwhile
-	
-	//Here get handle from provided address
+'--------------------------------------'
+
 	addr$ = strdehexize$(addr$)
 	rc = BtcSppConnect(addr$)
 	AssertResCode(rc)
 	if rc == 0 then
 		print "Connecting ... \n"
 	endif
-	
+
 endfunc 1 
-//-------------------------------------------------------------------------
-// rfcomm write --handle=0000 --data=abc123
-//-------------------------------------------------------------------------
-function _rfcommWrite()
-
-	dim dta$, len
-		
-	while ExtractStrToken(urtcmd$, tkn$)!=0
-		
-		if strcmp(tkn$,"help")==0 then
-			print "Usage:\n"
-			print "		rfcomm write --handle=0000 --data=abc123\n"
-			exitfunc 1
-		
-		elseif strcmp(tkn$,"handle")==0 then
-			strshiftleft(urtcmd$, 1)
-			rc = ExtractStrToken(urtcmd$, tkn$)
-			rc = ExtractIntToken(tkn$, conHdl)
-		
-		elseif strcmp(tkn$, "data")==0 then
-			strshiftleft(urtcmd$, 1)
-			dta$ = urtcmd$
-			break
-		endif	
-	
-	endwhile
-	
-	rc = BtcSppWrite(conHdl, dta$, len)
-	AssertResCode(rc)
-	
-endfunc 1
-//-------------------------------------------------------------------------
-// rfcomm listen --handle=0000
-//-------------------------------------------------------------------------
-function _rfcommLsn()
-
-	dim dta$, len
-
-	while ExtractStrToken(urtcmd$, tkn$)!=0
-		if strcmp(tkn$,"help")==0 then
-			print "Usage:\n"
-			print "		rfcomm listen --handle=0000\n"
-			exitfunc 1
-			
-		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-		elseif strcmp(tkn$,"handle")==0 then
-			strshiftleft(urtcmd$, 1)
-			rc = ExtractStrToken(urtcmd$, tkn$)
-			rc = ExtractIntToken(tkn$, conHdl)
-			
-		endif
-	endwhile
-	
-	rc = BtcSppRead(conHdl, dta$, len)
-	AssertResCode(rc)
-	print "Incoming data: ";dta$;"\n"
-	
-endfunc 1
-//-------------------------------------------------------------------------
-// rfcomm listen --handle=0000
-//-------------------------------------------------------------------------
-function _rfcommBind()
-	
-	while ExtractStrToken(urtcmd$, tkn$)!=0
-		if strcmp(tkn$,"help")==0 then
-			//print the rfcomm bind help menu
-			print "Usage:\n"
-			print "		rfcomm bind --handle=0000\n"
-			exitfunc 1
-			
-		elseif strcmp(tkn$,"handle")==0 then
-			strshiftleft(urtcmd$, 1)
-			rc = ExtractStrToken(urtcmd$, tkn$)
-			// Must check here if connection handle exists
-			rc = ExtractIntToken(tkn$, hcSpp)
-			
-		//else
-		//	print "bind: too few arguments\n"
-		//	exitfunc 1
-		endif
-	endwhile
-	
-	tkn$ = strdehexize$(tkn$)
-	//rc=SendMsgApp(0,BRIDGE_SPP_MODE)
-	exitfunc -1
-	
-endfunc 1
 //=========================================================================
 //						GATTTOOL
 //=========================================================================
-//-------------------------------------------------------------------------
-// gatttool -b <bdaddr> --primary
-//-------------------------------------------------------------------------
 function _gattSecLvl() as integer
 
 	strshiftleft(urtcmd$, 1)
@@ -502,7 +441,7 @@ function _gattSecLvl() as integer
 	if strcmp(tkn$, "level")==0 then
 		strshiftleft(urtcmd$,1)
 		rc = ExtractStrToken(urtcmd$, tkn$)
-		
+
 		if strcmp(tkn$,"low")==0 then
 			// unpair with device after getting all tokens from command
 			secPair = 0
@@ -510,146 +449,152 @@ function _gattSecLvl() as integer
 		elseif strcmp(tkn$,"medium")==0 || strcmp(tkn$,"high")==0 then
 			// pair with device after getting all tokens from command
 			secPair = 1
-		
+
 		endif
 	endif
-	
+
 endfunc 1 
 //-------------------------------------------------------------------------
 // gatttool -b <bdaddr> --primary
 //-------------------------------------------------------------------------
 function _gattPrimary() as integer
 
+'--- Extract all strings in command ---'
+'--------------------------------------'
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 			//print the gatttool help menu
 			print "Usage:\n"
 			print "		gatttool -b <bdaddr> --primary\n"
 			exitfunc 1
-			
+
 		elseif strcmp(tkn$,"b")==0 then
 			rc = ExtractStrToken(urtcmd$,addr$)
 			// connect to this device and get handle
 			addr$ = strdehexize$(addr$)
-			
+
 		elseif strcmp(tkn$,"device")==0 then
 			strshiftleft(urtcmd$, 1)
 			rc = ExtractStrToken(urtcmd$, addr$)
-		
+
 		elseif strcmp(tkn$, "sec")==0 then
-			//call the sec-level function to piar or unpair with LE device
+			//call the sec-level function to pair or unpair with LE device
 			rc = _gattSecLvl()
-		
+
 		endif
 	endwhile
-	
-	
-	
+'--------------------------------------'
+
 	rc = BleGetConnHandleFromAddr(addr$, conHdl)
 	AssertResCode(rc)
-	
+
 	if secPair == 1 then
 		rc = BlePair(conHdl, 0)
 		AssertResCode(rc)
 	endif
-	
+
 	rc = BleGattcOpen(0,0)
 	AssertResCode(rc)
 	rc = BleDiscServiceFirst(conHdl,0,0)
 	AssertResCode(rc)
-	
+
 endfunc 1
 //-------------------------------------------------------------------------
 // gatttool -b <bdaddr> --characteristics
 //-------------------------------------------------------------------------
 function _gattChar() as integer
-	
+
+'--- Extract all strings in command ---'
+'--------------------------------------'
 		while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 			//print the gatttool help menu
 			print "Usage:\n"
 			print "		gatttool -b <bdaddr> --characteristics\n"
 			exitfunc 1
-			
+
 		elseif strcmp(tkn$,"b")==0 then
 			rc = ExtractStrToken(urtcmd$,addr$)
 			addr$ = strdehexize$(addr$)
-			
+	
 		elseif strcmp(tkn$,"device")==0 then
 			strshiftleft(urtcmd$, 1)
 			rc = ExtractStrToken(urtcmd$, addr$)
-		
+
 		elseif strcmp(tkn$, "sec")==0 then
 			//call the sec-level function to piar or unpair with LE device
 			rc = _gattSecLvl()
-		
+
 		endif
 	endwhile
-	
+'--------------------------------------'
+
 	rc = BleGetConnHandleFromAddr(addr$, conHdl)
 	AssertResCode(rc)
-		
+	
 	if secPair == 1 then
 		rc = BlePair(conHdl, 0)
 		AssertResCode(rc)
 	endif
-	
+
 	rc = BleGattcOpen(0,0)
 	AssertResCode(rc)
 	rc = BleDiscServiceFirst(conHdl,0,0)
 	AssertResCode(rc)
-	
+
 endfunc 1
 //-------------------------------------------------------------------------
 // gatttool -b <bdaddr> --char-read --handle=0x0000
 //-------------------------------------------------------------------------
 function _gattCharRead() as integer
-	
+
+'--- Extract all strings in command ---'
+'--------------------------------------'	
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 			//print the gatttool help menu
 			print "Usage:\n"
 			print "		gatttool -b <bdaddr> --char-read --handle=0x0000 \n"
 			exitfunc 1
-		
+
 		elseif strcmp(tkn$,"b")==0 then
 			rc = ExtractStrToken(urtcmd$,addr$)
 			addr$ = strdehexize$(addr$)
-		
+
 		elseif strcmp(tkn$,"device")==0 then
 			strshiftleft(urtcmd$, 1)
 			rc = ExtractStrToken(urtcmd$, addr$)
-		
+
 		elseif strcmp(tkn$,"handle")==0 then
 			strshiftleft(urtcmd$, 1)
 			rc = ExtractStrToken(urtcmd$, tkn$)
 			rc = ExtractIntToken(tkn$, valHdl)
-		
+
 		elseif strcmp(tkn$, "sec")==0 then
 			//call the sec-level function to piar or unpair with LE device
 			rc = _gattSecLvl()
-			
+
 		elseif strcmp(tkn$, "l")==0 then
 			//call the sec-level function to piar or unpair with LE device
 			rc = _gattSecLvl()
-		
+
 		endif 
 	endwhile
-	
+'--------------------------------------'
+
 	rc = BleGetConnHandleFromAddr(addr$, conHdl)
 	AssertResCode(rc)
-		
+
 	if secPair == 1 then
 		rc = BlePair(conHdl, 0)
 		AssertResCode(rc)
 	endif
-	
+
 	rc = BleGattcOpen(0,0)											//must check rc here
 	AssertResCode(rc)
 	rc = BleGattcRead(conHdl,valHdl,0)
 	AssertResCode(rc)
 
-	
 endfunc 1
 //-------------------------------------------------------------------------
 // gatttool -b <bdaddr> --char-write --handle=0x0000  --value=0000
@@ -658,111 +603,108 @@ function _gattCharWrite() as integer
 
 	dim val$								// value (string format)
 	dim val									// value (integer format)
-	
-	
+
+'--- Extract all strings in command ---'
+'--------------------------------------'	
 	while ExtractStrToken(urtcmd$, tkn$)!=0 
 		if strcmp(tkn$,"help")==0 then
 			//print the gatttool help menu
 			print "Usage:\n"
 			print "		gatttool -b <bdaddr> --char-write --handle=0x0000 --value=0000 \n"
 			exitfunc 1
-		
+
 		elseif strcmp(tkn$,"b")==0 then
 			rc = ExtractStrToken(urtcmd$,addr$)
 			addr$ = strdehexize$(addr$)
-		
+
 		elseif strcmp(tkn$,"device")==0 then
 			strshiftleft(urtcmd$, 1)
 			rc = ExtractStrToken(urtcmd$, addr$)
-		
+
 		elseif strcmp(tkn$,"handle")==0 then
 			strshiftleft(urtcmd$, 1)
 			rc = ExtractStrToken(urtcmd$, tkn$)
 			rc = ExtractIntToken(tkn$, valHdl)
-		
+
 		elseif strcmp(tkn$,"value")==0 then
 			strshiftleft(urtcmd$, 1)
 			rc = ExtractStrToken(urtcmd$, val$)
 			val$ = StrDehexize$(val$)
-		
+
 		elseif strcmp(tkn$, "sec")==0 then
 			//call the sec-level function to piar or unpair with LE device
 			rc = _gattSecLvl()
-		
+
 		elseif strcmp(tkn$, "listen")==0 then
 			gattLsn = 1
 
 		endif 
 	endwhile
-
+'--------------------------------------'
 
 	rc = BleGetConnHandleFromAddr(addr$, conHdl)
 	AssertResCode(rc)
-		
+
 	if secPair == 1 then
 		rc = BlePair(conHdl, 0)
 		AssertResCode(rc)
-		DIM tm
-		tm = gettickcount()
-		while (gettickcount()-tm) <5000
-			//wait for 5 seconds
-		endwhile
-		
+		delay(5)
 	endif
-	
+
 	rc = BleGattcOpen(0,0)
 	AssertResCode(rc)
 	rc = BleGattcWrite(conHdl,valHdl,val$)
 	AssertResCode(rc)
-	
+
 	if gattLsn == 1 then
 			rc = SendMsgApp(0, GATTTOOL_LISTEN)
 	endif
-	
+
 endfunc 1
 //-------------------------------------------------------------------------
 // gatttool -b <bdaddr> --char-desc  --handle=0x0000
 //-------------------------------------------------------------------------
 function _gattCharDesc()
-	
+
 	chrHdl = 0
-	
+
+'--- Extract all strings in command ---'
+'--------------------------------------'	
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 			//print the gatttool help menu
 			print "Usage:\n"
 			print "		gatttool -b <bdaddr> --char-desc --handle=0x0000\n"
 			exitfunc 1
-		
+
 		elseif strcmp(tkn$,"b")==0 then
 			rc = ExtractStrToken(urtcmd$,addr$)
 			addr$ = strdehexize$(addr$)
-		
+
 		elseif strcmp(tkn$,"handle")==0 then
 			strshiftleft(urtcmd$, 1)
 			rc = ExtractStrToken(urtcmd$, tkn$)
 			rc = ExtractIntToken(tkn$, chrHdl)
-			
+
 		elseif strcmp(tkn$, "sec")==0 then
 			//call the sec-level function to piar or unpair with LE device
 			rc = _gattSecLvl()
 
 		endif
-		
 	endwhile
-	
+'--------------------------------------'
+
 	rc = BleGetConnHandleFromAddr(addr$, conHdl)
 	AssertResCode(rc)
-		
+
 	if secPair == 1 then
 		rc = BlePair(conHdl, 0)
 		AssertResCode(rc)
 	endif
-	
+
 	rc = BleGattcOpen(0,0)
 	AssertResCode(rc)
 	rc = BleDiscDescFirst(conHdl, 0, chrHdl)
 	AssertResCode(rc)
-	
+
 endfunc 1
-	
