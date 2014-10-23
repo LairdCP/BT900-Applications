@@ -100,30 +100,30 @@
 #define BLE_EVBLEMSGID_UNENCRYPTED                     20 // msgCtx = connection handle
 #define BLE_EVBLEMSGID_DEVICENAME_WRITE                21 // msgCtx = connection handle 
 
-// BLUEZ COMMAND IDs: HCITOOL
-#define BLUEZ_COMMAND_HCITOOL_DEV						1
-#define BLUEZ_COMMAND_HCITOOL_INQ						2
-#define BLUEZ_COMMAND_HCITOOL_SCAN						3
-#define BLUEZ_COMMAND_HCITOOL_NAME						4
-#define BLUEZ_COMMAND_HCITOOL_CON						5
-#define BLUEZ_COMMAND_HCITOOL_PAIR						6
-#define BLUEZ_COMMAND_HCITOOL_UNPAIR					7
-#define BLUEZ_COMMAND_HCITOOL_LESCAN					8
-#define BLUEZ_COMMAND_HCITOOL_LEADV						9
-#define BLUEZ_COMMAND_HCITOOL_LENOADV					10
-#define BLUEZ_COMMAND_HCITOOL_LECC						11
-#define BLUEZ_COMMAND_HCITOOL_LEDC						12
+// SMARTZ COMMAND IDs: HCITOOL
+#define SMARTZ_COMMAND_HCITOOL_DEV						1
+#define SMARTZ_COMMAND_HCITOOL_INQ						2
+#define SMARTZ_COMMAND_HCITOOL_SCAN						3
+#define SMARTZ_COMMAND_HCITOOL_NAME						4
+#define SMARTZ_COMMAND_HCITOOL_CON						5
+#define SMARTZ_COMMAND_HCITOOL_PAIR						6
+#define SMARTZ_COMMAND_HCITOOL_UNPAIR					7
+#define SMARTZ_COMMAND_HCITOOL_LESCAN					8
+#define SMARTZ_COMMAND_HCITOOL_LEADV						9
+#define SMARTZ_COMMAND_HCITOOL_LENOADV					10
+#define SMARTZ_COMMAND_HCITOOL_LECC						11
+#define SMARTZ_COMMAND_HCITOOL_LEDC						12
 
-// BLUEZ COMMAND IDs: GATTTOOL
-#define BLUEZ_COMMAND_GATTTOOL_PRIMARY					21
-#define BLUEZ_COMMAND_GATTTOOL_CHARACTERISTICS			22
-#define BLUEZ_COMMAND_GATTTOOL_CHAR_READ				23
-#define BLUEZ_COMMAND_GATTTOOL_CHAR_WRITE				24
-#define BLUEZ_COMMAND_GATTTOOL_CHAR_DESC				25
-#define BLUEZ_COMMAND_GATTTOOL_LISTEN					26
+// SMARTZ COMMAND IDs: GATTTOOL
+#define SMARTZ_COMMAND_GATTTOOL_PRIMARY					21
+#define SMARTZ_COMMAND_GATTTOOL_CHARACTERISTICS			22
+#define SMARTZ_COMMAND_GATTTOOL_CHAR_READ				23
+#define SMARTZ_COMMAND_GATTTOOL_CHAR_WRITE				24
+#define SMARTZ_COMMAND_GATTTOOL_CHAR_DESC				25
+#define SMARTZ_COMMAND_GATTTOOL_LISTEN					26
 
-// BLUEZ COMMAND IDs: RFCOMM
-#define BLUEZ_COMMAND_RFCOMM_CONNECT					31
+// SMARTZ COMMAND IDs: RFCOMM
+#define SMARTZ_COMMAND_RFCOMM_CONNECT					31
 
 // APP RUN MODES
 #define NORMAL_MODE                                 	0
@@ -146,7 +146,7 @@ dim addr$						// address of device being connected to
 dim prAddr$              		// BT address of last device pairing requested from or initiated with
 dim hcSpp                   	// handle of connection to use for VSP service
 
-dim command : command = 0		// Currently active BlueZ command
+dim command : command = 0		// Currently active smartZ command
 dim nDiscv : nDiscv = 1			// The device is discoverable by default
 dim nConn : nConn = 1 			// The device is connectable by default
 dim nPair : nPair = 1			// The device is pairable by default					
@@ -158,7 +158,7 @@ dim letpl : letpl = 4			// LE Tx Power level in dBm
 dim gattLsn : gattLsn = 0		// If Lsn = 1, notifications will be shown
 
 dim mjVersion : mjVersion=0		// Major version number
-dim mnVersion : mnVersion=97	// Minor version number
+dim mnVersion : mnVersion=98	// Minor version number
 dim conHdl						// global connection handle of the current connection being serviced
 dim chrHdl						// global characteristic handle of the current characteristic being serviced
 dim valHdl						// global characteristic value handle of the current characteristic value handle being serviced
@@ -235,7 +235,7 @@ endfunc 0
 //------------------------------------------------------------------------------
 //** #include the correct library file for the smartBASIC module being used 
 //------------------------------------------------------------------------------
-#include "lib\cmd.bluez.manager.sblib"		//comment out lines above if you are using the bluez commands
+#include "lib\cmd.bluez.manager.sblib"
 
 //==============================================================================
 // Initialise the Bluetooth device
@@ -280,7 +280,7 @@ endsub
 //==============================================================================
 // Print the Help menu
 //==============================================================================
-function _help()
+sub _help()
 
 	print "Available Commands: \n\n"
 	print "	help\n"
@@ -293,11 +293,11 @@ function _help()
 	print "For more information on the usage of each command use:\n"
 	print "<command> --help\n\n"
 
-endfunc 1
+endsub
 //==============================================================================
 // print the hcitool help menu
 //==============================================================================
-function _hciHelp()
+sub _hciHelp()
 
 	print "Usage:\n"
 	print "	hcitool <command> [command parameters]\n\n"
@@ -318,11 +318,11 @@ function _hciHelp()
 	print "For more information on the usage of each command use:\n"
 	print "	hcitool <command> --help\n\n"
 	
-endfunc 1
+endsub
 //==============================================================================
 // Print the gatt help menu
 //==============================================================================
-function _gattHelp()
+sub _gattHelp()
 
 	print "Usage:\n"
 	print "	gatttool [OPTION...] <command>\n\n"
@@ -340,11 +340,11 @@ function _gattHelp()
 	print "\nFor more information on the usage of each command use:\n"
 	print "	gatttool <command> --help\n\n"
 
-endfunc 1
+endsub
 //==============================================================================
 // Print the hciconfig help menu
 //==============================================================================
-function _hciCfgHelp() as integer
+sub _hciCfgHelp()
 
 	print "Usage:\n"
 	print "	hciconfig <command> [command parameters]\n\n"
@@ -368,58 +368,58 @@ function _hciCfgHelp() as integer
 	print "	letpl		[level]		Get/Set LE transmit power level\n"
 	print "\n"
 
-endfunc 1
+endsub
 //==============================================================================
 // Print the rfcomm help menu
 //==============================================================================
-function _rfcommHelp()
+sub _rfcommHelp()
 
 	print "Usage:\n"
 	print "		rfcomm connect <bdaddr>\n"
 
-endfunc 1
+endsub
 //==============================================================================
 // Extract the hcitool command
 //==============================================================================
-function _hci()
+sub _hci()
 
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
-			rc = _hciHelp()
-			exitfunc 1
+			_hciHelp()
+			break
 
 		elseif strcmp(tkn$,"dev")==0 then
 			// Display the address of the local device
 			rc = _hciDev()								
 
 		elseif strcmp(tkn$,"inq")==0 then				
-			command = BLUEZ_COMMAND_HCITOOL_INQ
+			command = SMARTZ_COMMAND_HCITOOL_INQ
 			// Inquire for remote devices (show address only)
 			rc = _hciInq()							
 
 		elseif strcmp(tkn$,"scan")==0 then
 			// Scan for remote devices (show address and name)
-			command = BLUEZ_COMMAND_HCITOOL_SCAN
+			command = SMARTZ_COMMAND_HCITOOL_SCAN
 			rc = _hciScan()							
 
 		elseif strcmp(tkn$,"name")==0 then
 			// Get name from remote device
-			command = BLUEZ_COMMAND_HCITOOL_NAME
+			command = SMARTZ_COMMAND_HCITOOL_NAME
 			rc = _hciName()							
 
 		elseif strcmp(tkn$,"con")==0 then
 			// Display active connection handles
-			command = BLUEZ_COMMAND_HCITOOL_CON
+			command = SMARTZ_COMMAND_HCITOOL_CON
 			rc = _hciCon()							
 
 		elseif strcmp(tkn$, "pair")==0 then
 			// Create connection to remote device
-			command = BLUEZ_COMMAND_HCITOOL_PAIR
+			command = SMARTZ_COMMAND_HCITOOL_PAIR
 			rc = _hciPair()
 
 		elseif strcmp(tkn$, "unpair")==0 then
 			// Disconnect from remote device
-			command = BLUEZ_COMMAND_HCITOOL_UNPAIR
+			command = SMARTZ_COMMAND_HCITOOL_UNPAIR
 			rc = _hciUnpair()
 
 		elseif strcmp(tkn$, "leadv")== 0 then
@@ -445,32 +445,31 @@ function _hci()
 			rc = _hciLeDc()
 		
 		endif
-	
 	endwhile
 
-endfunc 1
+endsub
 //==============================================================================
 // Extract the gatttool command
 //==============================================================================
-function _gatt()
+sub _gatt()
 
 	dim s$
 	s$ = urtcmd$
 	while ExtractStrToken(s$, tkn$)!= 0
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		if strcmp(tkn$,"help")==0 then
-			rc = _gattHelp()
+			_gattHelp()
 			break
 
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"primary")==0 then
-			command = BLUEZ_COMMAND_GATTTOOL_PRIMARY
+			command = SMARTZ_COMMAND_GATTTOOL_PRIMARY
 			rc = _gattPrimary()
 			break
 
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"characteristics")==0 then
-			command = BLUEZ_COMMAND_GATTTOOL_CHARACTERISTICS
+			command = SMARTZ_COMMAND_GATTTOOL_CHARACTERISTICS
 			rc = _gattChar()
 			break
 
@@ -479,15 +478,15 @@ function _gatt()
 			strshiftleft(s$, 1)
 			rc = ExtractStrToken(s$, tkn$)
 			if strcmp(tkn$, "read")==0 then
-				command = BLUEZ_COMMAND_GATTTOOL_CHAR_READ
+				command = SMARTZ_COMMAND_GATTTOOL_CHAR_READ
 				rc = _gattCharRead()
 				break
 			elseif strcmp(tkn$, "write")==0 then
-				command = BLUEZ_COMMAND_GATTTOOL_CHAR_WRITE
+				command = SMARTZ_COMMAND_GATTTOOL_CHAR_WRITE
 				rc = _gattCharWrite()
 				break
 			elseif strcmp(tkn$, "desc")==0 then
-				command = BLUEZ_COMMAND_GATTTOOL_CHAR_DESC
+				command = SMARTZ_COMMAND_GATTTOOL_CHAR_DESC
 				rc = _gattCharDesc()
 				break
 			endif
@@ -495,18 +494,18 @@ function _gatt()
 		endif
 	endwhile
 
-endfunc 1
+endsub
 //==============================================================================
 // Extract the hciconfig command
 //==============================================================================
-function _hciCfg()
+sub _hciCfg()
 
 	dim s$, val
 	s$ = urtcmd$
 	while ExtractStrToken(s$, tkn$)!= 0
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		if strcmp(tkn$,"help")==0 then
-			rc = _hciCfgHelp()
+			_hciCfgHelp()
 			break
 
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -536,7 +535,7 @@ function _hciCfg()
 				name$ = left$(name$, len-1)
 				rc = BtcSetFriendlyName(name$)
 				AssertResCode(rc)
-				exitfunc 1
+				exitsub
 			endif
 
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -758,25 +757,25 @@ function _hciCfg()
 		endif
 	endwhile
 
-endfunc 1
+endsub
 //==============================================================================
 // Extract the rfcomm command
 //==============================================================================
-function _rfcomm()
+sub _rfcomm()
 
 	while ExtractStrToken(urtcmd$, tkn$)!= 0
 		if strcmp(tkn$, "help")==0 then
-			rc = _rfcommHelp()
+			_rfcommHelp()
 			break
 
 		elseif strcmp(tkn$, "connect")==0 then
-			command = BLUEZ_COMMAND_RFCOMM_CONNECT
+			command = SMARTZ_COMMAND_RFCOMM_CONNECT
 			rc = _rfcommConnect()
 
 		endif
 	endwhile
 
-endfunc 1
+endsub
 //==============================================================================
 // Extract the received Uart command
 //==============================================================================
@@ -786,19 +785,19 @@ function OnUartCmd() as integer
 	tlen = ExtractStrToken(urtcmd$,tkn$) 
 
 	if strcmp(tkn$,"hcitool")==0 then
-		rc = _hci()
+		_hci()
 
     elseif strcmp(tkn$,"gatttool")==0 then
-		rc = _gatt()
+		_gatt()
 
 	elseif strcmp(tkn$,"hciconfig")==0 then
-		rc = _hciCfg()
+		_hciCfg()
 
 	elseif strcmp(tkn$, "rfcomm")==0 then
-		rc = _rfcomm()
+		_rfcomm()
 
 	elseif strcmp(tkn$, "help")==0 then
-		rc = _help()
+		_help()
 
 	elseif strcmp(tkn$,"exit")==0 || strcmp(tkn$,"quit")==0  then
 		reset(0)
@@ -816,7 +815,7 @@ endfunc 1
 //==============================================================================
 // gatt status error codes
 //==============================================================================
-function _gattStatus(status as integer)
+sub _gattStatus(status as integer)
 
 	print "\nATT Error: "
 	select status
@@ -890,7 +889,7 @@ function _gattStatus(status as integer)
 		endselect
 	print pr$
 
-endfunc 1
+endsub
 //******************************************************************************
 // Handler definitions
 //******************************************************************************
@@ -907,11 +906,11 @@ function HandlerInqResp(respType) as integer
 	rc = BtcInquiryGetReport(ad$,dta$,ndx,rsi)
 
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	if command == BLUEZ_COMMAND_HCITOOL_INQ then
+	if command == SMARTZ_COMMAND_HCITOOL_INQ then
 		print "\n		"; StrHexize$(ad$)
 
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	elseif command == BLUEZ_COMMAND_HCITOOL_SCAN then
+	elseif command == SMARTZ_COMMAND_HCITOOL_SCAN then
 		print "\n		"; StrHexize$(ad$)
 		if respType == 2 then
 			//Get local name
@@ -931,7 +930,7 @@ function HandlerInqResp(respType) as integer
 		endif
 
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	elseif command == BLUEZ_COMMAND_HCITOOL_NAME then
+	elseif command == SMARTZ_COMMAND_HCITOOL_NAME then
 		// Only looking for name of specified address
 		if strcmp(ad$, addr$)!=0 then
 			exitfunc 1
@@ -975,9 +974,11 @@ function HandlerSppCon(hConn, res) as integer
 		hz = AcqConnHandle(hConn)
 		conns = conns + 1
 		rc = BtcGetBDAddrFromHandle(hConn,conAddr$)
+		AssertResCode(rc)
 		print "\nConnected to ";strhexize$(conAddr$)
 		print "\nType \22^^^\22 for hangup\n"
 		rc=SendMsgApp(0,RFCOMM_MODE)
+		AssertResCode(rc)
 	else
 		print "\nConnection failed: ";res;"\n";pr$
     endif        
@@ -1145,14 +1146,14 @@ endfunc 1
 function HandlerPrimSvc(hConn,hUuid,hStart,hEnd) as integer
 
 	if hUuid != 0 then
-		if command == BLUEZ_COMMAND_GATTTOOL_PRIMARY then
+		if command == SMARTZ_COMMAND_GATTTOOL_PRIMARY then
 			print "\n" 
 			print "attr handle = 0x";integer.h' hStart
 			print ", end grp handle = 0x";integer.h' hEnd
 			print ", uuid = ";integer.h' hUuid
 			rc = BleDiscServiceNext(hConn)
 
-		elseif command == BLUEZ_COMMAND_GATTTOOL_CHARACTERISTICS then
+		elseif command == SMARTZ_COMMAND_GATTTOOL_CHARACTERISTICS then
 			rc = BleDiscCharFirst(hConn,0,hStart,hEnd)
 
 		endif
@@ -1223,7 +1224,7 @@ function HandlerAttrRead(hConn,hAttr,nSts) as integer
 		endif
  
 	else 
-		rc = _gattStatus(nSts)
+		_gattStatus(nSts)
 
 	endif
 
@@ -1238,7 +1239,7 @@ function HandlerAttrWrite(hConn,aHndl,nSts) as integer
 	if nSts == 0 then
 		print "\nCharacteristic value was written successfully\n";pr$
 	else 
-		rc = _gattStatus(nSts)
+		_gattStatus(nSts)
 	endif
 
 endfunc 1
@@ -1325,6 +1326,7 @@ function HandlerUartRxLsn() as integer
 			gattLsn = 0
 			print pr$
 			rc = SendMsgApp(0, NORMAL_MODE)
+			AssertResCode(rc)
 		endif
 	endif
 

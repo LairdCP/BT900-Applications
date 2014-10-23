@@ -155,7 +155,7 @@ function _hciCon()
 '--------------------------------------'
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
-			//print the dev help menu
+			//print the con help menu
 			print "Usage:\n"
 			print "		hcitool con\n"
 			exitfunc 1
@@ -224,7 +224,7 @@ function _hciUnpair()
 '--------------------------------------'
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
-			//print the hcitool dc help menu
+			//print the hcitool unpair help menu
 			print "Usage:\n"
 			print "		hcitool unpair <bdaddr>\n"
 			exitfunc 1
@@ -287,7 +287,7 @@ function _hciNoLeAdv()
 '--------------------------------------'
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
-		//print the leadv help menu
+		//print the noleadv help menu
 			print "Usage:\n"
 			print "		hcitool noleadv\n"
 			print ""
@@ -328,7 +328,7 @@ function _hciLeScan()
 	endwhile
 '--------------------------------------'
 
-	rc = BleScanStart(scnLen, 0)							//Scan for 30 seconds. No filtering of adverts.	
+	rc = BleScanStart(scnLen, 0)
 	AssertResCode(rc)
 	if rc == 0 then 
 		print "LE Scan ...\n"
@@ -336,7 +336,7 @@ function _hciLeScan()
 
 endfunc 1
 //-------------------------------------------------------------------------
-// hcitool lecc [--random] <bdaddr>							// [] denotes optional fields
+// hcitool lecc [--random] <bdaddr>
 //-------------------------------------------------------------------------
 function _hciLeCc() as integer
 
@@ -463,14 +463,14 @@ function _gattPrimary() as integer
 '--------------------------------------'
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
-			//print the gatttool help menu
+			//print the gatttool primary help menu
 			print "Usage:\n"
 			print "		gatttool -b <bdaddr> --primary\n"
 			exitfunc 1
 
 		elseif strcmp(tkn$,"b")==0 then
 			rc = ExtractStrToken(urtcmd$,addr$)
-			// connect to this device and get handle
+			// get address 
 			addr$ = strdehexize$(addr$)
 
 		elseif strcmp(tkn$,"device")==0 then
@@ -508,7 +508,7 @@ function _gattChar() as integer
 '--------------------------------------'
 		while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
-			//print the gatttool help menu
+			//print the gatttool characteristics help menu
 			print "Usage:\n"
 			print "		gatttool -b <bdaddr> --characteristics\n"
 			exitfunc 1
@@ -571,11 +571,11 @@ function _gattCharRead() as integer
 			rc = ExtractIntToken(tkn$, valHdl)
 
 		elseif strcmp(tkn$, "sec")==0 then
-			//call the sec-level function to piar or unpair with LE device
+			//call the sec-level function to pair or unpair with LE device
 			rc = _gattSecLvl()
 
 		elseif strcmp(tkn$, "l")==0 then
-			//call the sec-level function to piar or unpair with LE device
+			//call the sec-level function to pair or unpair with LE device
 			rc = _gattSecLvl()
 
 		endif 
@@ -590,7 +590,7 @@ function _gattCharRead() as integer
 		AssertResCode(rc)
 	endif
 
-	rc = BleGattcOpen(0,0)											//must check rc here
+	rc = BleGattcOpen(0,0)
 	AssertResCode(rc)
 	rc = BleGattcRead(conHdl,valHdl,0)
 	AssertResCode(rc)
@@ -657,7 +657,8 @@ function _gattCharWrite() as integer
 	AssertResCode(rc)
 
 	if gattLsn == 1 then
-			rc = SendMsgApp(0, GATTTOOL_LISTEN)
+		rc = SendMsgApp(0, GATTTOOL_LISTEN)
+		AssertResCode(rc)
 	endif
 
 endfunc 1
