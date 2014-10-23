@@ -905,11 +905,10 @@ function HandlerInqResp(respType) as integer
 			//Get local name
 			tag = 0x09
 			rc=BtcGetEIRbyTag(dta$, tag, name$)
-			//AssertResCode(rc)
 			if rc == 0x5703 then
 				tag = 0x08
 				rc=BtcGetEIRbyTag(dta$, tag, name$)
-				//AssertResCode(rc)
+
 			endif
 
 			if rc == 0 then
@@ -957,7 +956,7 @@ endfunc 1
 //==============================================================================
 function HandlerSppCon(hConn, res) as integer
 
-	dim hz, az, conAddr$
+	dim hz, conAddr$
     //if connected successfully
 	if res == 0 then
 		hcSpp = hConn
@@ -968,7 +967,7 @@ function HandlerSppCon(hConn, res) as integer
 		print "\nType \22^^^\22 for hangup\n"
 		rc=SendMsgApp(0,RFCOMM_MODE)
 	else
-		print "\nconnection failed: ";res;"\n";pr$
+		print "\nConnection failed: ";res;"\n";pr$
     endif        
 
 endfunc 1
@@ -976,32 +975,39 @@ endfunc 1
 // Called when a connection attempt to an SPP device times out
 //==============================================================================
 function HandlerSppConnTimOut() as integer
-    print "\n --- SPP Conn Attempt Timeout"
+
+    print "\nCould not create connection: Connection timed out\n";pr$
+
 endfunc 1
 //==============================================================================
 // Called when an SPP disconnection occurs
 //==============================================================================
 function HandlerSppDiscon(hConn)
-    dim hz, az
+
+    dim hz
     hz = RelConnHandle(hConn)
     conns = conns - 1
     print "\nDisconnected\n";pr$ 
 	rc=SendMsgApp(0,NORMAL_MODE)
+	AssertResCode(rc)
+
 endfunc 1
 //==============================================================================
 // This handler is called when there is an inquiry timeout
 //==============================================================================
 function HandlerBtcInqTimOut() as integer 
+
 	rc = BtcInquiryCancel()
 	AssertResCode(rc)
 	print "\n";pr$
+
 endfunc 1
 //==============================================================================
 // This handler is called when there is an inquiry timeout
 //==============================================================================
 function HandlerBtcDiscTimOut() as integer
 
-	//Enable inquiry scan and page scan (default)
+	//Set device discoverability depending on latest configuration
 	rc = BtcSetDiscoverable(nDiscv, 300)
 	AssertResCode(rc)
 
@@ -1010,27 +1016,15 @@ endfunc 1
 // Called when data is received via SPP
 //==============================================================================
 function HandlerSppData()
+
     dim hPort, data$, rLen
     '//read and print data while there is data available to read
 	while BtcSppRead(hPort, data$, rLen) == 0    
         if rLen>0 then
-            //print"\nPort Handle: ";hPort; " Length: ";rLen;"\nData: ";data$;pr$
 			print data$
         endif
     endwhile
-endfunc 1
-//==============================================================================
-// Called when data is received via SPP in bridge mode
-//==============================================================================
-function HandlerSppDataBridge()
-    dim hPort, data$, rLen
 
-    // read and print data while there is data available to read
-    while BtcSppRead(hPort, data$, rLen) == 0    
-        if rLen>0 then
-            print data$
-        endif
-    endwhile
 endfunc 1
 //==============================================================================
 // Called when there is a pairing request from another device
@@ -1040,7 +1034,6 @@ function HandlerPairReq()
 	dim s$
     rc=BtcGetPAIRRequestBDAddr(s$)
     prAddr$ = s$
-    //print "\nPair Req: "; StrHexize$(s$);" \n"
 	rc = BtcSendPAIRResp(1)
 	AssertResCode(rc)
 
@@ -1050,26 +1043,20 @@ endfunc 1
 //==============================================================================
 function HandlerPINReq() 
 
-	dim mac$
-    rc=BtcGetPinRequestBDAddr(mac$)
-	//AssertResCode(rc)
-    if rc==0 then
-        print "pin Req: "; StrHexize$(mac$);pr$;"\n"
-    else
-        //AssertResCode(rc,2273)
-		print "pin error : ";integer.h' rc;"\n"
-    endif
+	print "\nPIN feature will be added in future versions\n";pr$
+
 endfunc 1
 //==============================================================================
 // Called after a pairing attempt
 //==============================================================================
 function HandlerPairRes(res)
-	
+
 	if res == 0 then
 		print "\nPaired\n";pr$
 	else
 		print "\nPairing attempt failed : ";res;"\n";pr$
 	endif
+
 endfunc 1
 //==============================================================================
 // This handler is called when there is an inquiry report waiting to be read 
@@ -1108,66 +1095,37 @@ endfunc 1
 // This handler is called when there is a Ble scan timeout
 //==============================================================================
 function HandlerBlrScanTimOut() as integer 
+
 	rc = BleScanStop()
 	AssertResCode(rc)
 	print "\n";pr$
+
 endfunc 1
 //==============================================================================
 // This handler is called when there is a BLE message
 //==============================================================================
 function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as integer
-  dim hz
 
-  select nMsgId
-  case BLE_EVBLEMSGID_CONNECT
-    hz = nCtx
-	rc = AcqConnHandle(hz)
-	conns = conns + 1
-    //print "\nConnected\n";pr$
-	print "\nConnection handle ";hz;"\n";pr$
+	dim hz
 
-    if hz == 0 then
-      //Could not store the handle so drop the connection
-      rc = BleDisconnect(nCtx)
-	  AssertResCode(rc)
-    else
-      //accepted so display connection parameters
-      //ShowConnParms(nCtx)
-      //always assume most recent connection for VSP
-      //hcVsp = hc[hz]
-    endif
-    
-  case BLE_EVBLEMSGID_DISCONNECT
-    // here must get address from the handle
-	hz = RelConnHandle(nCtx)
-    conns = conns - 1
-	dim a$
-	//rc = BleAdvertStart(0,a$,25,300000,0)
-	//AssertResCode(rc)
-    print "\nDisconnected\n";pr$
+	select nMsgId
+	
+	case BLE_EVBLEMSGID_CONNECT
+		hz = nCtx
+		rc = AcqConnHandle(hz)
+		conns = conns + 1
+		print "\nConnection handle ";hz;"\n";pr$
 
-  case BLE_EVBLEMSGID_DISPLAY_PASSKEY
-    print "Display Pairing Passkey ";nCtx
+	case BLE_EVBLEMSGID_DISCONNECT
+		hz = RelConnHandle(nCtx)
+		conns = conns - 1
+		print "\nDisconnected\n";pr$
 
-  case BLE_EVBLEMSGID_NEW_BOND
-    //DbgMsg(" +++ New Bond")
+	case else
+		//Unknown Ble Msg
 
-  case BLE_EVBLEMSGID_UPDATED_BOND
-    print " +++ Updated Bond"
-
-  case BLE_EVBLEMSGID_ENCRYPTED
-    //DbgMsg(" +++ Encrypted Connection")
-
-  case BLE_EVBLEMSGID_CONN_TO_BONDED_MASTER
-    //DbgMsgVal(" -- Conn to Bonded Master ",nCtx)
-
-  case BLE_EVBLEMSGID_AUTH_KEY_REQUEST
-    print " +++ Auth Key Request, type=";nCtx
-
-
-  case else
-    print "Unknown Ble Msg"; nMsgId
   endselect
+
 endfunc 1
 //==============================================================================
 // This handler is called when a BLE primary service is discovered
@@ -1181,19 +1139,17 @@ function HandlerPrimSvc(hConn,hUuid,hStart,hEnd) as integer
 			print ", end grp handle = 0x";integer.h' hEnd
 			print ", uuid = ";integer.h' hUuid
 			rc = BleDiscServiceNext(hConn)
-	
-	
-	
+
 		elseif command == BLUEZ_COMMAND_GATTTOOL_CHARACTERISTICS then
 			rc = BleDiscCharFirst(hConn,0,hStart,hEnd)
-		
+
 		endif
-		
+
 	else
 		BleGattcClose()
 		print "\n";pr$
 		exitfunc 1
-		
+
 	endif
 	
 	
@@ -1202,7 +1158,7 @@ endfunc 1
 // This handler is called when a BLE characteristic is discovered
 //==============================================================================
 function HandlerCharDisc(hConn,hUuid,cProp,hVal,hiUuid) as integer
-	
+
 	if hUuid != 0 then
 		print "\n"
 		print "handle = 0x";integer.h' hVal-1
@@ -1210,7 +1166,7 @@ function HandlerCharDisc(hConn,hUuid,cProp,hVal,hiUuid) as integer
 		print ", char value handle = 0x";integer.h' hVal
 		print ", uuid = ";integer.h' hUuid
 	endif
-	
+
 	rc = BleDiscCharNext(hConn)
 	if rc != 0 then
 		rc = BleDiscServiceNext(hConn)
@@ -1219,24 +1175,24 @@ function HandlerCharDisc(hConn,hUuid,cProp,hVal,hiUuid) as integer
 			BleGattcClose()
 		endif
 	endif
-	
+
 endfunc 1
 //==============================================================================
 // This handler is called when a BLE descriptor is discovered
 //==============================================================================
 function HandlerDescDisc(hChar, hUuid, hDisc) as integer
-	
+
 	if hUuid !=0 then
 		print "\n"
 		print "handle : 0x";integer.h' hDisc;" uuid : ";integer.h' hUuid
 	endif
-	
+
 	rc = BleDiscDescNext(hChar)
 	if rc !=0 then
 		print "\n";pr$
 		BleGattcClose()
 	endif
-	
+
 endfunc 1
 //==============================================================================
 // This handler is called when a BLE characteristic attribute has been read
@@ -1253,27 +1209,26 @@ function HandlerAttrRead(hConn,hAttr,nSts) as integer
 		else	
 			AssertResCode(rc)
 		endif
-	 
+ 
 	else 
 		rc = _gattStatus(nSts)
+
 	endif
-	
+
 	BleGattcClose()
-	
+
 endfunc 1
 //==============================================================================
 // This handler is called when a BLE characteristic attribute has been written to 
 //==============================================================================
 function HandlerAttrWrite(hConn,aHndl,nSts) as integer
-    
+
 	if nSts == 0 then
 		print "\nCharacteristic value was written successfully\n";pr$
-	
 	else 
 		rc = _gattStatus(nSts)
-	
 	endif
-	
+
 endfunc 1
 //==============================================================================
 // This handler is called when there is data notified or indicated
@@ -1281,7 +1236,7 @@ endfunc 1
 function HandlerAttrNtfyCmd() as integer
   
 	dim hConn,hAttr,att$,dscd
-  
+
 	if gattLsn == 1 then
 		do
 			rc=BleGattcNotifyRead(hConn,hAttr,att$,dscd)
@@ -1292,19 +1247,18 @@ function HandlerAttrNtfyCmd() as integer
 	endif
 
 endfunc 1
-
 //==============================================================================
 // Called when data is received via UART when bridged to SPP
 //==============================================================================
 function HandlerUartRxSpp()
-    dim uLen, u$, nLen, nLen2 : uLen = 1
-    WHILE uLen != 0
+
+	dim uLen, u$, nLen, nLen2 : uLen = 1
+    while uLen != 0
         //read data that has arrived through via the UART
         uLen = UartRead(u$)
         if uLen > 0 then
-			
 			if uLen == 4 then
-			// Check if received ^^^ in Line mode
+				// Check if received ^^^ in Line mode
 				dim i$, j$
 				i$ = u$
 				rc = ExtractStrToken(i$,j$)
@@ -1313,7 +1267,7 @@ function HandlerUartRxSpp()
 					AssertResCode(rc)
 				endif 
 				STRSHIFTLEFT(u$, nLen)
-				
+
             elseif StrCmp(u$,"^")==0 then
 				carCnt = carCnt + 1
 				if carCnt<3 then
@@ -1323,30 +1277,33 @@ function HandlerUartRxSpp()
 					rc = BtcSppDisconnect(hcSpp)
 					AssertResCode(rc)
 				endif
-            
+
 			else
 				carCnt = 0
                 //write data to most recent spp connection
                 nLen2 = 0
-                WHILE nLen2 != uLen
+                while nLen2 != uLen
                     rc = BtcSPPWrite(hcSpp, u$, nLen)
-                    IF rc != 0 THEN
+                    if rc != 0 then
                         //Assume problem with the SPP connection
                         exitfunc rc
-                    ENDIF
+                    endif
                     STRSHIFTLEFT(u$, nLen)
                     nLen2 = nLen2 + nLen
-                ENDWHILE
+                endwhile
             endif
         endif
-    ENDWHILE
+
+    endwhile
+
 endfunc 1
 //==============================================================================
 // This handler is called when data has arrived at the serial port
 //==============================================================================
 function HandlerUartRxLsn() as integer
+
 	dim nMatch
-	
+
 	nMatch=UartReadMatch(stRsp$,13)
 	if nMatch!=0 then
 		//CR exists in the input buffer
@@ -1358,35 +1315,41 @@ function HandlerUartRxLsn() as integer
 			rc = SendMsgApp(0, NORMAL_MODE)
 		endif
 	endif
+
 endfunc 1
 //==============================================================================
 // This handler is called when data has arrived at the serial port
 //==============================================================================
 function HandlerUartRxCmd() as integer
+
 	dim nMatch
-	
+
 	nMatch=UartReadMatch(stRsp$,13)
 	if nMatch!=0 then
 		//CR exists in the input buffer
 		urtcmd$ = strsplitleft$(stRsp$, nMatch)
 		exitfunc OnUartCmd()
 	endif
+
 endfunc 1
 '//==============================================================================
 '// Called after SendMsgApp is called. Used to switch between command and bridge mode
 '//==============================================================================
 function SetMode(msgID, cmd) as integer
+
 	if cmd == NORMAL_MODE then
 		OnEvent	 EVUARTRX					call HandlerUartRxCmd
 		carCnt=0
+
 	elseif cmd == RFCOMM_MODE then
 		OnEvent	EVUARTRX					call HandlerUartRxSpp
-		
+
 	elseif cmd == GATTTOOL_LISTEN then	
 		print "\nListening for notifications/indications. For hangup, type \22stop\22\n"
 		OnEvent	EVUARTRX					call HandlerUartRxLsn
 
 	endif
+
 endfunc 1
 //******************************************************************************
 
@@ -1451,7 +1414,6 @@ endsub
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 Initialise()
-
 
 //------------------------------------------------------------------------------
 // Wait for a synchronous event.
