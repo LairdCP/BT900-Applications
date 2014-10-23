@@ -8,9 +8,18 @@
 // +++++                                                                      ++
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
-// This app provides for a command interface over the uart similar to the BlueZ
-// commands for Linux as follows
-//		
+//
+//	cmdZ.manager
+//
+//
+//	This app provides for a command interface to the BT900 devkit over the UART. The
+// 	commands are designed to mimic the behaviour of BlueZ commands used in Linux.
+//
+//	When you run the app you will get a -------> command prompt to allow you to submit
+//	commands as follows:- 
+//
+//
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //		hcitool dev 		Display local devices
 //		hcitool inq 		Inquire remote devices
 //		hcitool scan		Scan for remote devices
@@ -23,8 +32,15 @@
 //		hcitool lescan      Start LE scan
 //		hcitool lecc        Create a LE Connection
 //		hcitool ledc        Disconnect a LE Connection
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
 //
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//		rfcomm connect <bdaddr>
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+//
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //		gatttool 
 //		gatttool --primary        	Primary Service Discovery
 //		gatttool --characteristics	Characteristics Discovery
@@ -36,9 +52,10 @@
 //		Options:
 //		-b, --device=MAC	Specify remote Bluetooth address
 //		-l, --sec-level		Set security level. Default: low
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
 //
-//
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //		hciconfig auth  				Enable Authentication
 //		hciconfig noauth				Disable Authentication
 //		hciconfig piscan				Enable Page and Inquiry scan
@@ -46,17 +63,16 @@
 //		hciconfig iscan 				Enable Inquiry scan
 //		hciconfig pscan 				Enable Page scan
 //		hciconfig name   	[name]		Get/Set local name
-//		hciconfig inqtpl	[level]		Get/Set inquiry transmit power level
 //		hciconfig inqmode	[mode]		Get/Set inquiry mode
 //		hciconfig inqtype	[type]		Get/Set inquiry scan type
+//		hciconfig inqtpl	[level]		Get/Set inquiry transmit power level
+//		hciconfig letpl		[level]		Get/Set LE transmit power level
 //		hciconfig sspmode	[mode]		Get/Set Simple Pairing Mode
-//		hciconfig putkey	<bdaddr>		Store link key on the device
-//		hciconfig delkey	<bdaddr>		Delete link key from the device
+//		hciconfig putkey	<bdaddr>	Store link key on the device
+//		hciconfig delkey	<bdaddr>	Delete link key from the device
 //		hciconfig version				Display version information
 //		hciconfig leadv  				Enable LE advertising
 //		hciconfig noleadv				Disable LE advertising
-//		hciconfig letpl	[level]		Get/Set LE transmit power level
-//
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -65,28 +81,18 @@
 // Definitions
 //******************************************************************************
 
-
         // Number of connections
 #define NUM_OF_CONNS                         8
 
 // BLE EVENT MSG IDs
 #define BLE_EVBLEMSGID_CONNECT                          0 // msgCtx = connection handle
 #define BLE_EVBLEMSGID_DISCONNECT                       1 // msgCtx = connection handle
-#define BLE_EVBLEMSGID_IMMEDIATE_ALERT_SERVICE_ALERT    2 // msgCtx = alert level
-#define BLE_EVBLEMSGID_LINKLOSS_SERVICE_ALERT           3 // msgCtx = alert level
 #define BLE_EVBLEMSGID_SERVICE_ERROR                    4 // msgCtx = resultcode
-#define BLE_EVBLEMSGID_HTS_INDICATION_STATE             5 // msgCtx = new indication state 0=off, 1=on
-#define BLE_EVBLEMSGID_HTS_INDICATION_CNF               6 // msgCtx = not used
-#define BLE_EVBLEMSGID_BPS_INDICATION_STATE             7 // msgCtx = new indication state 0=off, 1=on
-#define BLE_EVBLEMSGID_BPS_INDICATION_CNF               8 // msgCtx = not used
 #define BLE_EVBLEMSGID_DISPLAY_PASSKEY                  9 // msgCtx = passcode to display
 #define BLE_EVBLEMSGID_NEW_BOND                        10 // msgCtx = connection handle
 #define BLE_EVBLEMSGID_AUTH_KEY_REQUEST                11 // msgCtx = 1 for passkey, 2 for 16 byte OOB data
-#define BLE_EVBLEMSGID_HRS_NOTIFICATION_STATE          12 // msgCtx = new notification state 0=off, 1=on
 
 // #define FUTURE_USE                                   13
-#define BLE_EVBLEMSGID_CONN_PARMS_UPDATE               14 // msgCtx = connection handle
-#define BLE_EVBLEMSGID_CONN_PARMS_UPDATE_FAIL          15 // msgCtx = connection handle
 #define BLE_EVBLEMSGID_CONN_TO_BONDED_MASTER           16 // msgCtx = connection handle
 #define BLE_EVBLEMSGID_UPDATED_BOND                    17 // msgCtx = connection handle
 #define BLE_EVBLEMSGID_ENCRYPTED                       18 // msgCtx = connection handle
@@ -98,99 +104,68 @@
 #define BLUEZ_COMMAND_HCITOOL_DEV						1
 #define BLUEZ_COMMAND_HCITOOL_INQ						2
 #define BLUEZ_COMMAND_HCITOOL_SCAN						3
-#define BLUEZ_COMMAND_HCITOOL_NAME						5
-#define BLUEZ_COMMAND_HCITOOL_INFO						6
-#define BLUEZ_COMMAND_HCITOOL_SPINQ						7
-#define BLUEZ_COMMAND_HCITOOL_EPINQ						8
-#define BLUEZ_COMMAND_HCITOOL_CMD						9
-#define BLUEZ_COMMAND_HCITOOL_CON						10
-#define BLUEZ_COMMAND_HCITOOL_PAIR						11
-#define BLUEZ_COMMAND_HCITOOL_UNPAIR					12
-#define BLUEZ_COMMAND_HCITOOL_SR						13
-#define BLUEZ_COMMAND_HCITOOL_CPT						14
-#define BLUEZ_COMMAND_HCITOOL_RSSI						15
-//#define BLUEZ_COMMAND_HCITOOL_SCAN						16
-#define BLUEZ_COMMAND_HCITOOL_LQ						17
-#define BLUEZ_COMMAND_HCITOOL_TPL						18
-#define BLUEZ_COMMAND_HCITOOL_AFH						19
-#define BLUEZ_COMMAND_HCITOOL_LP						20
-#define BLUEZ_COMMAND_HCITOOL_LST						21
-#define BLUEZ_COMMAND_HCITOOL_ENC						23
-#define BLUEZ_COMMAND_HCITOOL_KEY						24
-#define BLUEZ_COMMAND_HCITOOL_CLKOFF					25
-#define BLUEZ_COMMAND_HCITOOL_CLOCK						26
-#define BLUEZ_COMMAND_HCITOOL_LESCAN					27
-#define BLUEZ_COMMAND_HCITOOL_LEWLADD					28
-#define BLUEZ_COMMAND_HCITOOL_LEWLRM					29
-#define BLUEZ_COMMAND_HCITOOL_LEWLSZ					30
-#define BLUEZ_COMMAND_HCITOOL_LEWLCLR					31
-#define BLUEZ_COMMAND_HCITOOL_LECC						32
-#define BLUEZ_COMMAND_HCITOOL_LEDC						33
-#define BLUEZ_COMMAND_HCITOOL_LECUP						34
+#define BLUEZ_COMMAND_HCITOOL_NAME						4
+#define BLUEZ_COMMAND_HCITOOL_CON						5
+#define BLUEZ_COMMAND_HCITOOL_PAIR						6
+#define BLUEZ_COMMAND_HCITOOL_UNPAIR					7
+#define BLUEZ_COMMAND_HCITOOL_LESCAN					8
+#define BLUEZ_COMMAND_HCITOOL_LEADV						9
+#define BLUEZ_COMMAND_HCITOOL_LENOADV					10
+#define BLUEZ_COMMAND_HCITOOL_LECC						11
+#define BLUEZ_COMMAND_HCITOOL_LEDC						12
 
 // BLUEZ COMMAND IDs: GATTTOOL
-#define BLUEZ_COMMAND_GATTTOOL_PRIMARY					41
-#define BLUEZ_COMMAND_GATTTOOL_CHARACTERISTICS			42
-#define BLUEZ_COMMAND_GATTTOOL_CHAR_READ				43
-#define BLUEZ_COMMAND_GATTTOOL_CHAR_WRITE				44
-#define BLUEZ_COMMAND_GATTTOOL_CHAR_WRITE_REQ			45
-#define BLUEZ_COMMAND_GATTTOOL_CHAR_DESC				46
-#define BLUEZ_COMMAND_GATTTOOL_LISTEN					47
-
-// BLUEZ COMMAND IDs: GATTTOOL
-#define BLUEZ_COMMAND_GATTTOOL_SERVER_UUID				51
+#define BLUEZ_COMMAND_GATTTOOL_PRIMARY					21
+#define BLUEZ_COMMAND_GATTTOOL_CHARACTERISTICS			22
+#define BLUEZ_COMMAND_GATTTOOL_CHAR_READ				23
+#define BLUEZ_COMMAND_GATTTOOL_CHAR_WRITE				24
+#define BLUEZ_COMMAND_GATTTOOL_CHAR_DESC				25
+#define BLUEZ_COMMAND_GATTTOOL_LISTEN					26
 
 // BLUEZ COMMAND IDs: RFCOMM
-#define BLUEZ_COMMAND_RFCOMM_CONNECT					60
+#define BLUEZ_COMMAND_RFCOMM_CONNECT					31
 
 // APP RUN MODES
 #define NORMAL_MODE                                 	0
 #define RFCOMM_MODE                          			1
-#define GATTTOOL_INTERACTIVE_MODE						2
-#define GATTTOOL_LISTEN									3
-
-
+#define GATTTOOL_LISTEN									2
 
 //******************************************************************************
 // Global Variable Declarations
 //******************************************************************************
 dim rc
-dim stRsp$ 			        //Uart rx data is stored here
+dim stRsp$ 			        	//Uart rx data is stored here
 dim ok$,er$,pr$
-dim urtcmd$                 // cmd line from uart
-dim tkn$,tlen               // used by command parser
-dim urts                    // will be <0 if uart parser suspended
-dim hc[NUM_OF_CONNS+1]      // contains connection handles
-dim conns                   // number of connections
-dim name$					// local device name
-dim addr$					// address of device being connected to
+dim urtcmd$                 	// cmd line from uart
+dim tkn$,tlen               	// used by command parser
+dim hc[NUM_OF_CONNS+1]      	// contains connection handles
+dim conns                   	// number of connections
+dim name$						// local device name
+dim addr$						// address of device being connected to
 
-dim gcState                 // gatt client state, 0=IDLE, 1=TableMapping
-dim sAttr
-dim eAttr
+dim prAddr$              		// BT address of last device pairing requested from or initiated with
+dim hcSpp                   	// handle of connection to use for VSP service
 
-dim prAddr$              				// BT address of last device pairing requested from or initiated with
-dim hcSpp                   			// handle of connection to use for VSP service
+dim command : command = 0		// Currently active BlueZ command
+dim nDiscv : nDiscv = 1			// The device is discoverable by default
+dim nConn : nConn = 1 			// The device is connectable by default
+dim nPair : nPair = 1			// The device is pairable by default					
+dim inqtype	: inqtype = 0		// Inquiry Type: 0 General, 1 Limited
+dim inqmode	: inqmode = 2		// Inquiry Mode: 0 for Standard, 1 for with RSSI, 2 for Extended)
+dim sspmode : sspmode = 1		// SSP Mode: 0 for disabled, 1 for enabled 
+dim inqtpl : inqtpl=4			// Inquiry transmit power level
+dim letpl : letpl = 4			// LE Tx Power level in dBm
+dim gattLsn : gattLsn = 0		// If Lsn = 1, notifications will be shown
 
-dim command : command = 0				// Currently active BlueZ command
-dim nDiscv : nDiscv = 1					// The device is discoverable by default
-dim nConn : nConn = 1 					// The device is connectable by default
-dim nPair : nPair = 1					// The device is pairable by default					
-dim inqtype	: inqtype = 0				// Inquiry Type: 0 General, 1 Limited
-dim inqmode	: inqmode = 2				// Inquiry Mode: 0 for Standard, 1 for with RSSI, 2 for Extended)
-dim sspmode : sspmode = 1				// SSP Mode: 0 for disabled, 1 for enabled 
-dim inqtpl : inqtpl=4						// Inquiry transmit power level
-dim letpl : letpl = 4					// LE Tx Power level in dBm
-dim gattLsn : gattLsn = 0				// If Lsn = 1, notifications will be shown
+dim mjVersion : mjVersion=0		// Major version number
+dim mnVersion : mnVersion=96	// Minor version number
+dim conHdl						// global connection handle of the current connection being serviced
+dim chrHdl						// global characteristic handle of the current characteristic being serviced
+dim valHdl						// global characteristic value handle of the current characteristic value handle being serviced
 
-dim mjVersion : mjVersion=0			// Major version number
-dim mnVersion : mnVersion=95				// Minor version number
-dim conHdl								// global connection handle of the current connection being serviced
-dim chrHdl								// global characteristic handle of the current characteristic being serviced
-dim valHdl								// global characteristic value handle of the current characteristic value handle being serviced
+dim carCnt                  	//count variable for number of times '^' entered
+dim secPair						// If 1, it means sec-level is medium or high and therefore should pair
 
-dim carCnt                  //count variable for number of times '^' entered
-dim secPair								// If 1, it means sec-level is medium or high and therefore should pair
 //******************************************************************************
 // Initialise Global Variable
 //******************************************************************************
@@ -198,7 +173,6 @@ dim secPair								// If 1, it means sec-level is medium or high and therefore s
 ok$    = "\nOK"
 er$    = "\nERROR "
 pr$    = "------->"
-urts = 0					// not suspended
 
 //==============================================================================
 //==============================================================================
@@ -211,36 +185,40 @@ endsub
 // Initialise all connection handles
 //==============================================================================
 sub InitConnHandles()
-  dim z
-  for z=0 to (NUM_OF_CONNS)
-    hc[z]=-1
-  next
+
+	dim z
+	for z=0 to (NUM_OF_CONNS)
+		hc[z]=-1
+	next
+
 endsub
 //==============================================================================
 // Add the connection handle to the list of connection handles
 //==============================================================================
 function AcqConnHandle(hConn)
-  dim z
-  for z=1 to (NUM_OF_CONNS)
-    if hc[z] == -1 then
-	    hc[z]=hConn
-      exitfunc z
-    endif
-  next
+
+	dim z
+	for z=1 to (NUM_OF_CONNS)
+		if hc[z] == -1 then
+			hc[z]=hConn
+			exitfunc z
+		endif
+	next
 
 endfunc 0
-
 //==============================================================================
 // Release the connection handle from the array of conn handles
 //==============================================================================
 function RelConnHandle(hConn)
-  dim z
-  for z=1 to (NUM_OF_CONNS)
-    if hc[z] == hConn then 
-      hc[z]=-1
-      exitfunc z
-    endif
-  next
+
+	dim z
+	for z=1 to (NUM_OF_CONNS)
+		if hc[z] == hConn then 
+			hc[z]=-1
+			exitfunc z
+		endif
+	next
+
 endfunc 0
 //------------------------------------------------------------------------------
 //** #include the correct library file for the smartBASIC module being used 
@@ -248,23 +226,12 @@ endfunc 0
 #include "lib\cmd.bluez.manager.sblib"		//comment out lines above if you are using the bluez commands
 
 //==============================================================================
-//==============================================================================
-sub UartRsp(rsp as integer)
-  //if rsp == 0 then
-    print pr$
-  //elseif rsp > 0 then 
-  //  print er$;integer.h' rsp;pr$
-  //endif
-  urts = rsp
-endsub
-
-//==============================================================================
 // Initialise the Bluetooth device
 // Set the device to be disoverable, connectable, pairable, 
 // Set the inquiry type to be general, inquiry mode to be extended
 //==============================================================================
 sub InitBtDevice()
-	
+
 	dim nHandle
 	
 	// Set the name of the local Bluetooth device
@@ -274,7 +241,7 @@ sub InitBtDevice()
 	name$ = "cmdZ-" + name$
 	rc = BTCSETFRIENDLYNAME (name$)
 	AssertResCode(rc)
-	
+
 	// Configure classic BT radio
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	// Set device is discoverable with 300s discoverability timeout
@@ -296,15 +263,14 @@ sub InitBtDevice()
 	rc = btcSppOpen(nHandle)
 	AssertResCode(rc)
 	sspmode = 1
-	
+
 endsub											
 //==============================================================================
 // Print the Help menu
 //==============================================================================
-function _Help()
+function _help()
 
-	print "Available Commands: \n"
-	print "\n"
+	print "Available Commands: \n\n"
 	print "	help\n"
 	print "	hcitool\n"
 	print "	gatttool\n"
@@ -316,15 +282,13 @@ function _Help()
 	print "<command> --help\n\n"
 
 endfunc 1
-
 //==============================================================================
 // print the hcitool help menu
 //==============================================================================
-function _HciHelp()
+function _hciHelp()
 
 	print "Usage:\n"
-	print "	hcitool <command> [command parameters]\n"
-	print "\n"
+	print "	hcitool <command> [command parameters]\n\n"
 	print "Commands:\n"
 	print "	dev 		Display local devices\n"
 	print "	inq 		Inquire remote devices\n"
@@ -346,11 +310,10 @@ endfunc 1
 //==============================================================================
 // Print the gatt help menu
 //==============================================================================
-function _GattHelp()
+function _gattHelp()
 
 	print "Usage:\n"
-	print "	gatttool [OPTION...] <command>\n"
-	print "\n"
+	print "	gatttool [OPTION...] <command>\n\n"
 	print "GATT commands\n"
 	print "	--primary        						Primary Service Discovery\n"
 	print "	--characteristics						Characteristics Discovery\n"
@@ -364,14 +327,13 @@ function _GattHelp()
 	print "	-l, --sec-level=[low | medium | high]		Set security level. Default: low\n"	
 	print "\nFor more information on the usage of each command use:\n"
 	print "	gatttool <command> --help\n\n"
-	
-endfunc 1
 
+endfunc 1
 //==============================================================================
 // Print the hciconfig help menu
 //==============================================================================
-function _HciCfgHelp() as integer
-	
+function _hciCfgHelp() as integer
+
 	print "Usage:\n"
 	print "	hciconfig <command> [command parameters]\n\n"
 	print "Commands:\n"
@@ -407,27 +369,27 @@ endfunc 1
 //==============================================================================
 // Extract the hcitool command
 //==============================================================================
-function _Hci()
-	
+function _hci()
+
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
 			rc = _hciHelp()
 			exitfunc 1
-	
+
 		elseif strcmp(tkn$,"dev")==0 then
 			// Display the address of the local device
 			rc = _hciDev()								
-	
+
 		elseif strcmp(tkn$,"inq")==0 then				
 			command = BLUEZ_COMMAND_HCITOOL_INQ
 			// Inquire for remote devices (show address only)
 			rc = _hciInq()							
-	
+
 		elseif strcmp(tkn$,"scan")==0 then
 			// Scan for remote devices (show address and name)
 			command = BLUEZ_COMMAND_HCITOOL_SCAN
 			rc = _hciScan()							
-	
+
 		elseif strcmp(tkn$,"name")==0 then
 			// Get name from remote device
 			command = BLUEZ_COMMAND_HCITOOL_NAME
@@ -437,117 +399,116 @@ function _Hci()
 			// Display active connection handles
 			command = BLUEZ_COMMAND_HCITOOL_CON
 			rc = _hciCon()							
-	
-	
+
 		elseif strcmp(tkn$, "pair")==0 then
 			// Create connection to remote device
 			command = BLUEZ_COMMAND_HCITOOL_PAIR
 			rc = _hciPair()
-	
+
 		elseif strcmp(tkn$, "unpair")==0 then
 			// Disconnect from remote device
 			command = BLUEZ_COMMAND_HCITOOL_UNPAIR
 			rc = _hciUnpair()
-	
+
 		elseif strcmp(tkn$, "leadv")== 0 then
 			// LE advertise
 			rc = _hciLeAdv()
-			
+		
 		
 		elseif strcmp(tkn$, "noleadv")== 0 then
 			// LE advertise
 			rc = _hciNoLeAdv()
-			
+		
 	
 		elseif strcmp(tkn$, "lescan")==0 then
 			// Start LE scan
 			rc = _hciLeScan()
-	
+
 		elseif strcmp(tkn$, "lecc")==0 then
 			// Create a LE connection
 			rc = _hciLeCc()
-	
+
 		elseif strcmp(tkn$, "ledc")==0 then
 			// Disconnect a LE Connection
 			rc = _hciLeDc()
-			
-		endif
 		
-	endwhile
+		endif
 	
+	endwhile
+
 endfunc 1
 //==============================================================================
 // Extract the gatttool command
 //==============================================================================
-function _Gatt()
-	
+function _gatt()
+
 	dim s$
 	s$ = urtcmd$
 	while ExtractStrToken(s$, tkn$)!= 0
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		if strcmp(tkn$,"help")==0 then
-			rc = _GattHelp()
+			rc = _gattHelp()
 			break
 
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"primary")==0 then
 			command = BLUEZ_COMMAND_GATTTOOL_PRIMARY
-			rc = _GattPrimary()
+			rc = _gattPrimary()
 			break
 
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"characteristics")==0 then
 			command = BLUEZ_COMMAND_GATTTOOL_CHARACTERISTICS
-			rc = _GattChar()
+			rc = _gattChar()
 			break
-	
+
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$, "char")==0 then 
 			strshiftleft(s$, 1)
 			rc = ExtractStrToken(s$, tkn$)
 			if strcmp(tkn$, "read")==0 then
 				command = BLUEZ_COMMAND_GATTTOOL_CHAR_READ
-				rc = _GattCharRead()
+				rc = _gattCharRead()
 				break
 			elseif strcmp(tkn$, "write")==0 then
 				command = BLUEZ_COMMAND_GATTTOOL_CHAR_WRITE
-				rc = _GattCharWrite()
+				rc = _gattCharWrite()
 				break
 			elseif strcmp(tkn$, "desc")==0 then
 				command = BLUEZ_COMMAND_GATTTOOL_CHAR_DESC
-				rc = _GattCharDesc()
+				rc = _gattCharDesc()
 				break
 			endif
-			
+		
 		endif
 	endwhile
-	
+
 endfunc 1
 //==============================================================================
 // Extract the hciconfig command
 //==============================================================================
-function _HciCfg()
-	
+function _hciCfg()
+
 	dim s$, val
 	s$ = urtcmd$
 	while ExtractStrToken(s$, tkn$)!= 0
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		if strcmp(tkn$,"help")==0 then
-			rc = _HciCfgHelp()
-			exitfunc 1
-	
+			rc = _hciCfgHelp()
+			break
+
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"auth")==0 then 
 			rc = BtcSetConnectable(1)
 			AssertResCode(rc)
 			rc = BtcSetPairable(1)
 			AssertResCode(rc)
-		
+	
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~		
 		elseif strcmp(tkn$,"noauth")==0 then
 			rc = BtcSetPairable(0)
 			AssertResCode(rc)
-	
+
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"name")==0 then 
 			tlen = ExtractStrToken(s$,tkn$)
@@ -555,6 +516,7 @@ function _HciCfg()
 				rc = BtcGetFriendlyName(s$)
 				AssertResCode(rc)
 				print s$;"\n"
+			
 			else
 				DIM len
 				name$ = tkn$ + s$
@@ -564,7 +526,7 @@ function _HciCfg()
 				AssertResCode(rc)
 				exitfunc 1
 			endif
-	
+
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"piscan")==0 then 
 			//Enable inquiry scan and page scan (default)
@@ -573,21 +535,21 @@ function _HciCfg()
 			AssertResCode(rc)
 			rc = BtcSetConnectable(nConn)
 			AssertResCode(rc)
-	
+
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"pscan")==0 then 
 			//Enable page scan
 			nDiscv = 1 
 			rc = BtcSetDiscoverable(nDiscv, 300)
 			AssertResCode(rc)
-	
+
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"iscan")==0 then 
 			//Enable inquiry scan
 			nDiscv = 1
 			rc = BtcSetDiscoverable(nDiscv, 300)
 			AssertResCode(rc)
-	
+
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"noscan")==0 then 
 			//The adapter in not detectable by other devices and will not accept any incoming connections
@@ -596,7 +558,7 @@ function _HciCfg()
 			AssertResCode(rc)
 			rc = BtcSetConnectable(nConn)
 			AssertResCode(rc)
-		
+	
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$, "inqtpl")==0 then
 			// Get/set the transmit power level
@@ -624,7 +586,7 @@ function _HciCfg()
 				rc = BtcInquiryConfig(3,inqtpl)
 				AssertResCode(rc)
 			endif
-		
+	
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"inqmode")==0 then 
 			//Get/Set Inquiry mode
@@ -649,7 +611,7 @@ function _HciCfg()
 					print "Invalid inquiry mode. Valid values are 0, 1, and 2\n"
 				endif
 			endif
-		
+	
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"inqtype")==0 then 
 			//Get/Set Inquiry type
@@ -672,10 +634,9 @@ function _HciCfg()
 					print "Invalid inquiry type. Valid values are 0 and 1\n"
 				endif
 			endif
-		
+
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$, "sspmode")==0 then
-			dim hn
 			// Get/Set Simple Pairing Mode
 			if ExtractStrToken(s$, tkn$) == 0  then
 			// Get Simple Pairing Mode
@@ -686,6 +647,7 @@ function _HciCfg()
 					print "Enabled\n"
 				endif
 			else
+				dim hn
 				val = StrValDec(tkn$)
 				if val == 0 then
 					rc = BtcSppClose(hn)
@@ -699,7 +661,7 @@ function _HciCfg()
 					print "Invalid ssp mode. Valid values are 0 and 1\n"
 				endif
 			endif
-			
+
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$, "putkey")==0 then
 			//store link key on the device
@@ -713,7 +675,7 @@ function _HciCfg()
 					print "Link key made persistent\n"
 				endif
 			endif
-		
+
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$, "delkey")==0 then
 			//delete link key on the device
@@ -727,19 +689,18 @@ function _HciCfg()
 					print "Link key erased\n"
 				endif
 			endif
-			
+
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$, "leadv")==0 then
 			dim a$
-			rc = BleAdvertStart(0,a$,25,6000,0)
+			rc = BleAdvertStart(0,a$,25,0,0)
 			AssertResCode(rc)
-			
-		
+
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$, "noleadv")==0 then
 			rc = BleAdvertStop()
 			AssertResCode(rc)
-			
+
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$, "letpl")==0 then
 			// Get/set the LE transmit power level
@@ -767,7 +728,7 @@ function _HciCfg()
 				rc = BleTxPowerSet(letpl)
 				AssertResCode(rc)
 			endif
-		
+
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$, "version")==0 then
 			dim fw, X, Y, Z
@@ -779,41 +740,30 @@ function _HciCfg()
 			print "Device Name: ";BleGetDeviceName$();"\n"
 			print "Firmware: 9.";X;".";Y;".";Z;"\n"
 			print "Manufacturer: Laird Technologies\n"
-			
+
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-			
-		
+
 		endif
 	endwhile
-	
+
 endfunc 1
 //==============================================================================
 // Extract the rfcomm command
 //==============================================================================
 function _rfcomm()
-	
+
 	while ExtractStrToken(urtcmd$, tkn$)!= 0
 		if strcmp(tkn$, "help")==0 then
 			rc = _rfcommHelp()
-			exitfunc 1
+			break
 
 		elseif strcmp(tkn$, "connect")==0 then
 			command = BLUEZ_COMMAND_RFCOMM_CONNECT
 			rc = _rfcommConnect()
-	
-		elseif strcmp(tkn$, "write")==0 then
-			rc = _rfcommWrite()
-			exitfunc 1
-	
-		elseif strcmp(tkn$, "bind")==0 then
-			rc = _rfcommBind()
-		
-		elseif strcmp(tkn$,"-")!=0 then
-			print "Unknown command - \22";tkn$;"\22\n"
-	
+
 		endif
 	endwhile
-	
+
 endfunc 1
 //==============================================================================
 // Extract the received Uart command
@@ -822,115 +772,113 @@ function OnUartCmd() as integer
 
 	// get first token
 	tlen = ExtractStrToken(urtcmd$,tkn$) 
-	
+
 	if strcmp(tkn$,"hcitool")==0 then
-		rc = _Hci()
-      
+		rc = _hci()
+
     elseif strcmp(tkn$,"gatttool")==0 then
-		rc = _Gatt()
-	  
+		rc = _gatt()
+
 	elseif strcmp(tkn$,"hciconfig")==0 then
-		rc = _HciCfg()
-		
+		rc = _hciCfg()
+
 	elseif strcmp(tkn$, "rfcomm")==0 then
 		rc = _rfcomm()
-	  
+
 	elseif strcmp(tkn$, "help")==0 then
-		rc = _Help()
-	
+		rc = _help()
+
 	elseif strcmp(tkn$,"exit")==0 || strcmp(tkn$,"quit")==0  then
-      reset(0)
-	
+		reset(0)
+
 	elseif strcmp(tkn$,"")==0 then
-		//exitfunc 1
+		//received carriage return. Do nothing
 
 	else
 		print tkn$;": command not found\n"
 	endif
 
 	print pr$
-	
-endfunc 1
 
+endfunc 1
 //==============================================================================
 // gatt status error codes
 //==============================================================================
 function _gattStatus(status as integer)
-	
+
 	print "\nATT Error: "
 	select status
-		
+
 		case H'0101
 			print "Invalid attribute handle\n"
-			
+	
 		case H'0102
 			print "Read not permitted\n"
-			
+
 		case H'0103
 			print "Write not permitted\n"
-			
+
 		case H'0104
 			print "Used in ATT as invalid PDU\n"
-			
+	
 		case H'0105
 			print "Authenticated link required\n"
-			
+
 		case H'0106
 			print "Used in ATT as request not supported\n"
-			
+
 		case H'0107
 			print "Offset specified was past the end of the attribute\n"
-			
+
 		case H'0108
 			print "Used in ATT as insufficient authorisation\n"
-			
+
 		case H'0109
 			print "Used in ATT as prepare queue full\n"
-			
+
 		case H'010A
 			print "Used in ATT as attribute not found\n"
-			
+
 		case H'010B
 			print "Attribute cannot be read or written using read/write requests\n"
-			
+
 		case H'010C
 			print "Encryption key size used is insufficient\n"
-			
+
 		case H'010D
 			print "Invalid value size\n"
-			
+
 		case H'010E
 			print "Very unlikely error\n"
-			
+
 		case H'010F
 			print "Encrypted link required\n"
-			
+
 		case H'0110
 			print "Attribute type is not a supported grouping attribute\n"
-			
+
 		case H'0111
 			print "Encrypted link required\n"
-			
+
 		case H'0180
 			print "Application range begin\n"
-			
+
 		case H'019F
 			print "Application range end\n"
-			
+
 		case H'01FE
 			print "Profile and service error: Procedure already in progress\n"
-			
+
 		case H'01FF
 			print "Profile and service error: Out of range\n"
-			
+
 		case else
 			print "Unknown status\n"
-			
+
 		endselect
 	print pr$
-		
-endfunc 1
 
+endfunc 1
 //******************************************************************************
 // Handler definitions
 //******************************************************************************
@@ -940,16 +888,16 @@ endfunc 1
 // Algorithm will prevent display of data from the same peer consecutively 
 //==============================================================================
 function HandlerInqResp(respType) as integer
-	
+
 	dim ad$,dta$,ndx,rsi,tag, name$
-	
+
 	// Get the report from the inquiry response
 	rc = BtcInquiryGetReport(ad$,dta$,ndx,rsi)
-	
+
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	if command == BLUEZ_COMMAND_HCITOOL_INQ then
 		print "\n		"; StrHexize$(ad$)
-			
+
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	elseif command == BLUEZ_COMMAND_HCITOOL_SCAN then
 		print "\n		"; StrHexize$(ad$)
@@ -963,20 +911,20 @@ function HandlerInqResp(respType) as integer
 				rc=BtcGetEIRbyTag(dta$, tag, name$)
 				//AssertResCode(rc)
 			endif
-				
+
 			if rc == 0 then
 				print "  ";name$
 			endif		
 		else
 			print "  n/a"
 		endif
-		
+
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	elseif command == BLUEZ_COMMAND_HCITOOL_NAME then
 		// Only looking for name of specified address
 		if strcmp(ad$, addr$)!=0 then
 			exitfunc 1
-			
+
 		else
 			print "\n		"; StrHexize$(ad$)
 			if respType == 2 then
@@ -987,11 +935,11 @@ function HandlerInqResp(respType) as integer
 					tag = 0x08
 					rc=BtcGetEIRbyTag(dta$, tag, name$)
 				endif
-				
+
 				if rc == 0 then
 					print "  ";name$
 				endif		
-			
+
 			else
 				print "  n/a"
 			endif
@@ -999,16 +947,16 @@ function HandlerInqResp(respType) as integer
 			rc = BtcInquiryCancel()
 			AssertResCode(rc)
 			print "\n";pr$
-		
+
 		endif
 	endif
-	
+
 endfunc 1
 //==============================================================================
 // Called after an SPP connection attempt
 //==============================================================================
 function HandlerSppCon(hConn, res) as integer
-	
+
 	dim hz, az, conAddr$
     //if connected successfully
 	if res == 0 then
@@ -1044,17 +992,19 @@ endfunc 1
 // This handler is called when there is an inquiry timeout
 //==============================================================================
 function HandlerBtcInqTimOut() as integer 
+	rc = BtcInquiryCancel()
+	AssertResCode(rc)
 	print "\n";pr$
 endfunc 1
 //==============================================================================
 // This handler is called when there is an inquiry timeout
 //==============================================================================
 function HandlerBtcDiscTimOut() as integer
-	
+
 	//Enable inquiry scan and page scan (default)
 	rc = BtcSetDiscoverable(nDiscv, 300)
 	AssertResCode(rc)
-	
+
 endfunc 1
 //==============================================================================
 // Called when data is received via SPP
@@ -1074,7 +1024,7 @@ endfunc 1
 //==============================================================================
 function HandlerSppDataBridge()
     dim hPort, data$, rLen
-    
+
     // read and print data while there is data available to read
     while BtcSppRead(hPort, data$, rLen) == 0    
         if rLen>0 then
@@ -1086,14 +1036,14 @@ endfunc 1
 // Called when there is a pairing request from another device
 //==============================================================================
 function HandlerPairReq()
-	
+
 	dim s$
     rc=BtcGetPAIRRequestBDAddr(s$)
     prAddr$ = s$
     //print "\nPair Req: "; StrHexize$(s$);" \n"
 	rc = BtcSendPAIRResp(1)
 	AssertResCode(rc)
-	
+
 endfunc 1
 //==============================================================================
 // Called on a pin request from another device
@@ -1126,7 +1076,7 @@ endfunc 1
 // Algorithm will prevent display of data from the same peer consecutively 
 //==============================================================================
 function HandlerAdvRpt() as integer
-	
+
 	dim ad$,dta$,ndisc,rsi,tag, nm$
 	rc = BleScanGetAdvReport(ad$,dta$,ndisc,rsi)
 	while rc==0
@@ -1138,30 +1088,19 @@ function HandlerAdvRpt() as integer
 			tag = 0x08
 			rc = BLEGETADBYTAG(dta$, tag, nm$)
 		endif
-				
+
 		if rc == 0 then
 			print "  ";nm$
 		endif
 		rc = BleScanGetAdvReport(ad$,dta$,ndisc,rsi)
 	endwhile
-	
-endfunc 1
-//==============================================================================
-// This handler is called when there is a Ble advert timeout
-//==============================================================================
-function HandlerBleAdvTimOut()
-	
-	print "\nadvert timed out\n";pr$
-	dim a$
-	rc = BleAdvertStart(0,a$,25,300000,0)
-	AssertResCode(rc)
-	
+
 endfunc 1
 //==============================================================================
 // This handler is called when there is a Ble connection timeout
 //==============================================================================
 function HandlerBleConnTimOut() as integer
-	
+
 	print "\nCould not create connection: Connection timed out\n";pr$
 
 endfunc 1
@@ -1169,8 +1108,8 @@ endfunc 1
 // This handler is called when there is a Ble scan timeout
 //==============================================================================
 function HandlerBlrScanTimOut() as integer 
-	//print "\nScanning stopped via timeout\n"
-	//UartRsp(0)
+	rc = BleScanStop()
+	AssertResCode(rc)
 	print "\n";pr$
 endfunc 1
 //==============================================================================
@@ -1178,7 +1117,7 @@ endfunc 1
 //==============================================================================
 function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as integer
   dim hz
-  
+
   select nMsgId
   case BLE_EVBLEMSGID_CONNECT
     hz = nCtx
@@ -1186,7 +1125,7 @@ function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as intege
 	conns = conns + 1
     //print "\nConnected\n";pr$
 	print "\nConnection handle ";hz;"\n";pr$
-	
+
     if hz == 0 then
       //Could not store the handle so drop the connection
       rc = BleDisconnect(nCtx)
@@ -1225,11 +1164,6 @@ function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as intege
   case BLE_EVBLEMSGID_AUTH_KEY_REQUEST
     print " +++ Auth Key Request, type=";nCtx
 
-  case BLE_EVBLEMSGID_CONN_PARMS_UPDATE
-    //ShowConnParms(nCtx)
-
-  case BLE_EVBLEMSGID_CONN_PARMS_UPDATE_FAIL
-    print " ??? Conn Parm Negotiation FAILED"
 
   case else
     print "Unknown Ble Msg"; nMsgId
@@ -1240,8 +1174,6 @@ endfunc 1
 //==============================================================================
 function HandlerPrimSvc(hConn,hUuid,hStart,hEnd) as integer
 
-	sAttr = hStart
-	eAttr = hEnd
 	if hUuid != 0 then
 		if command == BLUEZ_COMMAND_GATTTOOL_PRIMARY then
 			print "\n" 
@@ -1253,7 +1185,7 @@ function HandlerPrimSvc(hConn,hUuid,hStart,hEnd) as integer
 	
 	
 		elseif command == BLUEZ_COMMAND_GATTTOOL_CHARACTERISTICS then
-			rc = BleDiscCharFirst(hConn,0,sAttr,eAttr)
+			rc = BleDiscCharFirst(hConn,0,hStart,hEnd)
 		
 		endif
 		
@@ -1489,8 +1421,6 @@ OnEvent EVBLE_ADV_REPORT			call HandlerAdvRpt
 OnEvent  EVBLE_SCAN_TIMEOUT       	call HandlerBlrScanTimOut
 OnEvent	EVBLE_CONN_TIMEOUT			call HandlerBleConnTimOut
 OnEvent  EVBLEMSG                 	call HandlerBleMsg
-OnEvent	EVBLE_ADV_TIMEOUT			call HandlerBleAdvTimOut
-//OnEvent EvDiscon                    call HndlrDiscon
 
 // gatttool related events
 OnEvent  EVDISCPRIMSVC            	call HandlerPrimSvc

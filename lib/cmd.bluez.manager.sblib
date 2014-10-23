@@ -518,7 +518,7 @@ endfunc 1
 //-------------------------------------------------------------------------
 // gatttool -b <bdaddr> --primary
 //-------------------------------------------------------------------------
-function _GattPrimary() as integer
+function _gattPrimary() as integer
 
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
@@ -562,7 +562,7 @@ endfunc 1
 //-------------------------------------------------------------------------
 // gatttool -b <bdaddr> --characteristics
 //-------------------------------------------------------------------------
-function _GattChar() as integer
+function _gattChar() as integer
 	
 		while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
@@ -603,7 +603,7 @@ endfunc 1
 //-------------------------------------------------------------------------
 // gatttool -b <bdaddr> --char-read --handle=0x0000
 //-------------------------------------------------------------------------
-function _GattCharRead() as integer
+function _gattCharRead() as integer
 	
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
@@ -654,7 +654,7 @@ endfunc 1
 //-------------------------------------------------------------------------
 // gatttool -b <bdaddr> --char-write --handle=0x0000  --value=0000
 //-------------------------------------------------------------------------
-function _GattCharWrite() as integer
+function _gattCharWrite() as integer
 
 	dim val$								// value (string format)
 	dim val									// value (integer format)
@@ -723,7 +723,7 @@ endfunc 1
 //-------------------------------------------------------------------------
 // gatttool -b <bdaddr> --char-desc  --handle=0x0000
 //-------------------------------------------------------------------------
-function _GattCharDesc()
+function _gattCharDesc()
 	
 	chrHdl = 0
 	
