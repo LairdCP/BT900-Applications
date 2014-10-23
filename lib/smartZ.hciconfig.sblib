@@ -29,7 +29,6 @@
 //		hciconfig inqtype	[type]		Get/Set inquiry scan type
 //		hciconfig inqtpl	[level]		Get/Set inquiry transmit power level
 //		hciconfig letpl		[level]		Get/Set LE transmit power level
-//		hciconfig sspmode	[mode]		Get/Set Simple Pairing Mode
 //		hciconfig putkey	<bdaddr>	Store link key on the device
 //		hciconfig delkey	<bdaddr>	Delete link key from the device
 //		hciconfig version				Display version information
@@ -60,7 +59,6 @@ sub _hciCfgHelp()
 	print "	inqtpl	[level]		Get/Set inquiry transmit power level\n"
 	print "	inqmode	[mode]		Get/Set inquiry mode\n"
 	print "	inqtype	[type]		Get/Set inquiry scan type\n"
-	print "	sspmode	[mode]		Get/Set Simple Pairing Mode\n"
 	print "	putkey	<bdaddr>		Store link key on the device\n"
 	print "	delkey	<bdaddr>		Delete link key from the device\n"
 	print "	version				Display version information\n"
@@ -221,32 +219,6 @@ sub _hciCfg()
 				endif
 			endif
 
-		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-		elseif strcmp(tkn$, "sspmode")==0 then
-			// Get/Set Simple Pairing Mode
-			if ExtractStrToken(s$, tkn$) == 0  then
-			// Get Simple Pairing Mode
-				print "Simple Pairing Mode: "
-				if sspmode == 0 then 
-					print "Disabled\n"
-				else 
-					print "Enabled\n"
-				endif
-			else
-				dim hn
-				val = StrValDec(tkn$)
-				if val == 0 then
-					rc = BtcSppClose(hn)
-					AssertResCode(rc)
-					sspmode = 0
-				elseif val == 1 then
-					rc = BtcSppOpen(hn)
-					AssertResCode(rc)
-					sspmode = 1
-				else
-					print "Invalid ssp mode. Valid values are 0 and 1\n"
-				endif
-			endif
 
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$, "putkey")==0 then

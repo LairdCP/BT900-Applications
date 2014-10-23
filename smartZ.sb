@@ -67,7 +67,6 @@
 //		hciconfig inqtype	[type]		Get/Set inquiry scan type
 //		hciconfig inqtpl	[level]		Get/Set inquiry transmit power level
 //		hciconfig letpl		[level]		Get/Set LE transmit power level
-//		hciconfig sspmode	[mode]		Get/Set Simple Pairing Mode
 //		hciconfig putkey	<bdaddr>	Store link key on the device
 //		hciconfig delkey	<bdaddr>	Delete link key from the device
 //		hciconfig version				Display version information
@@ -152,7 +151,6 @@ dim nConn : nConn = 1 			// The device is connectable by default
 dim nPair : nPair = 1			// The device is pairable by default					
 dim inqtype	: inqtype = 0		// Inquiry Type: 0 General, 1 Limited
 dim inqmode	: inqmode = 2		// Inquiry Mode: 0 for Standard, 1 for with RSSI, 2 for Extended)
-dim sspmode : sspmode = 1		// SSP Mode: 0 for disabled, 1 for enabled 
 dim inqtpl : inqtpl=4			// Inquiry transmit power level
 dim letpl : letpl = 4			// LE Tx Power level in dBm
 dim gattLsn : gattLsn = 0		// If Lsn = 1, notifications will be shown
@@ -281,8 +279,7 @@ sub InitBtDevice()
 	AssertResCode(rc)
 	// Open Spp
 	rc = btcSppOpen(nHandle)
-	AssertResCode(rc)
-	sspmode = 1
+
 
 endsub											
 //==============================================================================
