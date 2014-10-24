@@ -232,7 +232,7 @@ dim tkn$,tlen               //used by command parser
 dim hC                      //SPP connection handle
 dim carCnt                  //count variable for number of times '^' entered
 dim hSppPort                //handle of spp port that a peer will connect to
-
+dim BridgeHandle            //handle of UART sB bridge
 
 
 
@@ -836,10 +836,27 @@ endfunc 1
 //------------------------------------------------------------------------------
 function SetMode(msgID, cmd) as integer
     if cmd==BRIDGE_SPP_MODE then
-        OnEvent  EVUARTRX                call HandlerUartRxSpp    
-        OnEvent  EVBTC_SPP_DATA_RECEIVED call HandlerSppData
+        IF USE_BRIDGE == 0 THEN
+            //sB <-> UART
+            OnEvent  EVUARTRX                call HandlerUartRxSpp    
+            OnEvent  EVBTC_SPP_DATA_RECEIVED call HandlerSppData
+        ELSE
+            //sB UART bridged
+
+//dim hC                      //SPP connection handle
+//dim hSppPort                //handle of spp port that a peer will connect to
+//dim BridgeHandle            //handle of UART sB bridgedge
+dim Hndl1, Hndl2
+rc=STREAMGETUARTHANDLE(Hndl1)
+rc=STREAMGETSPPHANDLE(hC, Hndl2)
+rc=StreamBridge(Hndl1, Hndl2, BridgeHandle)
+
+        ENDIF
         print ok$;"\n"
     elseif cmd==CMD_MODE then
+IF USE_BRIDGE == 1 THEN
+	rc = STREAMUNBRIDGE(BridgeHandle)
+ENDIF
         OnEvent  EVUARTRX       call HandlerUartRx   
         carCnt=0
         UartRsp(0)
