@@ -83,7 +83,7 @@
 // Feel free to modify to suite your need
 //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #define MANF_NAME                            "Laird Technologies"
-#define MODELSTR                             "BL600"
+#define MODELSTR                             "BT900"
 #define SERIALNUM                            "12345"
 #define HWREV                                "1.0"
 

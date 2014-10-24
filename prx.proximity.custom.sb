@@ -39,7 +39,7 @@
 #define DEVICENAME_WRITABLE                  1
 #define APPEARANCE                           BLE_APPEARANCE_GENERIC_KEYRING
 #define MANF_NAME                            "Laird Technologies"
-#define MODELSTR                             "BL600"
+#define MODELSTR                             "BT900"
 #define SERIALNUM                            "12345"
 #define HWREV                                "HwRev1.0"
 #define SWREV                                "SwRev1.0"
