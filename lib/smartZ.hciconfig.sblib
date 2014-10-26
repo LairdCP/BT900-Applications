@@ -73,35 +73,43 @@ endsub
 //==============================================================================
 sub _hciCfg()
 
+	// Extract and process hciconfig subcommand
+
 	dim s$, val
 	s$ = urtcmd$
 	while ExtractStrToken(s$, tkn$)!= 0
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		if strcmp(tkn$,"help")==0 then
+			// Display hciconfig command help menu
 			_hciCfgHelp()
 			break
 
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-		elseif strcmp(tkn$,"auth")==0 then 
+		elseif strcmp(tkn$,"auth")==0 then
+			// Set device to be connectible and pairable
 			rc = BtcSetConnectable(1)
 			AssertResCode(rc)
 			rc = BtcSetPairable(1)
 			AssertResCode(rc)
-	
+
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~		
 		elseif strcmp(tkn$,"noauth")==0 then
+			// Set device to be unpairable
 			rc = BtcSetPairable(0)
 			AssertResCode(rc)
 
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-		elseif strcmp(tkn$,"name")==0 then 
+		elseif strcmp(tkn$,"name")==0 then
+			// Get/set device name
 			tlen = ExtractStrToken(s$,tkn$)
 			if tlen == 0 then
+				// Display device name
 				rc = BtcGetFriendlyName(s$)
 				AssertResCode(rc)
 				print s$;"\n"
-			
+
 			else
+				// Set device name
 				DIM len
 				name$ = tkn$ + s$
 				len = strlen(name$)
@@ -136,18 +144,18 @@ sub _hciCfg()
 
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"noscan")==0 then 
-			//The adapter in not detectable by other devices and will not accept any incoming connections
+			// Set device to be non-discoverable and unconnectable
 			nDiscv = 0 
 			rc = BtcSetDiscoverable(nDiscv, 300)
 			AssertResCode(rc)
 			rc = BtcSetConnectable(nConn)
 			AssertResCode(rc)
-	
+
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$, "inqtpl")==0 then
 			// Get/set the transmit power level
 			if ExtractStrToken(s$, tkn$) == 0  then
-				// Get the transmit power level
+				// Display the transmit power level
 				print "Inquiry transmit power level : ";inqtpl;"\n"
 			else 
 				// Set the transmit power level
@@ -170,12 +178,12 @@ sub _hciCfg()
 				rc = BtcInquiryConfig(3,inqtpl)
 				AssertResCode(rc)
 			endif
-	
+
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"inqmode")==0 then 
 			//Get/Set Inquiry mode
 			if ExtractStrToken(s$, tkn$) == 0  then
-				// Get inquiry mode
+				// Display inquiry mode
 				if inqmode == 0 then
 					print "Inquiry mode: Standard Inquiry\n"
 				elseif inqmode == 1 then
@@ -195,12 +203,12 @@ sub _hciCfg()
 					print "Invalid inquiry mode. Valid values are 0, 1, and 2\n"
 				endif
 			endif
-	
+
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"inqtype")==0 then 
 			//Get/Set Inquiry type
 			if ExtractStrToken(s$, tkn$) == 0  then
-				// Get inquiry type
+				// Display inquiry type
 				if inqtype == 0 then
 					print "Inquiry scan type: General Inquiry Scan\n"
 				elseif inqtype == 1 then
@@ -219,10 +227,9 @@ sub _hciCfg()
 				endif
 			endif
 
-
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$, "putkey")==0 then
-			//store link key on the device
+			// store link key on the device
 			if ExtractStrToken(s$, tkn$) == 0 then
 				print "MAC address not supplied\n"
 			else
@@ -250,12 +257,14 @@ sub _hciCfg()
 
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$, "leadv")==0 then
+			// Enable LE adverts
 			dim a$
 			rc = BleAdvertStart(0,a$,25,0,0)
 			AssertResCode(rc)
 
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$, "noleadv")==0 then
+			// Disable LE adverts
 			rc = BleAdvertStop()
 			AssertResCode(rc)
 
@@ -263,7 +272,7 @@ sub _hciCfg()
 		elseif strcmp(tkn$, "letpl")==0 then
 			// Get/set the LE transmit power level
 			if ExtractStrToken(s$, tkn$) == 0  then
-				// Get the LE transmit power level
+				// Display the LE transmit power level
 				print "LE transmit power level : ";letpl;"\n"
 			else 
 				// Set the LE transmit power level
@@ -289,6 +298,7 @@ sub _hciCfg()
 
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$, "version")==0 then
+			// Display version information
 			dim fw, X, Y, Z
 			fw = SYSINFO(3)
 			X = (fw >> 24) & 0xFF

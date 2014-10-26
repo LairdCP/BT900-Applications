@@ -53,13 +53,14 @@ function _rfcommConnect()
 			if strcmp(tkn$,"")==0 then
 				print "A valid Bluetooth address is required\n"
 			else
-				addr$ = tkn$
+				// Found bdaddr. Dehexize it
+				addr$ = strdehexize$(tkn$)
 			endif
 		endif
 	endwhile
 '--------------------------------------'
 
-	addr$ = strdehexize$(addr$)
+	// Connect to SPP device
 	rc = BtcSppConnect(addr$)
 	AssertResCode(rc)
 	if rc == 0 then
@@ -72,12 +73,15 @@ endfunc 1
 //==============================================================================
 sub _rfcomm()
 
+	// Extract and process rfcomm subcommand
 	while ExtractStrToken(urtcmd$, tkn$)!= 0
 		if strcmp(tkn$, "help")==0 then
+			// Display the rfcomm help menu
 			_rfcommHelp()
 			break
 
 		elseif strcmp(tkn$, "connect")==0 then
+			// if found "connect" string, connect with spp device
 			command = SMARTZ_COMMAND_RFCOMM_CONNECT
 			rc = _rfcommConnect()
 
@@ -96,15 +100,17 @@ endsub
 function HandlerSppCon(hConn, res) as integer
 
 	dim hz, conAddr$
-    //if connected successfully
+    //if connected successfully, acquire handle and switch to rfcomm mode
 	if res == 0 then
 		hcSpp = hConn
-		hz = AcqConnHandle(hConn)
+		// add connection handle to list of connected handles
+		hz = AcqConnHandle(hcSpp)
 		conns = conns + 1
-		rc = BtcGetBDAddrFromHandle(hConn,conAddr$)
+		rc = BtcGetBDAddrFromHandle(hcSpp,conAddr$)
 		AssertResCode(rc)
 		print "\nConnected to ";strhexize$(conAddr$)
 		print "\nType \22^^^\22 for hangup\n"
+		// Switch to rfcomm mode
 		rc=SendMsgApp(0,RFCOMM_MODE)
 		AssertResCode(rc)
 	else
@@ -121,14 +127,16 @@ function HandlerSppConnTimOut() as integer
 
 endfunc 1
 //==============================================================================
-// Called when an SPP disconnection occurs
+// Called when SPP disconnection occurs
 //==============================================================================
 function HandlerSppDiscon(hConn)
 
+	// Upon disconneciton, release connection handle and return to normal mode
     dim hz
     hz = RelConnHandle(hConn)
     conns = conns - 1
-    print "\nDisconnected\n";pr$ 
+    print "\nDisconnected\n";pr$
+	// switch back to normal mode
 	rc=SendMsgApp(0,NORMAL_MODE)
 	AssertResCode(rc)
 
@@ -138,6 +146,7 @@ endfunc 1
 //==============================================================================
 function HandlerSppData()
 
+	// When receiving SPP data just print it to terminal
     dim hPort, data$, rLen
     '//read and print data while there is data available to read
 	while BtcSppRead(hPort, data$, rLen) == 0    
@@ -148,13 +157,16 @@ function HandlerSppData()
 
 endfunc 1
 //==============================================================================
-// Called when data is received via UART when bridged to SPP
+// Called when data is received via UART
 //==============================================================================
 function HandlerUartRxSpp()
 
+	// Data is printed immediately unless "^^^" is received
+	// in which case the device will disconnect
+
 	dim uLen, u$, nLen, nLen2 : uLen = 1
     while uLen != 0
-        //read data that has arrived through via the UART
+        //read data that has arrived through the UART
         uLen = UartRead(u$)
         if uLen > 0 then
 			if uLen == 4 then

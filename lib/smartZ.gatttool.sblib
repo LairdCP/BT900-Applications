@@ -10,7 +10,7 @@
 //
 // This library file provides gatttool commands to be used by smartZ and should be
 // #included into the file 'smartZ.sb' if running on a dual mode module
-// e.g. BT900.
+// e.g. BT900. or a central single mode device e.g. BL620
 //
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //		gatttool 
@@ -53,8 +53,14 @@ sub _gattHelp()
 	print "	gatttool <command> --help\n\n"
 
 endsub
+
+//=========================================================================
+//	Set security level flag depending on sec-level value
+//=========================================================================
 function _gattSecLvl() as integer
 
+'--- Extract all strings in command ---'
+'--------------------------------------'
 	strshiftleft(urtcmd$, 1)
 	rc = ExtractStrToken(urtcmd$, tkn$)
 	if strcmp(tkn$, "level")==0 then
@@ -62,34 +68,36 @@ function _gattSecLvl() as integer
 		rc = ExtractStrToken(urtcmd$, tkn$)
 
 		if strcmp(tkn$,"low")==0 then
-			// unpair with device after getting all tokens from command
+			// Set pair flag to be 0
 			secPair = 0
-		
+
 		elseif strcmp(tkn$,"medium")==0 || strcmp(tkn$,"high")==0 then
-			// pair with device after getting all tokens from command
+			// Set pair flag to be 1
 			secPair = 1
 
 		endif
 	endif
+'--------------------------------------'
 
-endfunc 1 
-//-------------------------------------------------------------------------
+endfunc 1
+
+//==============================================================================
 // gatttool -b <bdaddr> --primary
-//-------------------------------------------------------------------------
+//==============================================================================
 function _gattPrimary() as integer
 
 '--- Extract all strings in command ---'
 '--------------------------------------'
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
-			//print the gatttool primary help menu
+			// Display the gatttool primary help menu
 			print "Usage:\n"
 			print "		gatttool -b <bdaddr> --primary\n"
 			exitfunc 1
 
 		elseif strcmp(tkn$,"b")==0 then
+			// Extract bdaddr from command
 			rc = ExtractStrToken(urtcmd$,addr$)
-			// get address 
 			addr$ = strdehexize$(addr$)
 
 		elseif strcmp(tkn$,"device")==0 then
@@ -104,9 +112,11 @@ function _gattPrimary() as integer
 	endwhile
 '--------------------------------------'
 
+	// Get connection handle from provided address
 	rc = BleGetConnHandleFromAddr(addr$, conHdl)
 	AssertResCode(rc)
 
+	// If pair flag is set, pair with LE device
 	if secPair == 1 then
 		rc = BlePair(conHdl, 0)
 		AssertResCode(rc)
@@ -118,25 +128,28 @@ function _gattPrimary() as integer
 	AssertResCode(rc)
 
 endfunc 1
-//-------------------------------------------------------------------------
+
+//==============================================================================
 // gatttool -b <bdaddr> --characteristics
-//-------------------------------------------------------------------------
+//==============================================================================
 function _gattChar() as integer
 
 '--- Extract all strings in command ---'
 '--------------------------------------'
 		while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
-			//print the gatttool characteristics help menu
+			// Display the gatttool characteristics help menu
 			print "Usage:\n"
 			print "		gatttool -b <bdaddr> --characteristics\n"
 			exitfunc 1
 
 		elseif strcmp(tkn$,"b")==0 then
+			// Extract bdaddr from command
 			rc = ExtractStrToken(urtcmd$,addr$)
 			addr$ = strdehexize$(addr$)
-	
+
 		elseif strcmp(tkn$,"device")==0 then
+			// Extract bdaddr from command
 			strshiftleft(urtcmd$, 1)
 			rc = ExtractStrToken(urtcmd$, addr$)
 
@@ -148,9 +161,11 @@ function _gattChar() as integer
 	endwhile
 '--------------------------------------'
 
+	// Get connection handle from provided address
 	rc = BleGetConnHandleFromAddr(addr$, conHdl)
 	AssertResCode(rc)
-	
+
+	// If pair flag is set, pair with LE device
 	if secPair == 1 then
 		rc = BlePair(conHdl, 0)
 		AssertResCode(rc)
@@ -162,29 +177,33 @@ function _gattChar() as integer
 	AssertResCode(rc)
 
 endfunc 1
-//-------------------------------------------------------------------------
+
+//==============================================================================
 // gatttool -b <bdaddr> --char-read --handle=0x0000
-//-------------------------------------------------------------------------
+//==============================================================================
 function _gattCharRead() as integer
 
 '--- Extract all strings in command ---'
 '--------------------------------------'	
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
-			//print the gatttool help menu
+			// Display the gatttool help menu
 			print "Usage:\n"
 			print "		gatttool -b <bdaddr> --char-read --handle=0x0000 \n"
 			exitfunc 1
 
 		elseif strcmp(tkn$,"b")==0 then
+			// Extract bdaddr from command
 			rc = ExtractStrToken(urtcmd$,addr$)
 			addr$ = strdehexize$(addr$)
 
 		elseif strcmp(tkn$,"device")==0 then
+			// Extract bdaddr from command
 			strshiftleft(urtcmd$, 1)
 			rc = ExtractStrToken(urtcmd$, addr$)
 
 		elseif strcmp(tkn$,"handle")==0 then
+			// Extract characteristic handle from command
 			strshiftleft(urtcmd$, 1)
 			rc = ExtractStrToken(urtcmd$, tkn$)
 			rc = ExtractIntToken(tkn$, valHdl)
@@ -201,9 +220,11 @@ function _gattCharRead() as integer
 	endwhile
 '--------------------------------------'
 
+	// Get connection handle from provided address
 	rc = BleGetConnHandleFromAddr(addr$, conHdl)
 	AssertResCode(rc)
 
+	// If pair flag is set, pair with LE device
 	if secPair == 1 then
 		rc = BlePair(conHdl, 0)
 		AssertResCode(rc)
@@ -215,9 +236,10 @@ function _gattCharRead() as integer
 	AssertResCode(rc)
 
 endfunc 1
-//-------------------------------------------------------------------------
+
+//==============================================================================
 // gatttool -b <bdaddr> --char-write --handle=0x0000  --value=0000
-//-------------------------------------------------------------------------
+//==============================================================================
 function _gattCharWrite() as integer
 
 	dim val$								// value (string format)
@@ -227,20 +249,23 @@ function _gattCharWrite() as integer
 '--------------------------------------'	
 	while ExtractStrToken(urtcmd$, tkn$)!=0 
 		if strcmp(tkn$,"help")==0 then
-			//print the gatttool help menu
+			// Display the gatttool help menu
 			print "Usage:\n"
 			print "		gatttool -b <bdaddr> --char-write --handle=0x0000 --value=0000 \n"
 			exitfunc 1
 
 		elseif strcmp(tkn$,"b")==0 then
+			// Extract bdaddr from command
 			rc = ExtractStrToken(urtcmd$,addr$)
 			addr$ = strdehexize$(addr$)
 
 		elseif strcmp(tkn$,"device")==0 then
+			// Extract bdaddr from command
 			strshiftleft(urtcmd$, 1)
 			rc = ExtractStrToken(urtcmd$, addr$)
 
 		elseif strcmp(tkn$,"handle")==0 then
+			// Extract characteristic handle from command
 			strshiftleft(urtcmd$, 1)
 			rc = ExtractStrToken(urtcmd$, tkn$)
 			rc = ExtractIntToken(tkn$, valHdl)
@@ -261,9 +286,11 @@ function _gattCharWrite() as integer
 	endwhile
 '--------------------------------------'
 
+	// Get connection handle from provided address
 	rc = BleGetConnHandleFromAddr(addr$, conHdl)
 	AssertResCode(rc)
 
+	// If pair flag is set, pair with LE device
 	if secPair == 1 then
 		rc = BlePair(conHdl, 0)
 		AssertResCode(rc)
@@ -275,15 +302,17 @@ function _gattCharWrite() as integer
 	rc = BleGattcWrite(conHdl,valHdl,val$)
 	AssertResCode(rc)
 
+	// If --listen is passed, switch mode to receive and display notifications
 	if gattLsn == 1 then
 		rc = SendMsgApp(0, GATTTOOL_LISTEN)
 		AssertResCode(rc)
 	endif
 
 endfunc 1
-//-------------------------------------------------------------------------
+
+//==============================================================================
 // gatttool -b <bdaddr> --char-desc  --handle=0x0000
-//-------------------------------------------------------------------------
+//==============================================================================
 function _gattCharDesc()
 
 	chrHdl = 0
@@ -298,10 +327,17 @@ function _gattCharDesc()
 			exitfunc 1
 
 		elseif strcmp(tkn$,"b")==0 then
+			// Extract bdaddr from command
 			rc = ExtractStrToken(urtcmd$,addr$)
 			addr$ = strdehexize$(addr$)
 
+		elseif strcmp(tkn$,"device")==0 then
+			// Extract bdaddr from command
+			strshiftleft(urtcmd$, 1)
+			rc = ExtractStrToken(urtcmd$, addr$)
+
 		elseif strcmp(tkn$,"handle")==0 then
+			// Extract characteristic handle from command
 			strshiftleft(urtcmd$, 1)
 			rc = ExtractStrToken(urtcmd$, tkn$)
 			rc = ExtractIntToken(tkn$, chrHdl)
@@ -314,9 +350,11 @@ function _gattCharDesc()
 	endwhile
 '--------------------------------------'
 
+	// Get connection handle from provided address
 	rc = BleGetConnHandleFromAddr(addr$, conHdl)
 	AssertResCode(rc)
 
+	// If pair flag is set, pair with LE device
 	if secPair == 1 then
 		rc = BlePair(conHdl, 0)
 		AssertResCode(rc)
@@ -328,27 +366,34 @@ function _gattCharDesc()
 	AssertResCode(rc)
 
 endfunc 1
+
 //==============================================================================
 // Extract the gatttool command
 //==============================================================================
 sub _gatt()
 
+	// Extract and process gatttool subcommand
+
 	dim s$
 	s$ = urtcmd$
+
 	while ExtractStrToken(s$, tkn$)!= 0
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		if strcmp(tkn$,"help")==0 then
+			// Display the gatt command help menu
 			_gattHelp()
 			break
 
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"primary")==0 then
+			// Discover primary services 
 			command = SMARTZ_COMMAND_GATTTOOL_PRIMARY
 			rc = _gattPrimary()
 			break
 
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$,"characteristics")==0 then
+			// Discover characteristics
 			command = SMARTZ_COMMAND_GATTTOOL_CHARACTERISTICS
 			rc = _gattChar()
 			break
@@ -358,34 +403,40 @@ sub _gatt()
 			strshiftleft(s$, 1)
 			rc = ExtractStrToken(s$, tkn$)
 			if strcmp(tkn$, "read")==0 then
+				// Read characteristic value
 				command = SMARTZ_COMMAND_GATTTOOL_CHAR_READ
 				rc = _gattCharRead()
 				break
 			elseif strcmp(tkn$, "write")==0 then
+				// Write characteristic value
 				command = SMARTZ_COMMAND_GATTTOOL_CHAR_WRITE
 				rc = _gattCharWrite()
 				break
 			elseif strcmp(tkn$, "desc")==0 then
+				// Discover characteristic descriptors
 				command = SMARTZ_COMMAND_GATTTOOL_CHAR_DESC
 				rc = _gattCharDesc()
 				break
 			endif
-		
+
 		endif
 	endwhile
 
 endsub
+
 //==============================================================================
 // gatt status error codes
 //==============================================================================
 sub _gattStatus(status as integer)
+
+	// Depending on the supplied status, print equivalent error message
 
 	print "\nATT Error: "
 	select status
 
 		case H'0101
 			print "Invalid attribute handle\n"
-	
+
 		case H'0102
 			print "Read not permitted\n"
 
@@ -394,7 +445,7 @@ sub _gattStatus(status as integer)
 
 		case H'0104
 			print "Used in ATT as invalid PDU\n"
-	
+
 		case H'0105
 			print "Authenticated link required\n"
 
@@ -453,6 +504,7 @@ sub _gattStatus(status as integer)
 	print pr$
 
 endsub
+
 //******************************************************************************
 // Handler definitions
 //******************************************************************************
@@ -481,9 +533,9 @@ function HandlerPrimSvc(hConn,hUuid,hStart,hEnd) as integer
 		exitfunc 1
 
 	endif
-	
-	
+
 endfunc 1
+
 //==============================================================================
 // This handler is called when a BLE characteristic is discovered
 //==============================================================================
@@ -507,6 +559,7 @@ function HandlerCharDisc(hConn,hUuid,cProp,hVal,hiUuid) as integer
 	endif
 
 endfunc 1
+
 //==============================================================================
 // This handler is called when a BLE descriptor is discovered
 //==============================================================================
@@ -524,6 +577,7 @@ function HandlerDescDisc(hChar, hUuid, hDisc) as integer
 	endif
 
 endfunc 1
+
 //==============================================================================
 // This handler is called when a BLE characteristic attribute has been read
 //==============================================================================
@@ -540,7 +594,8 @@ function HandlerAttrRead(hConn,hAttr,nSts) as integer
 			AssertResCode(rc)
 		endif
  
-	else 
+	else
+		// If status !=0, display equivalent error message
 		_gattStatus(nSts)
 
 	endif
@@ -548,6 +603,7 @@ function HandlerAttrRead(hConn,hAttr,nSts) as integer
 	BleGattcClose()
 
 endfunc 1
+
 //==============================================================================
 // This handler is called when a BLE characteristic attribute has been written to 
 //==============================================================================
@@ -556,18 +612,21 @@ function HandlerAttrWrite(hConn,aHndl,nSts) as integer
 	if nSts == 0 then
 		print "\nCharacteristic value was written successfully\n";pr$
 	else 
+		// If status !=0, display equivalent error message
 		_gattStatus(nSts)
 	endif
 
 endfunc 1
+
 //==============================================================================
 // This handler is called when there is data notified or indicated
 //==============================================================================
 function HandlerAttrNtfyCmd() as integer
-  
+
 	dim hConn,hAttr,att$,dscd
 
 	if gattLsn == 1 then
+		// If in gatttool listen mode, continuously print not/inds as they come
 		do
 			rc=BleGattcNotifyRead(hConn,hAttr,att$,dscd)
 			if rc==0 then
@@ -577,10 +636,13 @@ function HandlerAttrNtfyCmd() as integer
 	endif
 
 endfunc 1
+
 //==============================================================================
-// This handler is called when data has arrived at the serial port
+// This handler is called when data has arrived at the serial port in gatttool listen mode
 //==============================================================================
 function HandlerUartRxLsn() as integer
+
+	// Wait for "stop" command, otherwise discard
 
 	dim nMatch
 
@@ -592,12 +654,14 @@ function HandlerUartRxLsn() as integer
 		if strcmp(tkn$,"stop")==0 then 
 			gattLsn = 0
 			print pr$
+			// "Stop" received, switch back to normal mode
 			rc = SendMsgApp(0, NORMAL_MODE)
 			AssertResCode(rc)
 		endif
 	endif
 
 endfunc 1
+
 //------------------------------------------------------------------------------
 // Enable synchronous event handlers
 //------------------------------------------------------------------------------
@@ -608,4 +672,4 @@ OnEvent  EVDISCCHAR               	call HandlerCharDisc
 OnEvent  EVDISCDESC               	call HandlerDescDisc
 OnEvent  EVATTRREAD 				call HandlerAttrRead
 OnEvent  EVATTRWRITE              	call HandlerAttrWrite
-OnEvent	EVATTRNOTIFY             	call HandlerAttrNtfyCmd
+OnEvent  EVATTRNOTIFY             	call HandlerAttrNtfyCmd
