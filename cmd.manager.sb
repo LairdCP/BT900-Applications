@@ -497,6 +497,9 @@
         //Set this to 0 to disable all debugging messages
 #define ENABLE_DEBUG_PRINTS                  1
 
+        //Set this to 1 to enable direct sB UART bridging (faster throughput)
+#define USE_BRIDGE                           1
+
         // Number of connections
 #define NUM_OF_CONNS                         8
         // Number of spp ports
@@ -629,6 +632,7 @@ dim vsplen                  //0 implies can send data. >0 waiting for notify eve
 dim vspRxH                  //handle of the RX char in the peripheral for VSP
 dim vspTxH                  //handle of the TX char in the peripheral for VSP
 dim carCnt                  //count variable for number of times '^' entered
+dim BridgeHandle            //handle of sB UART bridge
 
 //******************************************************************************
 // Initialisse Global Variable
@@ -645,6 +649,7 @@ hcVsp = -1
 vsplen = 0
 vspRxH = VSP_RX_CHAR_HANDLE
 vspTxH = VSP_TX_CHAR_HANDLE
+BridgeHandle = 0
 
 //******************************************************************************
 // Function and Subroutine definitions
@@ -2357,6 +2362,12 @@ function SetMode(msgID, cmd) as integer
         
     elseif cmd==CMD_MODE then
         OnSetModeCmd()      //let sblib handle it first
+        IF USE_BRIDGE == 1 THEN
+            IF BridgeHandle != 0 THEN
+//                rc = STREAMUNBRIDGE(BridgeHandle)
+                BridgeHandle = 0
+            ENDIF
+        ENDIF
         //DTR Deasserted so command mode
         OnEvent  EVUARTRX       call HandlerUartRxCmd
         Onevent  EVNOTIFYBUF    call HandlerNotifyBufCmd
@@ -2366,10 +2377,17 @@ function SetMode(msgID, cmd) as integer
 
     elseif cmd==BRIDGE_SPP_MODE then
         if conns>0 then
-            OnSetModeSpp()      //let sblib handle it first
-            OnEvent  EVUARTRX                call HandlerUartRxSpp
-            Onevent  EVNOTIFYBUF             call HandlerNotifyBufCmd
-            OnEvent  EVATTRNOTIFY            call HandlerAttrNtfyCmd
+            IF USE_BRIDGE == 1 THEN
+                dim Hndl1, Hndl2
+                rc = STREAMGETUARTHANDLE(Hndl1)
+                rc = STREAMGETSPPHANDLE(hcSpp, Hndl2)
+                rc = StreamBridge(Hndl1, Hndl2, BridgeHandle)
+            ELSE
+                OnSetModeSpp()      //let sblib handle it first
+                OnEvent  EVUARTRX                call HandlerUartRxSpp
+                Onevent  EVNOTIFYBUF             call HandlerNotifyBufCmd
+                OnEvent  EVATTRNOTIFY            call HandlerAttrNtfyCmd
+            ENDIF
             print ok$
         endif
     endif

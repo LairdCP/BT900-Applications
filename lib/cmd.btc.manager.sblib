@@ -239,7 +239,7 @@
 //******************************************************************************
 // Global Variable Declarations
 //******************************************************************************
-dim hcSpp                   //handle of connection to use for VSP service
+dim hcSpp                   //handle of connection to use for SPP service
 dim hP[NUM_OF_SPP_PORTS+1]  //contains spp port handles
 dim prAddr$              //BT address of last device pairing requested from or initiated with
 
@@ -388,9 +388,9 @@ function _spp()
         // rc = ExtractStrTokens(urtcmd$,1,1)
         // if rc != 0 then
             // exitfunc rc
-        // endif
-        
+        // endif        
         exitfunc BtcSppWrite(hP[i[1]], urtcmd$, wLen)
+
     endif
 endfunc 5
 
