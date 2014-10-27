@@ -22,7 +22,7 @@ DIM Char7 //Characteristic 7 (Version)
 DIM Timezone : Timezone = 0 //Hours off from UTC, see https://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.time_zone.xml
 DIM DST : DST = 0 //0 for no DST, 4 for +1 hour DST, see https://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.dst_offset.xml
 DIM SendNotify : SendNotify = 0 //Set to 1 when notifications are enabled
-dim APP_VERSION$ : APP_VERSION$ = "0.8"
+dim APP_VERSION$ : APP_VERSION$ = "0.85"
 dim BuzzerFunc : BuzzerFunc = 0 //Which function to do with the buzzer next
 dim I2CSpeed : I2CSpeed = 250000 //250KHz
 dim RTCAddr : RTCAddr = 111 //I2C Address of RTC
@@ -331,6 +331,13 @@ FUNCTION GetAlarmTime()
 	
 	//Close I2C
 	I2CClose(I2Ch)
+
+	//Convert I2C RTC values into time & date information
+	AlmSec = ((AlmSec & 15) + ((AlmSec & 112)>>4)*10)
+	AlmMin = ((AlmMin & 15) + ((AlmMin & 112)>>4)*10)
+	AlmHour = ((AlmHour & 15) + ((AlmHour & 48)>>4)*10)
+	AlmDate = ((AlmDate & 15) + ((AlmDate & 48)>>4)*10)
+	AlmMonth = ((AlmMonth & 15) + ((AlmMonth & 16)>>4)*10)
 	
 	//Write this to the characteristic
 	dim TmpStr$ : TmpStr$ = ""
