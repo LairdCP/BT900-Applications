@@ -69,7 +69,7 @@
 // -----------------------------------------------------------------------------
 // atd #HEXbdAddr6bytes# OR
 // connect #HEXbdAddr6bytes# OR
-//    - connect to device with given BT address
+//    - Connect to device with given BT address
 //
 //    -> if an invalid or null BT address is given, the default mac address 
 //      (see #define PERIPH_MAC_ADDR) will be used.
@@ -81,19 +81,23 @@
 //             ptherwise the two devices will not connect to eachother. 
 //
 // -----------------------------------------------------------------------------
+//
+// at+btd #HEXbdaddr6bytes#
+//    - Deletes corrisponding link key from the database
+//
+// -----------------------------------------------------------------------------
 // ^^^
-//    - exit from bridge mode to command mode to accept the commands in this list.
+//    - Exit from bridge mode to command mode to accept the commands in this list.
 //
 // -----------------------------------------------------------------------------
 // ato OR bridge
-//    - enter bridge mode. Any data arriving at the UART is sent over the BLE 
+//    - Enter bridge mode. Any data arriving at the UART is sent over the BLE 
 //      connection.
 //
 // -----------------------------------------------------------------------------
 // ath OR disconnect
-//    - disconnect from peer device.
+//    - Disconnect from peer device.
 //
-
 // -----------------------------------------------------------------------------
 // bdaddr
 //    - Prints the module's 6 byte BT address
@@ -101,11 +105,10 @@
 // -----------------------------------------------------------------------------
 // stop
 //    - Stop inquiries
-//   
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // misc i  clearall
-//    - make all elements of the entire i[] array equal to 0
+//    - Make all elements of the entire i[] array equal to 0
 //
 // -----------------------------------------------------------------------------
 // misc i  set #INTidx# #INTval#
@@ -128,7 +131,7 @@
 //
 // -----------------------------------------------------------------------------
 // quit OR exit
-//    - exit to command mode
+//    - Exit to command mode
 //
 //******************************************************************************
 
@@ -484,6 +487,24 @@ function _connect()
     endif
 endfunc -1
 
+//-------------------------------------------------------------------------
+//#CMD#//  at+btd #HEXbdAddr6bytes#
+//-------------------------------------------------------------------------
+function _delete()     
+    rc=ExtractStrTokens(urtcmd$,1,1)
+
+    if rc!=0 then
+        exitfunc -2
+    endif
+    
+    s$[1] = StrDehexize$(s$[1])
+
+    rc=BtcBondingEraseKey(s$[1])
+    if rc!=0 then  
+        exitfunc rc
+    endif
+endfunc 0
+
 
 //-------------------------------------------------------------------------
 //#CMD#//  ath OR disconnect
@@ -627,6 +648,9 @@ function OnUartCmd() as integer
             
         elseif strcmp(tkn$,"atd")==0 || strcmp(tkn$,"connect")==0 then    
             rc = _connect()
+
+        elseif strcmp(tkn$,"at+btd")==0 then    
+            rc = _delete()
             
         elseif strcmp(tkn$,"inquiry")==0 then    
             rc = _inquiry()
