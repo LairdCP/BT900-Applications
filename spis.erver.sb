@@ -124,7 +124,7 @@ ENDIF
 		wr$ = "\02" + TmpStr$ + attr$
 		rc = SpiWrite(wr$)
 		assertRC(rc, 222)
-		rc= GpioWrite(8,1)
+		GpioWrite(8,1)
 		waitWrite()
 
 		//Disable writes
@@ -156,7 +156,7 @@ ENDFUNC 1
 
 //Setup SPI memory
 rc= GpioSetFunc(8,2,1)
-rc= GpioWrite(8,1)
+GpioWrite(8,1)
 
 //Open SPI connection
 rc=SpiOpen(1, 250000, 1, SPIHndl)
