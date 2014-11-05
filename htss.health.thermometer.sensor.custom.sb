@@ -123,8 +123,8 @@ dim rc
 //------------------------------------------------------------------------------
 //** #include the correct GPIO library file for the smartBASIC module being used 
 //------------------------------------------------------------------------------
-#include "lib\gpio.bl6xx.sblib"
-// #include "lib\gpio.bt9xx.sblib"
+//#include "lib\gpio.bl6xx.sblib"
+#include "lib\gpio.bt9xx.sblib"
 
 
 '//******************************************************************************
