@@ -106,7 +106,7 @@ OnEvent EvCharVal  call HndlrCharVal
 
 '//Start advertising
 rc=BleAdvertStart(0,addr$,100,0,0)
-print "\nMake a connection to the BL600"
+print "\nMake a connection to the BT900"
 
 '//------------------------------------------------------------------------------
 '// Wait for a synchronous event.
