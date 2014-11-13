@@ -63,8 +63,8 @@ endsub
 function _hciInq()  
 
 	// set default inquiry tine and maximum number of responses
-	DIM inqLen : inqLen = 10
-	DIM numRsp : numRsp = 50
+	dim inqLen : inqLen = 10
+	dim numRsp : numRsp = 50
 
 '--- Extract all strings in command ---'
 '--------------------------------------'
@@ -91,6 +91,9 @@ function _hciInq()
 '--------------------------------------'
 
 	print "Inquiring ...\n"
+	// Inquiry mode: Standard
+	rc = btcInquiryConfig(1, 0)
+	AssertResCode(rc)
 	// specify maximum number of responses
 	rc = btcInquiryConfig(2, numRsp)
 	AssertResCode(rc)
@@ -106,8 +109,8 @@ endfunc 1
 function _hciScan()
 
 	// Set the default inquiry time and maximum number of responses
-	DIM inqLen : inqLen = 10
-	DIM numRsp : numRsp = 50
+	dim inqLen : inqLen = 10
+	dim numRsp : numRsp = 50
 
 '--- Extract all strings in command ---'
 '--------------------------------------'	
@@ -134,6 +137,9 @@ function _hciScan()
 '--------------------------------------'	
 
 	print "Scanning ...\n"
+	// Inquiry mode: Extended
+	rc = btcInquiryConfig(1, 2)
+	AssertResCode(rc)
 	// specify maximum number of responses
 	rc = btcInquiryConfig(2, numRsp)
 	AssertResCode(rc)
@@ -149,7 +155,7 @@ endfunc 1
 function _hciName()
 
 	// Initialise number of parameters (minimum need=1)
-	DIM num_of_params : num_of_params = 0
+	dim num_of_params : num_of_params = 0
 
 '--- Extract all strings in command ---'
 '--------------------------------------'
@@ -190,7 +196,7 @@ endfunc 1
 //==============================================================================
 function _hciDev()
 
-	DIM addr$
+	dim addr$
 
 '--- Extract all strings in command ---'
 '--------------------------------------'
@@ -248,7 +254,7 @@ endfunc 1
 //==============================================================================
 function _hciPair()
 
-	DIM nBnd : nBnd = 0					// Bond flag. If 1, the device will bond
+	dim nBnd : nBnd = 0					// Bond flag. If 1, the device will bond
 
 '--- Extract all strings in command ---'
 '--------------------------------------'
@@ -412,6 +418,8 @@ endfunc 1
 //==============================================================================
 function _hciLeCc() as integer
 
+	addr$=""
+
 '--- Extract all strings in command ---'
 '--------------------------------------'
 	while ExtractStrToken(urtcmd$, tkn$)!=0
@@ -440,6 +448,8 @@ endfunc 1
 //	hcitool ledc <handle>
 //==============================================================================
 function _hciLeDc() as integer
+
+	dim conHdl
 
 '--- Extract all strings in command ---'
 '--------------------------------------'

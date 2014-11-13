@@ -132,8 +132,6 @@ dim conns						// number of connections
 dim name$						// local device name
 dim addr$						// address of device being connected to
 dim command : command = 0		// Currently active smartZ command
-dim conHdl						// global connection handle of the current connection being serviced
-
 
 // global variables used for rfcomm command
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -151,7 +149,7 @@ dim inqmode	: inqmode = 2		// Inquiry Mode: 0 for Standard, 1 for with RSSI, 2 f
 dim inqtpl : inqtpl=4			// Inquiry transmit power level
 dim letpl : letpl = 4			// LE Tx Power level in dBm
 dim mjVersion : mjVersion=1		// Major version number
-dim mnVersion : mnVersion=0		// Minor version number
+dim mnVersion : mnVersion=1		// Minor version number
 
 
 // globale variables used for gatttool command
