@@ -68,7 +68,7 @@
         //time module will be discoverable for in seconds if discoverabilty enabled
 #define DISCOV_TIMEOUT                     60
 
-#define USE_BRIDGE                          1   //Set to 0 to use smartBASIC to transfer data between UART and SPP, set to 1 to use direct briding (faster throughput)
+#define USE_BRIDGE                          0   //Set to 0 to use smartBASIC to transfer data between UART and SPP, set to 1 to use direct briding (faster throughput)
 
 
 //Inquiry config parameters (See description for BtcInquiryConfig() in BT900 Extention user manual)
