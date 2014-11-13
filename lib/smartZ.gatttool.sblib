@@ -86,6 +86,9 @@ endfunc 1
 //==============================================================================
 function _gattPrimary() as integer
 
+	dim conHdl
+	secPair = 0
+
 '--- Extract all strings in command ---'
 '--------------------------------------'
 	while ExtractStrToken(urtcmd$, tkn$)!=0
@@ -133,6 +136,9 @@ endfunc 1
 // gatttool -b <bdaddr> --characteristics
 //==============================================================================
 function _gattChar() as integer
+
+	dim conHdl
+	secPair = 0
 
 '--- Extract all strings in command ---'
 '--------------------------------------'
@@ -182,6 +188,9 @@ endfunc 1
 // gatttool -b <bdaddr> --char-read --handle=0x0000
 //==============================================================================
 function _gattCharRead() as integer
+
+	dim conHdl
+	secPair = 0
 
 '--- Extract all strings in command ---'
 '--------------------------------------'	
@@ -242,8 +251,10 @@ endfunc 1
 //==============================================================================
 function _gattCharWrite() as integer
 
+	dim conHdl
 	dim val$								// value (string format)
 	dim val									// value (integer format)
+	secPair = 0
 
 '--- Extract all strings in command ---'
 '--------------------------------------'	
@@ -315,7 +326,9 @@ endfunc 1
 //==============================================================================
 function _gattCharDesc()
 
+	dim conHdl
 	chrHdl = 0
+	secPair = 0
 
 '--- Extract all strings in command ---'
 '--------------------------------------'	
