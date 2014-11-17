@@ -43,7 +43,7 @@ dim tkn$,tlen					// used by command parser
 dim addr$						// address of remote device
 dim gcState						// gatt client state
 dim mjVersion : mjVersion=0		// Major version number
-dim mnVersion : mnVersion=5		// Minor version number
+dim mnVersion : mnVersion=6		// Minor version number
 
 dim hz							// connection handle
 dim hSvc						// service handle
@@ -68,11 +68,11 @@ sub Initialise()
 
 	// Display the following lines as soon as the program starts
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	print "\n---------\n"
+	print "\n---------------------\n"
 	print " copygatt v";mjVersion;".";mnVersion;"\n"
-	print "-----------\n"
+	print "---------------------\n"
 	print "Available Commands:\n"
-	print "\n	scan\n	clone <bdaddr>\n"
+	print "\n	scan\n	connect <bdaddr>\n	clone\n	disconnect\n	advertise\n"
 	print pr$
 
 endsub
@@ -98,11 +98,7 @@ sub terminateCloning(rc)
     //BLE_GATTC_NO_MORE_DATA
     rc=0
   endif
-  print pr$
-  addr$ = ""
-  rc = BleDisconnect(hz)
-  //AssertResCode(rc)
-  print "gatt table cloned successfully\n"
+  print "\ngatt table cloned successfully\n";pr$
 
 endsub
 
@@ -120,9 +116,9 @@ sub _scan()
 endsub
 
 //==============================================================================
-//	scan for remote Bluetooth Low Energy devices
+//	connect to remote Bluetooth Low Energy devices
 //==============================================================================
-sub _clone()
+sub _connect()
 
 '--- Extract all strings in command ---'
 '--------------------------------------'
@@ -143,6 +139,40 @@ sub _clone()
 endsub
 
 //==============================================================================
+//	clone gatt server of connected device
+//==============================================================================
+sub _clone()
+
+	print "\nCloning ...\n"
+	rc = BleGattcOpen(0, 0)
+	AssertResCode(rc)
+	rc = BleDiscServiceFirst(hz,0,0)
+	AssertResCode(rc)
+
+endsub
+
+//==============================================================================
+//	Disconnect from remote LE device
+//==============================================================================
+sub _disconnect()
+
+	print "\nDisconnecting ...\n"
+	rc = bledisconnect(hz)
+	AssertResCode(rc)
+
+endsub
+
+//==============================================================================
+//	Start Advertising
+//==============================================================================
+sub _advertise()
+
+	rc = BleAdvertStart(0,addr$,25,600000,0)
+	AssertResCode(rc)
+
+endsub
+
+//==============================================================================
 // Extract the received UART command
 //==============================================================================
 function OnUartCmd() as integer
@@ -153,10 +183,24 @@ function OnUartCmd() as integer
 	if strcmp(tkn$,"scan")==0 then
 		_scan()
 
+	elseif strcmp(tkn$, "connect")==0 then
+		_connect()
+
 	elseif strcmp(tkn$, "clone")==0 then
 		cloning = 1
 		_clone()
 
+	elseif strcmp(tkn$, "disconnect")==0 then
+		_disconnect()
+
+	elseif strcmp(tkn$, "advertise")==0 then
+		_advertise()
+
+	elseif strcmp(tkn$, "")==0 then
+		// received carriage return. Do nothing.
+
+	else
+		print tkn$;": command not found\n"
 	endif
 
 	print pr$
@@ -186,7 +230,7 @@ function HandlerUartRxCmd() as integer
 endfunc 1
 
 //==============================================================================
-// This handler is called when there is an advert report waiting to be read 
+// This handler is called when there is an advert report waiting to be read
 //==============================================================================
 function HandlerAdvRpt() as integer
 
@@ -230,18 +274,10 @@ function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as intege
 
 	case BLE_EVBLEMSGID_CONNECT
 		hz = nCtx
-		if cloning == 1 then
-			print "\nCloning ...\n"
-			rc = BleGattcOpen(0, 0)
-			AssertResCode(rc)
-			rc = BleDiscServiceFirst(hz,0,0)
-			AssertResCode(rc)
-		endif
+		print "\nConnected\n";pr$
 
 	case BLE_EVBLEMSGID_DISCONNECT
 		print "\nDisconnected\n";pr$
-		rc = BleAdvertStart(0,addr$,25,600000,0)
-		AssertResCode(rc)
 
 	case else
 		//Unknown Ble Msg
@@ -253,10 +289,11 @@ endfunc 1
 //==============================================================================
 //==============================================================================
 function HandlerPrimSvc(hConn,hUuid,hStart,hEnd) as integer
-    if hStart!=0 then
+
+	if hStart!=0 then
 		if (hUuid != 0xFE011801) && (hUuid != 0xFE011800) then
 			// S: hStart,(hEnd),hUuid
-			//print "\nS:";hStart;" ,(";hEnd;") ,";integer.h' hUuid
+			// print "\nS:";hStart;" ,(";hEnd;") ,";integer.h' hUuid
 			rc = BleServiceNew(BLE_SERVICE_PRIMARY, BleHandleUuid16(hUuid), hSvc)
 			AssertResCode(rc)
 			print "."
@@ -266,9 +303,10 @@ function HandlerPrimSvc(hConn,hUuid,hStart,hEnd) as integer
 			terminateCloning(rc)
 		endif
 	else
-			//reached end of remote gatt table
-			terminateCloning(0)
+		//reached end of remote gatt table
+		terminateCloning(0)
 	endif
+
 endfunc 1
 
 //==============================================================================
@@ -278,7 +316,7 @@ function HandlerCharDisc(hConn,hUuid,cProp,hVal,hiUuid) as integer
 	dim mdAttr, mdCccd, mdSccd
 	dim mdRd : mdRd = 0
 	dim mdWr : mdWr = 0
-	
+
 	if ((cProp & 32) == 32 || (cProp & 16) == 16) then
 		mdCccd = BleAttrMetadata(1, 1, 2, 0, rc)
 	endif
@@ -288,7 +326,7 @@ function HandlerCharDisc(hConn,hUuid,cProp,hVal,hiUuid) as integer
 	endif
 
 	if ((cProp & 4) == 4 || (cProp & 8) == 8 || (cProp & 64) == 64 || (cProp & 128) == 128) then
-		mdWr = 1	
+		mdWr = 1
 	endif
 
 	mdAttr=BleAttrMetadata(mdRd,mdWr,20,1,rc)
@@ -309,10 +347,10 @@ function HandlerCharDisc(hConn,hUuid,cProp,hVal,hiUuid) as integer
 		//no more chars in this service, so go for next service
 		rc = BleServiceCommit(hSvc)
 		AssertResCode(rc)
-	  rc = BleDiscServiceNext(hConn)
-      if rc!=0 then
-        terminateCloning(rc)
-      endif
+		rc = BleDiscServiceNext(hConn)
+		if rc!=0 then
+		terminateCloning(rc)
+		endif
     endif
 
 endfunc 1
@@ -347,6 +385,7 @@ endfunc 1
 //==============================================================================
 function HandlerBleConnTimOut() as integer
 
+	print "\nConnection attempt stopped via timeout"
 	print pr$
 
 endfunc 1
