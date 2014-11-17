@@ -35,6 +35,7 @@ sub _rfcommHelp()
 	print "		rfcomm connect <bdaddr>\n"
 
 endsub
+
 //-------------------------------------------------------------------------
 // rfcomm connect <bdaddr> 
 //-------------------------------------------------------------------------
@@ -67,7 +68,8 @@ function _rfcommConnect()
 		print "Connecting ... \n"
 	endif
 
-endfunc 1 
+endfunc 1
+
 //==============================================================================
 // Extract the rfcomm command
 //==============================================================================
@@ -118,6 +120,7 @@ function HandlerSppCon(hConn, res) as integer
     endif        
 
 endfunc 1
+
 //==============================================================================
 // Called when a connection attempt to an SPP device times out
 //==============================================================================
@@ -126,6 +129,7 @@ function HandlerSppConnTimOut() as integer
     print "\nCould not create connection: Connection timed out\n";pr$
 
 endfunc 1
+
 //==============================================================================
 // Called when SPP disconnection occurs
 //==============================================================================
@@ -141,6 +145,7 @@ function HandlerSppDiscon(hConn)
 	AssertResCode(rc)
 
 endfunc 1
+
 //==============================================================================
 // Called when data is received via SPP
 //==============================================================================
@@ -156,6 +161,7 @@ function HandlerSppData()
     endwhile
 
 endfunc 1
+
 //==============================================================================
 // Called when data is received via UART
 //==============================================================================
@@ -209,6 +215,7 @@ function HandlerUartRxSpp()
     endwhile
 
 endfunc 1
+
 //------------------------------------------------------------------------------
 // Enable synchronous event handlers
 //------------------------------------------------------------------------------

@@ -149,7 +149,7 @@ dim inqmode	: inqmode = 2		// Inquiry Mode: 0 for Standard, 1 for with RSSI, 2 f
 dim inqtpl : inqtpl=4			// Inquiry transmit power level
 dim letpl : letpl = 4			// LE Tx Power level in dBm
 dim mjVersion : mjVersion=1		// Major version number
-dim mnVersion : mnVersion=1		// Minor version number
+dim mnVersion : mnVersion=2		// Minor version number
 
 
 // globale variables used for gatttool command
@@ -177,7 +177,8 @@ sub AssertResCode(resCode)
 	if rc !=0 then
 		print "error: ";integer.h' rc;"\n"
 	endif
-endsub 
+endsub
+
 //==============================================================================
 // Add a delay of t seconds
 //==============================================================================
@@ -191,6 +192,7 @@ sub delay(t as integer)
 		endwhile
 
 endsub
+
 //==============================================================================
 // Initialise all connection handles
 //==============================================================================
@@ -202,6 +204,7 @@ sub InitConnHandles()
 	next
 
 endsub
+
 //==============================================================================
 // Add the connection handle to the list of connection handles
 //==============================================================================
@@ -216,20 +219,24 @@ function AcqConnHandle(hConn)
 	next
 
 endfunc 0
+
 //==============================================================================
 // Release the connection handle from the array of conn handles
 //==============================================================================
 function RelConnHandle(hConn)
 
-	dim z
+	dim x, z
 	for z=1 to (NUM_OF_CONNS)
-		if hc[z] == hConn then 
-			hc[z]=-1
+		if hc[z] == hConn then
+			for x = z to (NUM_OF_CONNS-1)
+				hc[x] = hc[x+1]
+			next
 			exitfunc z
 		endif
 	next
 
 endfunc 0
+
 //==============================================================================
 
 //------------------------------------------------------------------------------
@@ -242,7 +249,7 @@ endfunc 0
 
 //==============================================================================
 // Initialise the Bluetooth device
-// Set the device to be discoverable, connectible, pairable, 
+// Set the device to be discoverable, connectible, pairable,
 // Set the inquiry type to be general, inquiry mode to be extended
 //==============================================================================
 sub InitBtDevice()
@@ -300,7 +307,7 @@ sub Initialise()
 	print "\nType \22help\22 or \22<command> help\22\n"
 	print pr$
 
-endsub									
+endsub
 //==============================================================================
 // Display the Help menu
 //==============================================================================
@@ -324,7 +331,7 @@ endsub
 function OnUartCmd() as integer
 
 	// get first token
-	tlen = ExtractStrToken(urtcmd$,tkn$) 
+	tlen = ExtractStrToken(urtcmd$,tkn$)
 
 	if strcmp(tkn$,"hcitool")==0 then
 		_hci()
@@ -355,6 +362,11 @@ function OnUartCmd() as integer
 	print pr$
 
 endfunc 1
+
+'//******************************************************************************
+'// Handler definitions
+'//******************************************************************************
+
 //==============================================================================
 // This handler is called when data has arrived through the UART
 //==============================================================================
