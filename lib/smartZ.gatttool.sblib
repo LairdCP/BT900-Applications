@@ -534,6 +534,11 @@ function HandlerPrimSvc(hConn,hUuid,hStart,hEnd) as integer
 			print ", end grp handle = 0x";integer.h' hEnd
 			print ", uuid = ";integer.h' hUuid
 			rc = BleDiscServiceNext(hConn)
+			if rc!=0 then
+				BleGattcClose()
+				print "\n";pr$
+				exitfunc 1
+			endif
 
 		elseif command == SMARTZ_COMMAND_GATTTOOL_CHARACTERISTICS then
 			rc = BleDiscCharFirst(hConn,0,hStart,hEnd)

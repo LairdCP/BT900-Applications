@@ -85,6 +85,8 @@
 #define BLE_EVBLEMSGID_CONNECT                          0 // msgCtx = connection handle
 #define BLE_EVBLEMSGID_DISCONNECT                       1 // msgCtx = connection handle
 
+// SMARTZ COMMAND IDs:
+#define SMARTZ_COMMAND_NONE								0
 // SMARTZ COMMAND IDs: HCITOOL
 #define SMARTZ_COMMAND_HCITOOL_DEV						1
 #define SMARTZ_COMMAND_HCITOOL_INQ						2
@@ -149,7 +151,7 @@ dim inqmode	: inqmode = 2		// Inquiry Mode: 0 for Standard, 1 for with RSSI, 2 f
 dim inqtpl : inqtpl=4			// Inquiry transmit power level
 dim letpl : letpl = 4			// LE Tx Power level in dBm
 dim mjVersion : mjVersion=1		// Major version number
-dim mnVersion : mnVersion=2		// Minor version number
+dim mnVersion : mnVersion=3		// Minor version number
 
 
 // globale variables used for gatttool command

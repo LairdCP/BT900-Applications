@@ -585,7 +585,7 @@ function HandlerInqResp(respType) as integer
 
 			if rc == 0 then
 				print "  ";name$
-			endif		
+			endif
 		else
 			print "  n/a"
 		endif
@@ -610,7 +610,7 @@ function HandlerInqResp(respType) as integer
 
 				if rc == 0 then
 					print "  ";name$
-				endif		
+				endif
 
 			else
 				print "  n/a"
@@ -633,6 +633,7 @@ function HandlerBtcInqTimOut() as integer
 	rc = BtcInquiryCancel()
 	AssertResCode(rc)
 	print "\n";pr$
+	command = SMARTZ_COMMAND_NONE
 
 endfunc 1
 
