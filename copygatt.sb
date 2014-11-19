@@ -19,6 +19,9 @@
 '// Definitions
 '//******************************************************************************
 
+//Set this to 0 to disable all debugging messages
+#define ENABLE_DEBUG_PRINTS								0
+
 // BLE EVENT MSG IDs
 #define BLE_EVBLEMSGID_CONNECT                          0 // msgCtx = connection handle
 #define BLE_EVBLEMSGID_DISCONNECT                       1 // msgCtx = connection handle
@@ -26,6 +29,12 @@
 // PRIMARY AND SECONDARY SERVICES
 #DEFINE BLE_SERVICE_SECONDARY                           0
 #DEFINE BLE_SERVICE_PRIMARY                             1
+
+// CURRENT COMMAND BEING SERVICED
+#DEFINE COMMAND_NONE									0
+#DEFINE COMMAND_BROWSE									1
+#DEFINE COMMAND_CLONE									2
+
 '//******************************************************************************
 '// Library Import
 '//******************************************************************************
@@ -42,8 +51,9 @@ dim urtcmd$						// cmd line from uart
 dim tkn$,tlen					// used by command parser
 dim addr$						// address of remote device
 dim gcState						// gatt client state
+dim command						// Current command being serviced
 dim mjVersion : mjVersion=0		// Major version number
-dim mnVersion : mnVersion=6		// Minor version number
+dim mnVersion : mnVersion=7		// Minor version number
 
 dim hz							// connection handle
 dim hSvc						// service handle
@@ -72,7 +82,7 @@ sub Initialise()
 	print " copygatt v";mjVersion;".";mnVersion;"\n"
 	print "---------------------\n"
 	print "Available Commands:\n"
-	print "\n	scan\n	connect <bdaddr>\n	clone\n	disconnect\n	advertise\n"
+	print "\n	scan\n	browse <bdaddr>\n	clone <bdaddr>\n	quit\n"
 	print pr$
 
 endsub
@@ -80,10 +90,10 @@ endsub
 //==============================================================================
 // Display the error message
 //==============================================================================
-sub AssertResCode(resCode)
+sub AssertResCode(byval rc as integer,byval tag as integer)
 
-	if rc !=0 then
-		print "error: ";integer.h' rc;"\n"
+	if (ENABLE_DEBUG_PRINTS!=0) && (rc!=0) then
+		print "\nFailed with ";integer.h' rc;" at tag ";tag
 	endif
 
 endsub
@@ -92,13 +102,18 @@ endsub
 //==============================================================================
 sub terminateCloning(rc)
 
-  gcState=0
-  cloning = 0
-  if rc==0x6052 then
-    //BLE_GATTC_NO_MORE_DATA
-    rc=0
-  endif
-  print "\ngatt table cloned successfully\n";pr$
+	gcState=0
+	cloning = 0
+	if rc==0x6052 then
+		//BLE_GATTC_NO_MORE_DATA
+		rc=0
+	endif
+	if command==COMMAND_CLONE then
+		print "\ngatt table cloned successfully\n";pr$
+	endif
+	print "\nDisconnecting ...\n"
+	rc = bledisconnect(hz)
+	AssertResCode(rc, 1018)
 
 endsub
 
@@ -111,12 +126,12 @@ sub _scan()
 	dim scnLen : scnLen = 5000
 
 	rc = BleScanStart(scnLen, 0)
-	AssertResCode(rc)
+	AssertResCode(rc, 1010)
 
 endsub
 
 //==============================================================================
-//	connect to remote Bluetooth Low Energy devices
+//	Browse through the services, characteristics, and descriptors of the remote device
 //==============================================================================
 sub _connect()
 
@@ -125,40 +140,17 @@ sub _connect()
 	If ExtractStrToken(urtcmd$, tkn$)!=0 then
 		addr$ = strdehexize$(tkn$)
 	else
-		print "Remote Bluetooth address must be provided\n"
+		print "\nRemote Bluetooth address must be provided\n"
 		exitsub
 	endif
 '--------------------------------------'
 
 	rc = BleConnect(addr$, 5000, 20000, 75000, 5000000)
-	AssertResCode(rc)
+	AssertResCode(rc, 1012)
 	if rc == 0 then
-		print "Connecting ...\n"
+		print "\n\nConnecting ...\n"
 	endif
-
-endsub
-
-//==============================================================================
-//	clone gatt server of connected device
-//==============================================================================
-sub _clone()
-
-	print "\nCloning ...\n"
-	rc = BleGattcOpen(0, 0)
-	AssertResCode(rc)
-	rc = BleDiscServiceFirst(hz,0,0)
-	AssertResCode(rc)
-
-endsub
-
-//==============================================================================
-//	Disconnect from remote LE device
-//==============================================================================
-sub _disconnect()
-
-	print "\nDisconnecting ...\n"
-	rc = bledisconnect(hz)
-	AssertResCode(rc)
+	// at this point should start browsing for data
 
 endsub
 
@@ -167,8 +159,7 @@ endsub
 //==============================================================================
 sub _advertise()
 
-	rc = BleAdvertStart(0,addr$,25,600000,0)
-	AssertResCode(rc)
+
 
 endsub
 
@@ -183,18 +174,16 @@ function OnUartCmd() as integer
 	if strcmp(tkn$,"scan")==0 then
 		_scan()
 
-	elseif strcmp(tkn$, "connect")==0 then
+	elseif strcmp(tkn$, "browse")==0 then
+		command = COMMAND_BROWSE
 		_connect()
 
 	elseif strcmp(tkn$, "clone")==0 then
-		cloning = 1
-		_clone()
+		command = COMMAND_CLONE
+		_connect()
 
-	elseif strcmp(tkn$, "disconnect")==0 then
-		_disconnect()
-
-	elseif strcmp(tkn$, "advertise")==0 then
-		_advertise()
+	elseif strcmp(tkn$, "quit")==0 then
+		reset(0)
 
 	elseif strcmp(tkn$, "")==0 then
 		// received carriage return. Do nothing.
@@ -260,7 +249,7 @@ endfunc 1
 function HandlerBlrScanTimOut() as integer
 
 	rc = BleScanStop()
-	AssertResCode(rc)
+	AssertResCode(rc, 1022)
 	print "\n";pr$
 
 endfunc 1
@@ -274,10 +263,26 @@ function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as intege
 
 	case BLE_EVBLEMSGID_CONNECT
 		hz = nCtx
-		print "\nConnected\n";pr$
+		print "\n\nConnected\n";pr$
+		if command == COMMAND_BROWSE then
+			print "\nBrowsing ...\n"
+		elseif command == COMMAND_CLONE then
+			print "\nCloning ...\n"
+		else
+			exitfunc 1
+		endif
+		rc = BleGattcOpen(0, 0)
+		AssertResCode(rc, 1014)
+		rc = BleDiscServiceFirst(hz,0,0)
+		AssertResCode(rc, 1016)
 
 	case BLE_EVBLEMSGID_DISCONNECT
-		print "\nDisconnected\n";pr$
+		print "\n\nDisconnected\n";pr$
+		if command==COMMAND_CLONE then
+			rc = BleAdvertStart(0,addr$,25,600000,0)
+			AssertResCode(rc, 1020)
+		endif
+		command=COMMAND_NONE
 
 	case else
 		//Unknown Ble Msg
@@ -291,12 +296,15 @@ endfunc 1
 function HandlerPrimSvc(hConn,hUuid,hStart,hEnd) as integer
 
 	if hStart!=0 then
-		if (hUuid != 0xFE011801) && (hUuid != 0xFE011800) then
+		if command == COMMAND_BROWSE then
 			// S: hStart,(hEnd),hUuid
-			// print "\nS:";hStart;" ,(";hEnd;") ,";integer.h' hUuid
-			rc = BleServiceNew(BLE_SERVICE_PRIMARY, BleHandleUuid16(hUuid), hSvc)
-			AssertResCode(rc)
-			print "."
+			print "\nS:";hStart;" ,(";hEnd;") ,";integer.h' hUuid
+		elseif command == COMMAND_CLONE then
+			if (hUuid != 0xFE011801) && (hUuid != 0xFE011800) then
+				rc = BleServiceNew(BLE_SERVICE_PRIMARY, BleHandleUuid16(hUuid), hSvc)
+				AssertResCode(rc, 1024)
+				print "."
+			endif
 		endif
 		rc=BleDiscCharFirst(hConn,0,hStart,hEnd)
 		if rc!=0 then
@@ -332,26 +340,31 @@ function HandlerCharDisc(hConn,hUuid,cProp,hVal,hiUuid) as integer
 	mdAttr=BleAttrMetadata(mdRd,mdWr,20,1,rc)
 
 	if hVal!=0 then
-		// C: hVal,cProp,hUuid,hiUuid
-		//print "\n C:";hVal;" ,";integer.h' cProp;" ,";integer.h' hUuid;" ,";hiUuid
-		// and get all descriptors of this characteristics
-		print "."
-		rc = BleCharNew(cProp, hUuid, mdAttr, mdCccd, mdSccd)
-		AssertResCode(rc)
-		rc = BleCharCommit(hSvc, hs$, hChar)
-		rc=BleDiscDescFirst(hConn,0,hVal)
+		if command==COMMAND_BROWSE then
+			// C: hVal,cProp,hUuid,hiUuid
+			print "\n C:";hVal;" ,";integer.h' cProp;" ,";integer.h' hUuid;" ,";hiUuid
+			// and get all descriptors of this characteristics
+		elseif command==COMMAND_CLONE then
+			print "."
+			rc = BleCharNew(cProp, hUuid, mdAttr, mdCccd, mdSccd)
+			AssertResCode(rc, 1026)
+			rc = BleCharCommit(hSvc, hs$, hChar)
+		endif
+		rc = BleDiscDescFirst(hConn,0,hVal)
 		if rc!=0 then
 			terminateCloning(rc)
 		endif
 	else
 		//no more chars in this service, so go for next service
-		rc = BleServiceCommit(hSvc)
-		AssertResCode(rc)
+		if command==COMMAND_BROWSE then
+			rc = BleServiceCommit(hSvc)
+			AssertResCode(rc, 1028)
+		endif
 		rc = BleDiscServiceNext(hConn)
 		if rc!=0 then
-		terminateCloning(rc)
+			terminateCloning(rc)
 		endif
-    endif
+	endif
 
 endfunc 1
 
@@ -360,17 +373,23 @@ endfunc 1
 function HandlerDescDisc(hConn,hUuid,hDesc) as integer
 
     if hDesc!=0 then
-		// D: hDesc,hUuid
-		//print "\n  D:";hDesc;" ,";integer.h' hUuid
-		print "."
+		if command==COMMAND_BROWSE then
+			// D: hDesc,hUuid
+			print "\n  D:";hDesc;" ,";integer.h' hUuid
+		else
+			print "."
+		endif
     endif
-		// and get all descriptors of this characteristics
-		rc=BleDiscDescNext(hConn)
+	
+	// and get all descriptors of this characteristics
+	rc=BleDiscDescNext(hConn)
     if rc!=0 then
 		//no more descc in this char, so go for next char
 		rc = BleDiscCharNext(hConn)
 		if rc!=0 then
-			rc = BleServiceCommit(hSvc)
+			if command==COMMAND_CLONE then
+				rc = BleServiceCommit(hSvc)
+			endif
 			rc = BleDiscServiceNext(hConn)
 			if rc!=0 then
 				terminateCloning(rc)
@@ -385,7 +404,7 @@ endfunc 1
 //==============================================================================
 function HandlerBleConnTimOut() as integer
 
-	print "\nConnection attempt stopped via timeout"
+	print "\n\nConnection attempt stopped via timeout\n"
 	print pr$
 
 endfunc 1
