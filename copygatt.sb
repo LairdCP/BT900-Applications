@@ -53,12 +53,12 @@ dim addr$						// address of remote device
 dim gcState						// gatt client state
 dim command						// Current command being serviced
 dim mjVersion : mjVersion=0		// Major version number
-dim mnVersion : mnVersion=7		// Minor version number
+dim mnVersion : mnVersion=8		// Minor version number
 
 dim hz							// connection handle
 dim hSvc						// service handle
 dim hChar						// characteristic handle
-dim hs$
+dim hCharVal					// handle of characteristic value
 
 dim cloning : cloning = 0		// cloning state. 1 = currently cloning, 0 = idle
 //******************************************************************************
@@ -108,10 +108,12 @@ sub terminateCloning(rc)
 		//BLE_GATTC_NO_MORE_DATA
 		rc=0
 	endif
+	
 	if command==COMMAND_CLONE then
-		print "\ngatt table cloned successfully\n";pr$
+		print "\ngatt table cloned successfully\n"
+	elseif command==COMMAND_BROWSE then
+		print "\n"
 	endif
-	print "\nDisconnecting ...\n"
 	rc = bledisconnect(hz)
 	AssertResCode(rc, 1018)
 
@@ -147,19 +149,6 @@ sub _connect()
 
 	rc = BleConnect(addr$, 5000, 20000, 75000, 5000000)
 	AssertResCode(rc, 1012)
-	if rc == 0 then
-		print "\n\nConnecting ...\n"
-	endif
-	// at this point should start browsing for data
-
-endsub
-
-//==============================================================================
-//	Start Advertising
-//==============================================================================
-sub _advertise()
-
-
 
 endsub
 
@@ -184,15 +173,18 @@ function OnUartCmd() as integer
 
 	elseif strcmp(tkn$, "quit")==0 then
 		reset(0)
+	
+	elseif strcmp(tkn$, "help")==0 then
+		print "Available Commands:\n"
+		print "\n	scan\n	browse <bdaddr>\n	clone <bdaddr>\n	quit\n"
 
 	elseif strcmp(tkn$, "")==0 then
 		// received carriage return. Do nothing.
+		print pr$
 
 	else
 		print tkn$;": command not found\n"
 	endif
-
-	print pr$
 
 endfunc 1
 
@@ -263,7 +255,7 @@ function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as intege
 
 	case BLE_EVBLEMSGID_CONNECT
 		hz = nCtx
-		print "\n\nConnected\n";pr$
+		print "\nConnected\n"
 		if command == COMMAND_BROWSE then
 			print "\nBrowsing ...\n"
 		elseif command == COMMAND_CLONE then
@@ -277,10 +269,15 @@ function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as intege
 		AssertResCode(rc, 1016)
 
 	case BLE_EVBLEMSGID_DISCONNECT
-		print "\n\nDisconnected\n";pr$
+		print "\nDisconnected\n"
 		if command==COMMAND_CLONE then
 			rc = BleAdvertStart(0,addr$,25,600000,0)
 			AssertResCode(rc, 1020)
+			if rc == 0 then
+				print "Now advertising with the cloned gatt table\n";pr$
+			endif
+		elseif command==COMMAND_BROWSE then
+			print "\n"
 		endif
 		command=COMMAND_NONE
 
@@ -292,6 +289,7 @@ function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as intege
 endfunc 1
 
 //==============================================================================
+// This handler is called when a BLE primary service is discovered
 //==============================================================================
 function HandlerPrimSvc(hConn,hUuid,hStart,hEnd) as integer
 
@@ -318,24 +316,16 @@ function HandlerPrimSvc(hConn,hUuid,hStart,hEnd) as integer
 endfunc 1
 
 //==============================================================================
+// This handler is called when a BLE characteristic is discovered
 //==============================================================================
 function HandlerCharDisc(hConn,hUuid,cProp,hVal,hiUuid) as integer
 
-	dim mdAttr, mdCccd, mdSccd
-	dim mdRd : mdRd = 0
-	dim mdWr : mdWr = 0
-
-	if ((cProp & 32) == 32 || (cProp & 16) == 16) then
-		mdCccd = BleAttrMetadata(1, 1, 2, 0, rc)
-	endif
-
-	if ((cProp & 2) == 2 ) then
-		mdRd = 1
-	endif
-
-	if ((cProp & 4) == 4 || (cProp & 8) == 8 || (cProp & 64) == 64 || (cProp & 128) == 128) then
-		mdWr = 1
-	endif
+	dim mdAttr
+	dim mdCccd
+	dim mdSccd
+	dim mdRd
+	dim mdWr
+	dim ofst, a$
 
 	mdAttr=BleAttrMetadata(mdRd,mdWr,20,1,rc)
 
@@ -346,9 +336,22 @@ function HandlerCharDisc(hConn,hUuid,cProp,hVal,hiUuid) as integer
 			// and get all descriptors of this characteristics
 		elseif command==COMMAND_CLONE then
 			print "."
+			if ((cProp & 32) == 32 || (cProp & 16) == 16) then
+				// Characteristic is notifiable/indicatable
+				// Get notification and encode it
+				mdCccd = BleAttrMetadata(1, 1, 2, 0, rc)
+
+			elseif ((cProp & 2) == 2 ) then
+				// Characteristic is readable so read characteristic value
+				mdRd = 1
+
+			elseif ((cProp & 4) == 4 || (cProp & 8) == 8 || (cProp & 64) == 64 || (cProp & 128) == 128) then
+				// Characteristic is writable
+				mdWr = 1
+			endif
 			rc = BleCharNew(cProp, hUuid, mdAttr, mdCccd, mdSccd)
 			AssertResCode(rc, 1026)
-			rc = BleCharCommit(hSvc, hs$, hChar)
+			rc = BleCharCommit(hSvc, a$, hChar)
 		endif
 		rc = BleDiscDescFirst(hConn,0,hVal)
 		if rc!=0 then
@@ -369,6 +372,7 @@ function HandlerCharDisc(hConn,hUuid,cProp,hVal,hiUuid) as integer
 endfunc 1
 
 //==============================================================================
+// This handler is called when a BLE descriptor is discovered
 //==============================================================================
 function HandlerDescDisc(hConn,hUuid,hDesc) as integer
 
@@ -380,7 +384,7 @@ function HandlerDescDisc(hConn,hUuid,hDesc) as integer
 			print "."
 		endif
     endif
-	
+
 	// and get all descriptors of this characteristics
 	rc=BleDiscDescNext(hConn)
     if rc!=0 then
@@ -433,7 +437,5 @@ OnEvent EVBLEMSG                 	call HandlerBleMsg
 OnEvent  EVDISCPRIMSVC            call HandlerPrimSvc
 OnEvent  EVDISCCHAR               call HandlerCharDisc
 OnEvent  EVDISCDESC               call HandlerDescDisc
-//OnEvent  EVATTRWRITE              call HandlerAttrWrite
-//OnEvent  EVATTRREAD               call HandlerAttrRead
 
 waitevent
