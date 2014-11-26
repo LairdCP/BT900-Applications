@@ -110,7 +110,7 @@ sub _hciCfg()
 
 			else
 				// Set device name
-				DIM len
+				dim len
 				name$ = tkn$ + s$
 				len = strlen(name$)
 				name$ = left$(name$, len-1)

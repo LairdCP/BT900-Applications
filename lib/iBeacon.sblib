@@ -135,7 +135,7 @@
 '//   #                                                                                     #
 '//   #  [Remain Connectible Time]:                    569a2018-b87f-490c-92cb-11ba5ea5167c #
 '//   #     - Time to advertise with type 0 (connectible)                                   #
-'//   #     - Length: 1 byte (signed 8 bit)                                                 #
+'//   #     - Length: 1 byte (unsigned 8 bit)                                                 #
 '//   #     - Unit:  seconds (e.g. 10 will give 10000ms)                                    #
 '//   #     - Valid values: 1-255                                                           #
 '//   #                                                                                     #

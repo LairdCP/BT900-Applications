@@ -1,0 +1,441 @@
+'//******************************************************************************
+'//******************************************************************************
+'// Laird Technologies (c) 2014
+'//
+'// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+'// +++++                                                                      ++
+'// +++++  When UwTerminal downloads the app it will store it as a filenname   ++
+'// +++++  which consists of all characters up to the first . and excluding it ++
+'// +++++                                                                      ++
+'// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+'//
+'// CopyGatt Gatt Cloner -- clones a GattServer and then hosts using it's data
+'//
+'// IMPORTANT: This application is still in progress
+'//
+'//******************************************************************************
+
+'//******************************************************************************
+'// Definitions
+'//******************************************************************************
+
+//Set this to 0 to disable all debugging messages
+#define ENABLE_DEBUG_PRINTS								0
+
+// BLE EVENT MSG IDs
+#define BLE_EVBLEMSGID_CONNECT                          0 // msgCtx = connection handle
+#define BLE_EVBLEMSGID_DISCONNECT                       1 // msgCtx = connection handle
+
+// PRIMARY AND SECONDARY SERVICES
+#DEFINE BLE_SERVICE_SECONDARY                           0
+#DEFINE BLE_SERVICE_PRIMARY                             1
+
+// CURRENT COMMAND BEING SERVICED
+#DEFINE COMMAND_NONE									0
+#DEFINE COMMAND_BROWSE									1
+#DEFINE COMMAND_CLONE									2
+
+'//******************************************************************************
+'// Library Import
+'//******************************************************************************
+
+
+'//******************************************************************************
+'// Global Variable Declarations
+'//******************************************************************************
+
+dim rc      					// result code
+dim stRsp$						// Uart rx data is stored here
+dim pr$							// command prompt
+dim urtcmd$						// cmd line from uart
+dim tkn$,tlen					// used by command parser
+dim addr$						// address of remote device
+dim gcState						// gatt client state
+dim command						// Current command being serviced
+dim mjVersion : mjVersion=0		// Major version number
+dim mnVersion : mnVersion=8		// Minor version number
+
+dim hz							// connection handle
+dim hSvc						// service handle
+dim hChar						// characteristic handle
+dim hCharVal					// handle of characteristic value
+
+dim cloning : cloning = 0		// cloning state. 1 = currently cloning, 0 = idle
+//******************************************************************************
+// Initialisse Global Variable
+//******************************************************************************
+
+pr$    = "\r\n>"
+
+'//******************************************************************************
+'// Function and Subroutine definitions
+'//******************************************************************************
+
+//==============================================================================
+// This is the first subroutine called when the program starts
+//==============================================================================
+sub Initialise()
+
+	// Display the following lines as soon as the program starts
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	print "\n---------------------\n"
+	print " copygatt v";mjVersion;".";mnVersion;"\n"
+	print "---------------------\n"
+	print "Available Commands:\n"
+	print "\n	scan\n	browse <bdaddr>\n	clone <bdaddr>\n	quit\n"
+	print pr$
+
+endsub
+
+//==============================================================================
+// Display the error message
+//==============================================================================
+sub AssertResCode(byval rc as integer,byval tag as integer)
+
+	if (ENABLE_DEBUG_PRINTS!=0) && (rc!=0) then
+		print "\nFailed with ";integer.h' rc;" at tag ";tag
+	endif
+
+endsub
+
+//==============================================================================
+//==============================================================================
+sub terminateCloning(rc)
+
+	gcState=0
+	cloning = 0
+	if rc==0x6052 then
+		//BLE_GATTC_NO_MORE_DATA
+		rc=0
+	endif
+	
+	if command==COMMAND_CLONE then
+		print "\ngatt table cloned successfully\n"
+	elseif command==COMMAND_BROWSE then
+		print "\n"
+	endif
+	rc = bledisconnect(hz)
+	AssertResCode(rc, 1018)
+
+endsub
+
+//==============================================================================
+//	scan for remote Bluetooth Low Energy devices
+//==============================================================================
+sub _scan()
+
+	// Set default scan time to 5 seconds
+	dim scnLen : scnLen = 5000
+
+	rc = BleScanStart(scnLen, 0)
+	AssertResCode(rc, 1010)
+
+endsub
+
+//==============================================================================
+//	Browse through the services, characteristics, and descriptors of the remote device
+//==============================================================================
+sub _connect()
+
+'--- Extract all strings in command ---'
+'--------------------------------------'
+	If ExtractStrToken(urtcmd$, tkn$)!=0 then
+		addr$ = strdehexize$(tkn$)
+	else
+		print "\nRemote Bluetooth address must be provided\n"
+		exitsub
+	endif
+'--------------------------------------'
+
+	rc = BleConnect(addr$, 5000, 20000, 75000, 5000000)
+	AssertResCode(rc, 1012)
+
+endsub
+
+//==============================================================================
+// Extract the received UART command
+//==============================================================================
+function OnUartCmd() as integer
+
+	// get first token
+	tlen = ExtractStrToken(urtcmd$,tkn$)
+
+	if strcmp(tkn$,"scan")==0 then
+		_scan()
+
+	elseif strcmp(tkn$, "browse")==0 then
+		command = COMMAND_BROWSE
+		_connect()
+
+	elseif strcmp(tkn$, "clone")==0 then
+		command = COMMAND_CLONE
+		_connect()
+
+	elseif strcmp(tkn$, "quit")==0 then
+		reset(0)
+	
+	elseif strcmp(tkn$, "help")==0 then
+		print "Available Commands:\n"
+		print "\n	scan\n	browse <bdaddr>\n	clone <bdaddr>\n	quit\n"
+
+	elseif strcmp(tkn$, "")==0 then
+		// received carriage return. Do nothing.
+		print pr$
+
+	else
+		print tkn$;": command not found\n"
+	endif
+
+endfunc 1
+
+'//******************************************************************************
+'// Handler definitions
+'//******************************************************************************
+
+//==============================================================================
+// This handler is called when data has arrived through the UART
+//==============================================================================
+function HandlerUartRxCmd() as integer
+
+	dim nMatch
+
+	// read UART data until CR
+	nMatch=UartReadMatch(stRsp$,13)
+	if nMatch!=0 then
+		//CR exists in the input buffer
+		urtcmd$ = strsplitleft$(stRsp$, nMatch)
+		// process the received string
+		exitfunc OnUartCmd()
+	endif
+
+endfunc 1
+
+//==============================================================================
+// This handler is called when there is an advert report waiting to be read
+//==============================================================================
+function HandlerAdvRpt() as integer
+
+	dim ad$,dta$,ndisc,rsi,tag, nm$
+	rc = BleScanGetAdvReport(ad$,dta$,ndisc,rsi)
+	while rc==0
+		ad$ = right$(ad$,8)
+		print "\n		";strhexize$(ad$)
+		tag = 0x09
+		rc = BLEGETADBYTAG(dta$, tag, nm$)
+		if rc == 0x6060 then
+			tag = 0x08
+			rc = BLEGETADBYTAG(dta$, tag, nm$)
+		endif
+
+		if rc == 0 then
+			print "  ";nm$
+		endif
+		rc = BleScanGetAdvReport(ad$,dta$,ndisc,rsi)
+	endwhile
+
+endfunc 1
+
+//==============================================================================
+// This handler is called when there is a BLE scan timeout
+//==============================================================================
+function HandlerBlrScanTimOut() as integer
+
+	rc = BleScanStop()
+	AssertResCode(rc, 1022)
+	print "\n";pr$
+
+endfunc 1
+
+//==============================================================================
+// This handler is called when there is a BLE message (connection or disconnection)
+//==============================================================================
+function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as integer
+
+	select nMsgId
+
+	case BLE_EVBLEMSGID_CONNECT
+		hz = nCtx
+		print "\nConnected\n"
+		if command == COMMAND_BROWSE then
+			print "\nBrowsing ...\n"
+		elseif command == COMMAND_CLONE then
+			print "\nCloning ...\n"
+		else
+			exitfunc 1
+		endif
+		rc = BleGattcOpen(0, 0)
+		AssertResCode(rc, 1014)
+		rc = BleDiscServiceFirst(hz,0,0)
+		AssertResCode(rc, 1016)
+
+	case BLE_EVBLEMSGID_DISCONNECT
+		print "\nDisconnected\n"
+		if command==COMMAND_CLONE then
+			rc = BleAdvertStart(0,addr$,25,600000,0)
+			AssertResCode(rc, 1020)
+			if rc == 0 then
+				print "Now advertising with the cloned gatt table\n";pr$
+			endif
+		elseif command==COMMAND_BROWSE then
+			print "\n"
+		endif
+		command=COMMAND_NONE
+
+	case else
+		//Unknown Ble Msg
+
+  endselect
+
+endfunc 1
+
+//==============================================================================
+// This handler is called when a BLE primary service is discovered
+//==============================================================================
+function HandlerPrimSvc(hConn,hUuid,hStart,hEnd) as integer
+
+	if hStart!=0 then
+		if command == COMMAND_BROWSE then
+			// S: hStart,(hEnd),hUuid
+			print "\nS:";hStart;" ,(";hEnd;") ,";integer.h' hUuid
+		elseif command == COMMAND_CLONE then
+			if (hUuid != 0xFE011801) && (hUuid != 0xFE011800) then
+				rc = BleServiceNew(BLE_SERVICE_PRIMARY, BleHandleUuid16(hUuid), hSvc)
+				AssertResCode(rc, 1024)
+				print "."
+			endif
+		endif
+		rc=BleDiscCharFirst(hConn,0,hStart,hEnd)
+		if rc!=0 then
+			terminateCloning(rc)
+		endif
+	else
+		//reached end of remote gatt table
+		terminateCloning(0)
+	endif
+
+endfunc 1
+
+//==============================================================================
+// This handler is called when a BLE characteristic is discovered
+//==============================================================================
+function HandlerCharDisc(hConn,hUuid,cProp,hVal,hiUuid) as integer
+
+	dim mdAttr
+	dim mdCccd
+	dim mdSccd
+	dim mdRd
+	dim mdWr
+	dim ofst, a$
+
+	mdAttr=BleAttrMetadata(mdRd,mdWr,20,1,rc)
+
+	if hVal!=0 then
+		if command==COMMAND_BROWSE then
+			// C: hVal,cProp,hUuid,hiUuid
+			print "\n C:";hVal;" ,";integer.h' cProp;" ,";integer.h' hUuid;" ,";hiUuid
+			// and get all descriptors of this characteristics
+		elseif command==COMMAND_CLONE then
+			print "."
+			if ((cProp & 32) == 32 || (cProp & 16) == 16) then
+				// Characteristic is notifiable/indicatable
+				// Get notification and encode it
+				mdCccd = BleAttrMetadata(1, 1, 2, 0, rc)
+
+			elseif ((cProp & 2) == 2 ) then
+				// Characteristic is readable so read characteristic value
+				mdRd = 1
+
+			elseif ((cProp & 4) == 4 || (cProp & 8) == 8 || (cProp & 64) == 64 || (cProp & 128) == 128) then
+				// Characteristic is writable
+				mdWr = 1
+			endif
+			rc = BleCharNew(cProp, hUuid, mdAttr, mdCccd, mdSccd)
+			AssertResCode(rc, 1026)
+			rc = BleCharCommit(hSvc, a$, hChar)
+		endif
+		rc = BleDiscDescFirst(hConn,0,hVal)
+		if rc!=0 then
+			terminateCloning(rc)
+		endif
+	else
+		//no more chars in this service, so go for next service
+		if command==COMMAND_BROWSE then
+			rc = BleServiceCommit(hSvc)
+			AssertResCode(rc, 1028)
+		endif
+		rc = BleDiscServiceNext(hConn)
+		if rc!=0 then
+			terminateCloning(rc)
+		endif
+	endif
+
+endfunc 1
+
+//==============================================================================
+// This handler is called when a BLE descriptor is discovered
+//==============================================================================
+function HandlerDescDisc(hConn,hUuid,hDesc) as integer
+
+    if hDesc!=0 then
+		if command==COMMAND_BROWSE then
+			// D: hDesc,hUuid
+			print "\n  D:";hDesc;" ,";integer.h' hUuid
+		else
+			print "."
+		endif
+    endif
+
+	// and get all descriptors of this characteristics
+	rc=BleDiscDescNext(hConn)
+    if rc!=0 then
+		//no more descc in this char, so go for next char
+		rc = BleDiscCharNext(hConn)
+		if rc!=0 then
+			if command==COMMAND_CLONE then
+				rc = BleServiceCommit(hSvc)
+			endif
+			rc = BleDiscServiceNext(hConn)
+			if rc!=0 then
+				terminateCloning(rc)
+			endif
+		endif
+    endif
+
+endfunc 1
+
+//==============================================================================
+// This handler is called when there is a BLE connection timeout
+//==============================================================================
+function HandlerBleConnTimOut() as integer
+
+	print "\n\nConnection attempt stopped via timeout\n"
+	print pr$
+
+endfunc 1
+
+'//******************************************************************************
+'// Equivalent to main() in C
+'//******************************************************************************
+
+// Initialise the device
+Initialise()
+
+'//------------------------------------------------------------------------------
+'// Wait for a synchronous event.
+'// An application can have multiple <WaitEvent> statements
+'//------------------------------------------------------------------------------
+// Data received over the UART. Process the data accordingly
+OnEvent  EVUARTRX					call HandlerUartRxCmd
+
+// BLE HCI events
+OnEvent EVBLE_ADV_REPORT			call HandlerAdvRpt
+OnEvent EVBLE_SCAN_TIMEOUT       	call HandlerBlrScanTimOut
+OnEvent	EVBLE_CONN_TIMEOUT			call HandlerBleConnTimOut
+OnEvent EVBLEMSG                 	call HandlerBleMsg
+
+// BLE GATT events
+OnEvent  EVDISCPRIMSVC            call HandlerPrimSvc
+OnEvent  EVDISCCHAR               call HandlerCharDisc
+OnEvent  EVDISCDESC               call HandlerDescDisc
+
+waitevent
