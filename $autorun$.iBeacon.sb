@@ -49,10 +49,10 @@
 #define BEACON_MAJOR                         0x1234
         '// Default Minor value for beacon (16 bit number)
 #define BEACON_MINOR                         0x5678
-        '// Default TxPower, one of (4,0,-4,-8,-12,-16,-20,-40,-50) 
-#define BEACON_TXPOWER_DBM                   4
-        '//RSSI at 1m from BL600 when tx power = 4 
-        '//Set this by advertising at 4 dBm and measuring the RSSI 1m from the BL600
+        '// Default TxPower, one of (8,4,0,-4,-8,-12,-16,-20)
+#define BEACON_TXPOWER_DBM                   8
+        '//RSSI at 1m from BT900 when tx power = 8 
+        '//Set this by advertising at 4 dBm and measuring the RSSI 1m from the BT900
 #define CALIBRTD_VALUE_DBM                   -60
         '// Default value for iBeacon format
         '//   --> 0       : Full AD

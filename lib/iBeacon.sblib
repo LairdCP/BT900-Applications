@@ -341,12 +341,11 @@ dtaLen[FORMAT_INDEX]=1
 dtaLen[UUID_INDEX]=16
 dtaLen[MAJOR_INDEX]=2
 dtaLen[MINOR_INDEX]=2
-dtaLen[TXPOWER_INDEX]=1     
+dtaLen[TXPOWER_INDEX]=1
 dtaLen[ADV_INTVL_INDEX]=1
 dtaLen[ADV_TMT_INDEX]=1
 dtaLen[CAL_VAL_INDEX]=1
 dtaLen[REM_CONN_TME_INDEX]=1
-
 
 
 '//******************************************************************************
