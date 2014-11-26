@@ -157,7 +157,7 @@
 // -----------------------------------------------------------------------------
 // txpower = #INTtxPower#
 //   - Sets a new iBeacon Transmitting Power
-//   - Valid values: -55, -30, -20, -16, -12, -8, -4, 0, 4 
+//   - Valid values: -55, -30, -20, -16, -12, -8, -4, 0, 4, 8 (BT900 only)
 //
 //   ~ Example: "txpower = -8" sets tx power to -8 dBm
 //
@@ -682,6 +682,9 @@ function _connect()
         exitfunc -2
     endif
     
+    '//Stop scanning before connecting
+    rc=BleScanStop()  
+    
     '//only opening gatt client when we need it to save memory
     rc=BleGattcOpen(0,0)
     AssertResCode(rc,452)
@@ -694,9 +697,6 @@ function _connect()
     
     s$[1] = StrDehexize$(s$[1])
 
-    '//Stop scanning before connecting
-    rc=BleScanStop()     
-    
     rc=BleConnect(s$[1], CONN_TMT, MIN_CONN_INTVL, MAX_CONN_INTVL, LINK_SUP_TMT)
     if rc!=0 then
         exitfunc rc
