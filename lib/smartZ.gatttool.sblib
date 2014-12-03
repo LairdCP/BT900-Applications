@@ -196,7 +196,7 @@ function _gattCharRead() as integer
 '--------------------------------------'	
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
-			// Display the gatttool help menu
+			// Display the gatttool char-read help menu
 			print "Usage:\n"
 			print "		gatttool -b <bdaddr> --char-read --handle=0x0000 \n"
 			exitfunc 1
@@ -260,7 +260,7 @@ function _gattCharWrite() as integer
 '--------------------------------------'	
 	while ExtractStrToken(urtcmd$, tkn$)!=0 
 		if strcmp(tkn$,"help")==0 then
-			// Display the gatttool help menu
+			// Display the gatttool char-write help menu
 			print "Usage:\n"
 			print "		gatttool -b <bdaddr> --char-write --handle=0x0000 --value=0000 \n"
 			exitfunc 1
@@ -334,7 +334,7 @@ function _gattCharDesc()
 '--------------------------------------'	
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
-			//print the gatttool help menu
+			// Display the gatttool char-desc help menu
 			print "Usage:\n"
 			print "		gatttool -b <bdaddr> --char-desc --handle=0x0000\n"
 			exitfunc 1

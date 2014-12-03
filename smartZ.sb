@@ -32,6 +32,7 @@
 //		hcitool lescan      Start LE scan
 //		hcitool lecc        Create a LE Connection
 //		hcitool ledc        Disconnect a LE Connection
+//		hcitool lecup		LE connection update
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
 //
@@ -100,6 +101,7 @@
 #define SMARTZ_COMMAND_HCITOOL_LENOADV					10
 #define SMARTZ_COMMAND_HCITOOL_LECC						11
 #define SMARTZ_COMMAND_HCITOOL_LEDC						12
+#define SMARTZ_COMMAND_HCITOOL_LECUP					13
 
 // SMARTZ COMMAND IDs: GATTTOOL
 #define SMARTZ_COMMAND_GATTTOOL_PRIMARY					21
@@ -151,7 +153,7 @@ dim inqmode	: inqmode = 2		// Inquiry Mode: 0 for Standard, 1 for with RSSI, 2 f
 dim inqtpl : inqtpl=4			// Inquiry transmit power level
 dim letpl : letpl = 4			// LE Tx Power level in dBm
 dim mjVersion : mjVersion=1		// Major version number
-dim mnVersion : mnVersion=3		// Minor version number
+dim mnVersion : mnVersion=4		// Minor version number
 
 
 // globale variables used for gatttool command

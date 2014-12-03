@@ -25,6 +25,7 @@
 //		hcitool lescan      Start LE scan
 //		hcitool lecc        Create a LE Connection
 //		hcitool ledc        Disconnect a LE Connection
+//		hcitool lecup		LE connection update
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 //******************************************************************************
@@ -51,6 +52,7 @@ sub _hciHelp()
 	print "	lescan      Start LE scan\n"
 	print "	lecc        Create a LE Connection\n"
 	print "	ledc        Disconnect a LE Connection\n"
+	print "	lecup		LE connection update\n"
 	print "\n"
 	print "For more information on the usage of each command use:\n"
 	print "	hcitool <command> --help\n\n"
@@ -70,7 +72,7 @@ function _hciInq()
 '--------------------------------------'
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
-			// Display the inquiry help menu
+			// Display the hcitool inq help menu
 			print "Usage:\n"
 			print "		hcitool inq	[--length=t] maximum inquiry duration in seconds\n"
 			print " 				[--numrsp=N] specify maximum number of inquiry responses\n"
@@ -116,7 +118,7 @@ function _hciScan()
 '--------------------------------------'
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
-			// Display the scan help menu
+			// Display the hcitool scan help menu
 			print "Usage:\n"
 			print "		hcitool scan [--length=t] maximum inquiry duration in seconds\n"
 			print " 				 [--numrsp=N] specify maximum number of inquiry responses\n"
@@ -161,7 +163,7 @@ function _hciName()
 '--------------------------------------'
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
-			// Display the name help menu
+			// Display the hcitool name help menu
 			print "Usage:\n"
 			print "		hcitool name <bdaddr>\n"
 			exitfunc 1
@@ -202,7 +204,7 @@ function _hciDev()
 '--------------------------------------'
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
-			//Display the dev help menu
+			//Display the hcitool dev help menu
 			print "Usage:\n"
 			print "		hcitool dev\n"
 			exitfunc 1
@@ -227,7 +229,7 @@ function _hciCon()
 '--------------------------------------'
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
-			// Display the con help menu
+			// Display the hcitool con help menu
 			print "Usage:\n"
 			print "		hcitool con\n"
 			exitfunc 1
@@ -260,7 +262,7 @@ function _hciPair()
 '--------------------------------------'
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
-			// Display the  hcitool pair help menu
+			// Display the hcitool pair help menu
 			print "Usage:\n"
 			print "		hcitool pair <bdaddr> [--bond]\n"
 			exitfunc 1
@@ -329,7 +331,7 @@ function _hciLeAdv()
 '--------------------------------------'
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
-		// Display the leadv help menu
+		// Display the hcitool leadv help menu
 			print "Usage:\n"
 			print "		hcitool leadv [--timeout=t] advert time-out in seconds\n"
 			print ""
@@ -362,7 +364,7 @@ function _hciNoLeAdv()
 '--------------------------------------'
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
-		// Display the noleadv help menu
+		// Display the hcitool noleadv help menu
 			print "Usage:\n"
 			print "		hcitool noleadv\n"
 			print ""
@@ -389,7 +391,7 @@ function _hciLeScan()
 '--------------------------------------'
 	while ExtractStrToken(urtcmd$, tkn$)!=0
 		if strcmp(tkn$,"help")==0 then
-		// Display the lescan help menu
+		// Display the hcitool lescan help menu
 			print "Usage:\n"
 			print "		hcitool lescan [--length=N] maximum scan duration in seconds\n"
 			print ""
@@ -407,7 +409,7 @@ function _hciLeScan()
 
 	rc = BleScanStart(scnLen, 0)
 	AssertResCode(rc)
-	if rc == 0 then 
+	if rc == 0 then
 		print "LE Scan ...\n"
 	endif
 
@@ -471,9 +473,70 @@ function _hciLeDc() as integer
 	// Disconnect from LE device
 	rc = bledisconnect(conHdl)
 	AssertResCode(rc)
-	if rc == 0 then 
+	if rc == 0 then
 		print "Disconnecting ...\n"
-	endif	
+	endif
+
+endfunc 1
+
+//==============================================================================
+//	hcitool lecup <handle> <min> <max> <latency> <timeout>
+//==============================================================================
+function _hciLeCup()
+
+	dim conHdl : conHdl = 0
+	dim mn : mn = 7500
+	dim mx : mx = 4000000
+	dim tm : tm = 32000000
+	dim sl : sl = 0
+
+	'--- Extract all strings in command ---'
+	'--------------------------------------'
+	while ExtractStrToken(urtcmd$, tkn$)!=0
+		if strcmp(tkn$,"help")==0 then
+			// Display the hcitool lecup help menu
+			print "Usage:\n"
+			print "	hcitool lecup <handle> <min> <max> <latency> <timeout>\n"
+			print "	Options:\n"
+			print "		--handle <0xXXXX>  LE connection handle\n"
+			print "		--min <interval>	Range: 7500 to 4000000 ms\n"
+			print "		--max <interval>	Range: 7500 to 4000000 ms\n"
+			print "		--timeout  <time>	Range: 100000 to 32000000 ms\n"
+			print "		--latency <range>	Default: 0\n"
+			print "\n"
+			print "	min/max range: 7.5ms to 4s. Multiply factor: 1.25ms\n"
+			print "	timeout range: 100ms to 32.0s. Larger than max interval\n"
+			print "\n"
+
+			exitfunc 1
+
+		elseif strcmp(tkn$,"handle")==0 then
+			rc = extractStrToken(urtcmd$, tkn$)
+			rc = extractInttoken(tkn$,conHdl)
+
+		elseif strcmp(tkn$,"min")==0 then
+			rc = extractStrToken(urtcmd$, tkn$)
+			rc = extractInttoken(tkn$,mn)
+
+		elseif strcmp(tkn$,"max")==0 then
+			rc = extractStrToken(urtcmd$, tkn$)
+			rc = extractInttoken(tkn$,mx)
+
+		elseif strcmp(tkn$,"timeout")==0 then
+			rc = extractStrToken(urtcmd$, tkn$)
+			rc = extractInttoken(tkn$,tm)
+
+		elseif strcmp(tkn$,"latency")==0 then
+			rc = extractStrToken(urtcmd$, tkn$)
+			rc = extractInttoken(tkn$,sl)
+
+		endif
+	endwhile
+	'--------------------------------------'
+
+	// Update connection parameters
+	rc = blesetcurconnparms(conHdl, mn, mx, tm, sl)
+	AssertResCode(rc)
 
 endfunc 1
 
@@ -543,6 +606,10 @@ sub _hci()
 		elseif strcmp(tkn$, "ledc")==0 then
 			// Disconnect a LE Connection
 			rc = _hciLeDc()
+
+		elseif strcmp(tkn$, "lecup")==0 then
+			// LE Connection Update
+			rc = _hciLeCup()
 
 		endif
 	endwhile
@@ -628,7 +695,7 @@ endfunc 1
 //==============================================================================
 // This handler is called when there is an inquiry timeout
 //==============================================================================
-function HandlerBtcInqTimOut() as integer 
+function HandlerBtcInqTimOut() as integer
 
 	rc = BtcInquiryCancel()
 	AssertResCode(rc)
@@ -663,7 +730,7 @@ endfunc 1
 //==============================================================================
 // Called on a pin request from another device
 //==============================================================================
-function HandlerPINReq() 
+function HandlerPINReq()
 
 	print "\nPIN feature will be added in future versions\n";pr$
 
@@ -683,7 +750,7 @@ function HandlerPairRes(res)
 endfunc 1
 
 //==============================================================================
-// This handler is called when there is an advert report waiting to be read 
+// This handler is called when there is an advert report waiting to be read
 //==============================================================================
 function HandlerAdvRpt() as integer
 
