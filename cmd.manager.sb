@@ -612,7 +612,7 @@ endsub
 dim rc
 dim stRsp$ as string        //Uart rx data is stored here
 
-dim ok$,er$,pr$
+dim ok$,er$,pr$, uc$
 
 dim i[NUM_OF_I_PARAMS]      // index 0 used for return values
 dim s$[NUM_OF_S_PARAMS]    // must be at least 8 elements for BleSvcRegDevInfo()
@@ -641,6 +641,7 @@ dim BridgeHandle            //handle of sB UART bridge
 ok$    = "\nOK"
 er$    = "\nERROR "
 pr$    = "\r\n>"
+uc$    = "\nUNKNOWN COMMAND"
 
 gcState = 0 // gatt client is idle
 urts=0 //not suspended
@@ -715,6 +716,8 @@ sub UartRsp(rsp as integer)
         print ok$;pr$
     elseif rsp == -2 then
         print pr$
+    elseif rsp == -4 then
+        print uc$;pr$
     elseif rsp > 0 then 
         print er$;integer.h' rsp;pr$
     endif

@@ -262,7 +262,7 @@ endsub
 dim rc
 dim stRsp$ as string        //Uart rx data is stored here
 
-dim ok$,er$,pr$, nc$
+dim ok$,er$,pr$, nc$, uc$
 
 dim i[NUM_OF_I_PARAMS]      // index 0 used for return values
 dim s$[NUM_OF_S_PARAMS]     // must be at least 8 elements
@@ -298,6 +298,7 @@ ok$    = "\nOK"
 er$    = "\nERROR "
 pr$    = "\r\n>"
 nc$      = "\nNO CARRIER"
+uc$    = "\nUNKNOWN COMMAND"
 bseUuid$ = LT_BASE_UUID
 
 
@@ -336,6 +337,8 @@ sub UartRsp(rsp as integer)
         print ok$;pr$
     elseif rsp == -2 then
         print pr$
+    elseif rsp == -4 then
+        print uc$;pr$
     elseif rsp > 0 then 
         print er$;integer.h' rsp;pr$
     endif
@@ -635,6 +638,8 @@ function OnUartCmd() as integer
             s$[1] = SysInfo$(4)
             print "\n";StrHexize$(s$[1])
     
+        else
+            rc = -4
         endif
     endif
     // send a response back to the user
