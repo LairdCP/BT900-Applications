@@ -13,6 +13,9 @@
 //
 // This smartBASIC application provides a command line interface for testing SPP.
 //
+// - See file 'spp.atcmd.sblib' for a description of the commands for this application.
+//
+//
 // This top level .sb file is used to configure the application for individual modules
 // so you can configure and save a different copy of this file for each module.
 // It #includes atcmd.btc.spp.sblib.
@@ -35,11 +38,21 @@
 //
 //
 // ::Note::
+//      - Upon connection, the module will automatically switch to bridge mode. Any data arriving
+//        at the SPP port will be sent to the UART and vice versa. 
+//
+//        -> To switch back to command mode so the module can accept commands again, assert the 
+//           nAutorun pin. This can be done by unticking DTR in UwTerminal. Switch back to bridge mode
+//           by deasserting the nAutorun pin - ticking DTR in UwTerminal.
+//
+//        -> If using a BT900 Development kit, make sure DIP Switch 2 on CON12 is in the ON position.
+//
 //      - Whenever SPP port is opened, module will be discoverable for time DISCOV_TIMEOUT
 //      - On a disconnection event, if SPP port is open, module will be discoverable
 //      - Module will be connectable on a disconnection
 //      - On a connection event, module will not be connectable or discoverable
 //      - If SPP port is closed, the device will not be discoverable unless enabled manually
+//
 //******************************************************************************
 
 //******************************************************************************
@@ -68,7 +81,7 @@
         //time module will be discoverable for in seconds if discoverabilty enabled
 #define DISCOV_TIMEOUT                     60
 
-#define USE_BRIDGE                          0   //Set to 0 to use smartBASIC to transfer data between UART and SPP, set to 1 to use direct briding (faster throughput)
+#define USE_BRIDGE                          1   //Set to 0 to use smartBASIC to transfer data between UART and SPP, set to 1 to use direct briding (faster throughput)
 
 
 //Inquiry config parameters (See description for BtcInquiryConfig() in BT900 Extention user manual)
@@ -81,7 +94,7 @@
 #define SAVE_PAIRINGS                      1         
 
         //Set this to 0 to disable all debugging messages
-#define ENABLE_DEBUG_PRINTS                  1
+#define ENABLE_DEBUG_PRINTS                1
 
 
 

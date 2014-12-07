@@ -80,19 +80,18 @@
 //    -> Note: The SPP port must be open on the device you are connecting to
 //             ptherwise the two devices will not connect to eachother. 
 //
-// -----------------------------------------------------------------------------
+// ::Note::
+//    - Upon connection, the module will automatically switch to bridge mode. 
+//      Any data arriving at the SPP port will be sent to the UART and vice versa. 
 //
+//      -> To switch back to command mode so the module can accept commands again, assert the 
+//         nAutorun pin. This can be done by unticking DTR in UwTerminal. Switch back to bridge mode
+//         by deasserting the nAutorun pin - ticking DTR in UwTerminal.
+//
+//      -> If using a BT900 Development kit, make sure DIP Switch 2 on CON12 is in the ON position.
+// -----------------------------------------------------------------------------
 // at+btd #HEXbdaddr6bytes#
 //    - Deletes corrisponding link key from the database
-//
-// -----------------------------------------------------------------------------
-// ^^^
-//    - Exit from bridge mode to command mode to accept the commands in this list.
-//
-// -----------------------------------------------------------------------------
-// ato OR bridge
-//    - Enter bridge mode. Any data arriving at the UART is sent over the BLE 
-//      connection.
 //
 // -----------------------------------------------------------------------------
 // ath OR disconnect
@@ -224,7 +223,7 @@ endsub
 dim rc
 dim stRsp$ as string        //Uart rx data is stored here
 
-dim ok$,er$,pr$, nc$, t$, e$, p$
+dim ok$,er$,pr$, nc$, t$, e$, p$, uc$
 
 dim i[NUM_OF_I_PARAMS]      // index 0 used for return values
 dim s$[NUM_OF_S_PARAMS]     // must be at least 8 elements
@@ -247,6 +246,7 @@ ok$    = "\nOK"
 er$    = "\nERROR "
 pr$    = "\r\n>"
 nc$    = "\nNO CARRIER"
+uc$    = "\nUNKNOWN COMMAND"
 t$ = "\nType 'y' to pair and 'n' to decline - and press Enter\n"
 e$ = "\nEnter Pin and press Enter: "
 p$ = "\nEnter 'pair #HEX12bytes#' followed by Enter to pair\nExample 'pair 943g0aa92a3c'"
@@ -284,6 +284,8 @@ sub UartRsp(rsp as integer)
         print pr$
     elseif rsp == -3 then
         print ok$
+    elseif rsp == -4 then
+        print uc$;pr$
     elseif rsp > 0 then 
         print er$;integer.h' rsp;pr$
     endif
@@ -698,15 +700,20 @@ function OnUartCmd() as integer
             StrShiftLeft(s$[1],1)
             print "\n";StrHexize$(s$[1])
 
-        endif  
+        else
+            rc=-4   //send an "UNKNOWN COMMAND" response to user
+        endif
     endif
-    // sednd a response back to the user
+    // send a response back to the user
     UartRsp(rc)
 endfunc 1
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 sub Initialise()   
+    '//Setup nAutorun pin to control switching between command and bridge mode
+    rc=GpioBindEvent(0,22,2)
+    
     '//set friendly name
     s$[1] = FRIENDLY_NAME
     rc=BtcSetFriendlyName(s$[1])
@@ -791,17 +798,9 @@ function HandlerUartRxSpp()
     uLen  = UartRead(u$) 
     
     if uLen > 0 then
-        if StrCmp(u$,"^")==0 then
-            '//parse the ^ entry
-            if SwitchToCmd() == 1 then
-                print "\n"
-                rc=SendMsgApp(0,CMD_MODE)
-            endif           
-        else
-            //write data to most recent spp connection
-            rc=BtcSppWrite(hC, u$, wLen)
-            u$=""
-        endif
+        //write data to most recent spp connection
+        rc=BtcSppWrite(hC, u$, wLen)
+        u$=""
     endif
 endfunc 1
 
@@ -874,7 +873,7 @@ function SetMode(msgID, cmd) as integer
         print ok$;"\n"
     elseif cmd==CMD_MODE then
         IF USE_BRIDGE == 1 THEN
-	    rc = STREAMUNBRIDGE(BridgeHandle)
+            rc = STREAMUNBRIDGE(BridgeHandle)
         ENDIF
         OnEvent  EVUARTRX       call HandlerUartRx   
         carCnt=0
@@ -1034,6 +1033,12 @@ function HandlerPairRes(res)
 endfunc 1
 
 
+//------------------------------------------------------------------------------
+// Called on a transition on the nAutorun pin (DTR in UwTerminal)
+//------------------------------------------------------------------------------
+function HandlerGpioChan0()  
+endfunc SetMode(0,!GpioRead(22))
+
 
 //******************************************************************************
 //******************************************************************************
@@ -1053,7 +1058,8 @@ OnEvent  EVBTC_PAIR_RESULT      call HandlerPairRes
 OnEvent  EVBTC_PAIR_REQUEST     call HandlerPairReq
 onevent  EVBTC_PIN_REQUEST      call HandlerPINReq
 OnEvent  EVBTC_SPP_CONN_TIMEOUT call HandlerSppConnTimOut
-OnEvent  EVBTC_DISCOV_TIMEOUT   call HandlerBtcDiscTimOut 
+OnEvent  EVBTC_DISCOV_TIMEOUT   call HandlerBtcDiscTimOut
+OnEvent  EVGPIOCHAN0            call HandlerGpioChan0 
 
 //------------------------------------------------------------------------------
 // Initialise and then wait for events
