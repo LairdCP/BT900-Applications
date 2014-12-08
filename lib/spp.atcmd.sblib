@@ -91,7 +91,7 @@
 //      -> If using a BT900 Development kit, make sure DIP Switch 2 on CON12 is in the ON position.
 // -----------------------------------------------------------------------------
 // at+btd #HEXbdaddr6bytes#
-//    - Deletes corrisponding link key from the database
+//    - Deletes corresponding link key from the database
 //
 // -----------------------------------------------------------------------------
 // ath OR disconnect
@@ -468,6 +468,7 @@ endfunc rc
 //-------------------------------------------------------------------------
 function _connect() 
     if InConnection() == 1 then
+        print "\nALREADY CONNECTED"
         exitfunc -2
     endif
     
@@ -516,7 +517,7 @@ function _disconnect()
     if rc!=0 then
         exitfunc rc
     endif
-endfunc -3  //dont give response to user
+endfunc -3 
 
 
 //-------------------------------------------------------------------------
@@ -543,7 +544,7 @@ Function _at()
             exitfunc _pair()
         endif
     endif
-endfunc -2  //just print '>' if incorrect command
+endfunc -4  //print 'UNKNOWN COMMAND' if incorrect command
 
 
 //------------------------------------------------------------------------------
@@ -659,10 +660,6 @@ function OnUartCmd() as integer
             
         elseif strcmp(tkn$,"pair")==0 then    
             rc = _pair()
-            
-        elseif StrCmp(tkn$,"ato")==0 || StrCmp(tkn$,"bridge")==0 then
-            rc=SendMsgApp(0,BRIDGE_SPP_MODE)
-            rc=-1       //don't give response to user
             
         elseif StrCmp(tkn$,"ath")==0 || StrCmp(tkn$,"disconnect")==0 then
             rc = _disconnect()
@@ -859,6 +856,11 @@ endfunc 1
 //------------------------------------------------------------------------------
 function SetMode(msgID, cmd) as integer
     if cmd==BRIDGE_SPP_MODE then
+        if InConnection() == 0 then
+            print "\n";nc$;pr$
+            exitfunc 1
+        endif
+            
         IF USE_BRIDGE == 0 THEN
             //sB <-> UART
             OnEvent  EVUARTRX                call HandlerUartRxSpp    
@@ -870,7 +872,7 @@ function SetMode(msgID, cmd) as integer
             rc = STREAMGETSPPHANDLE(hC, Hndl2)
             rc = StreamBridge(Hndl1, Hndl2, BridgeHandle)
         ENDIF
-        print ok$;"\n"
+        print "\n";ok$;"\n"
     elseif cmd==CMD_MODE then
         IF USE_BRIDGE == 1 THEN
             rc = STREAMUNBRIDGE(BridgeHandle)
