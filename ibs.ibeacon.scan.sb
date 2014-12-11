@@ -157,7 +157,8 @@
 // -----------------------------------------------------------------------------
 // txpower = #INTtxPower#
 //   - Sets a new iBeacon Transmitting Power
-//   - Valid values: -55, -30, -20, -16, -12, -8, -4, 0, 4, 8 (BT900 only)
+//   - Valid values: -55, -30, -20, -16, -12, -8, -4, 0, 4, 8 ->(BT900 only)
+//   - Unit:  dBm
 //
 //   ~ Example: "txpower = -8" sets tx power to -8 dBm
 //
@@ -188,15 +189,13 @@
 //
 // -----------------------------------------------------------------------------
 // calrssi ?
-//   - Returns the RSSI measured 1m from BL600 when Tx Power = 4 dBm
-//   - Length: 1 byte (signed 8 bit)
-//   - Unit:  dBm   
+//   - Returns the RSSI measured 1m from BL600 when Tx Power = 4 dBm  
 //
 // -----------------------------------------------------------------------------
 // calrssi = #INTcalrssi#
-//   - Sets a new iBeacon Advertising Interval
-//   - Length: 1 byte (unsigned 8 bit)
-//   - Unit:  minutes (e.g. 10 will give 600000ms), 0 == forever 
+//   - Sets a new Calibrated RSSI Value (RSSI at 100m distance from iBeacon)
+//   - Length: 1 byte (signed 8 bit)
+//   - Unit:  dBm
 //
 //   ~ Example: "calrssi = -60" sets calibrated rssi to -60 dBm
 //
