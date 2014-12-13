@@ -1924,7 +1924,9 @@ function OnUartCmd() as integer
       
     elseif strcmp(tkn$,"exit")==0 || strcmp(tkn$,"quit")==0  then
       exitfunc 0
-      
+    
+    else
+        rc=-4 //send an "UNKNOWN COMMAND" response to user
     
     endif
   endif
