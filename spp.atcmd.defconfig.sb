@@ -29,7 +29,7 @@
 // *Example* - 2 BT900 modules. BT900-A is an SPP client and connects to BT900-B, an SPP server
 //      ::BT900-A config::
 //          #define CONNECT_ON_STARTUP       1
-//          #define PEER_BT_ADDR             "11233AABBCC"     //BT address of BT900-B
+//          #define PEER_BT_ADDR             "112233AABBCC"     //BT address of BT900-B
 //
 //      ::BT900-B config::
 //          #define OPEN_SPP_ON_STARTUP      1                 //connect to BT900-A on startup

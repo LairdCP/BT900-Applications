@@ -105,6 +105,11 @@
 // stop
 //    - Stop inquiries
 // 
+// -----------------------------------------------------------------------------
+// ato OR bridge
+//    - enter bridge mode. Any data arriving at the UART is sent over the BLE 
+//      connection.
+//
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // misc i  clearall
 //    - Make all elements of the entire i[] array equal to 0
@@ -153,6 +158,9 @@
 
 
 #define AUTH_FAILURE                        0x05
+
+#define DISCON_TIMER                        0   //if this is changed, make sure to change the EvTmrX statement
+#define DISCON_TIMER_DUR_MS               500
 
 
 //******************************************************************************
@@ -651,6 +659,10 @@ function OnUartCmd() as integer
             
         elseif strcmp(tkn$,"atd")==0 || strcmp(tkn$,"connect")==0 then    
             rc = _connect()
+            
+        elseif StrCmp(tkn$,"ato")==0 || StrCmp(tkn$,"bridge")==0 then
+            _bridge()
+            rc=-1       //don't give response to user
 
         elseif strcmp(tkn$,"at+btd")==0 then    
             rc = _delete()
@@ -853,6 +865,10 @@ endfunc 1
 
 //------------------------------------------------------------------------------
 // Called after SendMsgApp is called. Used to switch between command and bridge mode
+// cmd: 0 = switch to command mode
+//      1 = switch to bridge mode
+//
+// msgID: Not Used
 //------------------------------------------------------------------------------
 function SetMode(msgID, cmd) as integer
     if cmd==BRIDGE_SPP_MODE then
@@ -860,11 +876,14 @@ function SetMode(msgID, cmd) as integer
             print "\n";nc$;pr$
             exitfunc 1
         endif
+        
+        print ok$;"\n"
             
         IF USE_BRIDGE == 0 THEN
             //sB <-> UART
             OnEvent  EVUARTRX                call HandlerUartRxSpp    
             OnEvent  EVBTC_SPP_DATA_RECEIVED call HandlerSppData
+            exitfunc HandlerSppData()
         ELSE
             //sB UART bridged
             dim Hndl1, Hndl2
@@ -872,11 +891,15 @@ function SetMode(msgID, cmd) as integer
             rc = STREAMGETSPPHANDLE(hC, Hndl2)
             rc = StreamBridge(Hndl1, Hndl2, BridgeHandle)
         ENDIF
-        print "\n";ok$;"\n"
+        
+        
     elseif cmd==CMD_MODE then
         IF USE_BRIDGE == 1 THEN
             rc = STREAMUNBRIDGE(BridgeHandle)
-        ENDIF
+        else
+            OnEvent  EVBTC_SPP_DATA_RECEIVED disable
+        endif
+        
         OnEvent  EVUARTRX       call HandlerUartRx   
         carCnt=0
         UartRsp(0)
@@ -1039,7 +1062,18 @@ endfunc 1
 // Called on a transition on the nAutorun pin (DTR in UwTerminal)
 //------------------------------------------------------------------------------
 function HandlerGpioChan0()  
-endfunc SetMode(0,!GpioRead(22))
+    dim i : i = GpioRead(22)
+    
+    '//if DTR unticked
+    if i == 1 then
+        TimerStart(DISCON_TIMER, DISCON_TIMER_DUR_MS, 0)
+    
+    '//DTR ticked -> switch to command mode
+    elseif TimerRunning(DISCON_TIMER)!=0 then
+        TimerCancel(DISCON_TIMER)
+        exitfunc SetMode(0, CMD_MODE)
+    endif
+endfunc 1
 
 
 //******************************************************************************
@@ -1062,6 +1096,7 @@ onevent  EVBTC_PIN_REQUEST      call HandlerPINReq
 OnEvent  EVBTC_SPP_CONN_TIMEOUT call HandlerSppConnTimOut
 OnEvent  EVBTC_DISCOV_TIMEOUT   call HandlerBtcDiscTimOut
 OnEvent  EVGPIOCHAN0            call HandlerGpioChan0 
+OnEvent  EVTMR0                 call _disconnect
 
 //------------------------------------------------------------------------------
 // Initialise and then wait for events
