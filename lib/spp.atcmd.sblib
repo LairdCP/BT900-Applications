@@ -413,6 +413,7 @@ function _spp()
     if strcmp(tkn$,"open")==0 then       
         '//don't open another SPP port if one is already open
         if hSppPort!=0 then
+            print "\nSPP Port Already Open"
             exitfunc -2
         endif
         
@@ -964,8 +965,7 @@ endfunc 1
 // This handler is called when there is an discoverability timeout
 //------------------------------------------------------------------------------
 function HandlerBtcDiscTimOut() as integer
-    print "\n --- No longer discoverable"
-    UartRsp(0)
+    print "\n --- No longer discoverable";pr$
 endfunc 1
 
 
@@ -1031,6 +1031,7 @@ endfunc 1
 //------------------------------------------------------------------------------
 function HandlerPairReq()
     rc=BtcGetPAIRRequestBDAddr(s$[3])       //setting it to s$[3] so it doesn't get mixed up with any other strings (command params etc) that may be stored in s$[1]
+    rc=BtcBondingEraseKey(s$[3])            //erase link key for this bluetooth device incase already bonded with it
     print "\nPair Req: "; StrHexize$(s$[3]);pr$
     print t$
     UartFlush(1)    //flush the uart rx buffer
@@ -1043,6 +1044,7 @@ endfunc 1
 //------------------------------------------------------------------------------
 function HandlerPINReq() 
     rc=BtcGetPinRequestBDAddr(s$[3])
+    rc=BtcBondingEraseKey(s$[3])            //erase link key for this bluetooth device incase already bonded with it
     print "\nPIN Req: "; StrHexize$(s$[3])
     print e$
     UartFlush(1)    //flush the uart rx buffer
@@ -1054,7 +1056,7 @@ endfunc 1
 // Called after a pairing attempt
 //------------------------------------------------------------------------------
 function HandlerPairRes(res)
-    print "\n --- Pair: (";integer.h'res; ") "; StrHexize$(s$[3]);pr$
+    print "\n --- Pair: (";integer.h'res; ") "; StrHexize$(s$[3]);ok$;pr$
 endfunc 1
 
 
