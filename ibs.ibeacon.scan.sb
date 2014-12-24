@@ -214,6 +214,10 @@
 //
 //   ~ Example: "timeconnectable = 60" sets advertising timeout to 60 seconds
 // -----------------------------------------------------------------------------
+// batt ?
+//   - Returns the current battery level of the iBeacon
+//
+// -----------------------------------------------------------------------------
 
 
 //******************************************************************************
@@ -252,6 +256,8 @@
 #define LT_BASE_UUID                        "\56\9a\00\00\b8\7f\49\0c\92\cb\11\ba\5e\a5\16\7c\"
         '// iBeacon Service 16 bit UUID
 #define IBEACON_SVC_UUID                    0x1900
+        '// Bluetooth Battery Service 16 bit UUID
+#define BT_BATT_SVC_UUID                    0x180F
         '// iBeacon Service Device Name char UUID
 #define IBEACON_DEVNAME_CHAR_UUID           0x2010
         '// iBeacon Service UUID char UUID
@@ -260,7 +266,7 @@
 #define IBEACON_MAJOR_CHAR_UUID             0x2013
         '// iBeacon Service Minor char UUID
 #define IBEACON_MINOR_CHAR_UUID             0x2014
-        '// Bluetooth Adopted TX char UUID
+        '// Bluetooth Adopted TX Power char UUID
 #define TX_CHAR_UUID                        0x2A07
         '// iBeacon Service Advertising Interval char UUID
 #define IBEACON_ADINT_CHAR_UUID             0x2015
@@ -270,6 +276,8 @@
 #define IBEACON_CALRSSI_CHAR_UUID           0x2017
         '// iBeacon Service Remain Connectible Time Value char UUID
 #define IBEACON_REMCONNTIME_CHAR_UUID       0x2018
+        '// Bluetooth Adopted Battery Level char UUID
+#define BATTLVL_CHAR_UUID                   0x2A19
 
 
         '// Array index for device name
@@ -292,6 +300,8 @@
 #define CAL_RSSI_INDEX                       8
         '// Array index for Remain Connectible Time (supplied in seconds)
 #define REM_CONN_TME_INDEX                   9
+        '// Array index for Battery Level char
+#define BATTLVL_INDEX                        10
 
 
 //BLE EVENT MSG IDs
@@ -299,7 +309,7 @@
 #define BLE_EVBLEMSGID_DISCONNECT                       1 // msgCtx = connection handle
 
         '//Number of characteristics 
-#define NUM_OF_CHARS                         10
+#define NUM_OF_CHARS                         11
 
 
 //******************************************************************************
@@ -338,6 +348,7 @@ dim hChars[NUM_OF_CHARS]     '//array of characteristic value attribute handles
                                // 7 : Advert Time out
                                // 8 : Calibrated RSSI Value
                                // 9 : Remain Connectible Time
+                               // 10: Battery Level
                              '//---------------------------------------
                              
 dim hCharUUIDs[NUM_OF_CHARS]  //array of characteristic UUIDs - indexes same as above
@@ -382,6 +393,7 @@ hCharUUIDs[ADV_INTVL_INDEX] = BleHandleUuidSibling(hBseUuid, IBEACON_ADINT_CHAR_
 hCharUUIDs[ADV_TMT_INDEX] = BleHandleUuidSibling(hBseUuid, IBEACON_ADTO_CHAR_UUID)
 hCharUUIDs[CAL_RSSI_INDEX] = BleHandleUuidSibling(hBseUuid, IBEACON_CALRSSI_CHAR_UUID)
 hCharUUIDs[REM_CONN_TME_INDEX] = BleHandleUuidSibling(hBseUuid, IBEACON_REMCONNTIME_CHAR_UUID)
+hCharUUIDs[BATTLVL_INDEX] = BleHandleUuid16(BATTLVL_CHAR_UUID)
 
 
 
@@ -814,6 +826,7 @@ endfunc 5
 //#CMD#//  adtimeout?=
 //#CMD#//  calrssi?=
 //#CMD#//  timeconnectable?=
+//#CMD#//  batt?
 //-------------------------------------------------------------------------
 function OnUartCmd() as integer
   rc=-2 //default response is ">"
@@ -870,6 +883,9 @@ function OnUartCmd() as integer
            
         elseif strcmp(tkn$,"timeconnectable")==0 then 
             rc=_iBeaconConfig(REM_CONN_TME_INDEX)
+        
+        elseif strcmp(tkn$,"batt")==0 then 
+            rc=_iBeaconConfig(BATTLVL_INDEX)
 
         endif
   endif
@@ -1014,7 +1030,7 @@ endfunc 1
 //------------------------------------------------------------------------------
 function HandlerFindChar(hConn, chProps, hCharVal, hIncSvc)   
     if hCharVal == 0 then
-        print "\niBeacon Service not found. Disconnecting..."
+        print "\nLaird iBeacon Service not found. Disconnecting..."
         exitfunc 1  
     endif        
    
@@ -1033,7 +1049,13 @@ function HandlerFindChar(hConn, chProps, hCharVal, hIncSvc)
             print "\nDone\n"
             UartRsp(-2)
             exitfunc 1
+        elseif charIndex == NUM_OF_CHARS - 1 then
+            '//find battery level char
+            rc=BleGattcFindChar(hc[0], BleHandleUuid16(BT_BATT_SVC_UUID) , 0, hCharUUIDs[charIndex], 0)
+            AssertResCode(rc, 1051)
+            exitfunc 1
         endif
+            
     endif
     
     print "."
@@ -1058,7 +1080,7 @@ function HandlerAttrRead(hConn, hAttr, nSts)
             print i;" dBm\n";pr$
             exitfunc 1
             
-        elseif hAttr == hChars[ADV_INTVL_INDEX] || hAttr == hChars[ADV_TMT_INDEX] || hAttr == hChars[REM_CONN_TME_INDEX] then
+        elseif hAttr == hChars[ADV_INTVL_INDEX] || hAttr == hChars[ADV_TMT_INDEX] || hAttr == hChars[REM_CONN_TME_INDEX] || hAttr == hChars[BATTLVL_INDEX] then
             print StrGetChr(s$,0)
             
             i = GetCharIndex(hAttr)
@@ -1069,6 +1091,8 @@ function HandlerAttrRead(hConn, hAttr, nSts)
                     print " minutes"
                 case REM_CONN_TME_INDEX
                     print " seconds"
+                case BATTLVL_INDEX
+                    print " %"
                 case else
             endselect
          
