@@ -319,7 +319,7 @@
 dim rc
 dim stRsp$ as string          //Uart rx data is stored here
 
-dim ok$,er$,pr$,nc$
+dim ok$,er$,pr$,nc$,uc$
 
 dim i[NUM_OF_I_PARAMS]        //index 0 used for return values
 dim s$[NUM_OF_S_PARAMS]       //must be at least 8 elements for BleSvcRegDevInfo()
@@ -355,7 +355,6 @@ dim hCharUUIDs[NUM_OF_CHARS]  //array of characteristic UUIDs - indexes same as 
 
 dim tbDispParams$             //table of specified display parameters for iBeacon advert reports
                               //see 'config scan display'
-dim tbDisParIDs               //ID count for scan display parameters table
 
 dim charIndex                 //index of current characteristic being found/processed
 
@@ -371,6 +370,7 @@ ok$    = "\nOK"
 er$    = "\nERROR "
 pr$    = "\r\n>"
 nc$    = "\nNot Connected"
+uc$    = "\nUNKNOWN COMMAND"
 
 urts = 0            //not suspended
 numConns = 0           //number of connections
@@ -443,7 +443,9 @@ sub UartRsp(rsp as integer)
     elseif rsp == -2 then
         print pr$
     elseif rsp == -3 then
-        print nc$;pr$
+        print ok$
+    elseif rsp == -4 then
+        print uc$;pr$
     elseif rsp > 0 then 
         print er$;integer.h' rsp;pr$
     endif
@@ -583,7 +585,7 @@ EndSub
 function _configScan()
     tlen = ExtractStrToken(urtcmd$,tkn$)
     if tlen == 0 then
-        exitfunc 5
+        exitfunc -4
     endif
     
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -622,9 +624,14 @@ function _configScan()
     
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     elseif strcmp(tkn$,"display")==0 then
+        dim tbDisParIDs : tbDisParIDs = 0
         tbDispParams$=""
         if TableInit(tbDispParams$)!=0 then
             exitfunc rc
+        endif
+                
+        if StrLen(urtcmd$) < 3 then
+            exitfunc -4     //give unknown command response to user
         endif
         
         while ExtractStrToken(urtcmd$,tkn$)!=0
@@ -638,7 +645,7 @@ function _configScan()
                 endif
             endif
         endwhile 
-        
+
         exitfunc 0
         
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -666,7 +673,7 @@ function _configScan()
         endif
         
     endif
-endfunc 5
+endfunc -4
 
 
 //-------------------------------------------------------------------------
@@ -735,7 +742,7 @@ function _iBeaconConfig(chrInd)
     dim tkn
     tlen = ExtractStrToken(urtcmd$,tkn$)
     if tlen == 0 then
-        exitfunc 5
+        exitfunc -4
     endif
     
     
@@ -779,7 +786,7 @@ function _iBeaconConfig(chrInd)
         endif
         tkn$=""
     else    
-        exitfunc 5
+        exitfunc -4
     endif      
 endfunc -1
     
@@ -792,7 +799,7 @@ endfunc -1
 function _Config()
     tlen = ExtractStrToken(urtcmd$,tkn$)
     if tlen == 0 then
-        exitfunc 5
+        exitfunc -4
     endif
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -803,10 +810,10 @@ function _Config()
     elseif strcmp(tkn$,"txpower")==0 then
         //extract 1 (#INTtxpower#) and store starting at i[1]
         rc = ExtractIntTokens(urtcmd$,1,1)
-        exitfunc BLETXPOWERSET(i[1])
+        exitfunc BleTxPowerSet(i[1])
         
     endif
-endfunc 5
+endfunc -4    //send an "UNKNOWN COMMAND" response to user
 
 
 //-------------------------------------------------------------------------
@@ -886,6 +893,9 @@ function OnUartCmd() as integer
         
         elseif strcmp(tkn$,"batt")==0 then 
             rc=_iBeaconConfig(BATTLVL_INDEX)
+            
+        else
+            rc=-4   //send an "UNKNOWN COMMAND" response to user
 
         endif
   endif
@@ -938,20 +948,16 @@ function HandlerAdvRpt() as integer
             
             //Get AD element with iBeacon data
             rc=BleGetADByTag(dta$,0xFF,iBdta$)
-
-            
-            
-            '//print <Device Name> : <MAC Address> : <RSSI> - seperated by tabs
-             //        (UUID)    :   <UUID>
-             //        (Major)   :   <Major>
-             //        (Minjor)  :   <Minor>
-             //        (TxPower) :   <TxPower>
+          
+            '//print <MAC Address> :  <RSSI> : <Device Name> 
             print "\n";StrHexize$(ad$);"  : ";rsi;" :  ";nme$
+            
             PrintiBeaconParams(iBdta$)
 
             '//for printing other AD elements    
             dim i, s$, tok$
         
+            '//if 'other' was specified as a parameter in 'config scan display', print the other AD tags
             tok$ = "other"
             if TableLookup(tbDispParams$,tok$)>=0 then
                 print "\n Other ADs: "
@@ -1072,14 +1078,17 @@ endfunc 1
 function HandlerAttrRead(hConn, hAttr, nSts)   
     dim s$, i
     if nSts==0 then    
+        //read the data
         rc=BleGattcReadData(hConn, hAttr, i, s$)
         AssertResCode(rc,1173)
-           
+        
+        '//print 'dBm' units if char is tx power or calibrated rssi value
         if hAttr == hChars[TXPOWER_INDEX] || hAttr == hChars[CAL_RSSI_INDEX] then    
             rc=BleDecodeS8(s$,i,0)
             print i;" dBm\n";pr$
             exitfunc 1
             
+        '//print other units depending on the characteristic
         elseif hAttr == hChars[ADV_INTVL_INDEX] || hAttr == hChars[ADV_TMT_INDEX] || hAttr == hChars[REM_CONN_TME_INDEX] || hAttr == hChars[BATTLVL_INDEX] then
             print StrGetChr(s$,0)
             
