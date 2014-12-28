@@ -407,7 +407,7 @@ endfunc -1      //dont give response to user
 function _spp()  
     tlen = ExtractStrToken(urtcmd$,tkn$)
     if tlen == 0 then
-        exitfunc 5
+        exitfunc -4     //send unknown command response to user 
     endif
     
     if strcmp(tkn$,"open")==0 then       
@@ -440,8 +440,10 @@ function _spp()
         else
             exitfunc rc
         endif
+    else
+        UartRsp(-4)     //send unknown command response to user 
     endif
-endfunc -2
+endfunc -1
 
 
 //-------------------------------------------------------------------------
@@ -681,7 +683,7 @@ function OnUartCmd() as integer
             rc = _misc()
             
         elseif strcmp(tkn$,"stop")==0 then
-            rc=BtcInquiryCancel()
+            rc = BtcInquiryCancel()
     
         elseif strcmp(tkn$,"quit")==0 || strcmp(tkn$,"exit")==0 then
             rc=BtcSppDisconnect(hC)
@@ -695,7 +697,7 @@ function OnUartCmd() as integer
             if rc != 0 then
                 exitfunc rc
             endif        
-            rc=BtcSetDiscoverable(i[1], i[2])
+            rc =BtcSetDiscoverable(i[1], i[2])
         
         elseif strcmp(tkn$,"setpairable")==0 then
             //extract 1 : (#INTenable#) and store starting at i[1]
@@ -703,7 +705,7 @@ function OnUartCmd() as integer
             if rc != 0 then
                 exitfunc rc
             endif            
-            rc=BtcSetPairable(i[1])
+            rc = BtcSetPairable(i[1])
             
         elseif strcmp(tkn$,"bdaddr")==0 then
             s$[1] = SysInfo$(4)
