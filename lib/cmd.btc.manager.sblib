@@ -1,4 +1,4 @@
-ï»¿//******************************************************************************
+//******************************************************************************
 // Laird Technologies (c) 2014
 //
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -178,14 +178,14 @@
 //    - Set whether to save pairing information (Bond) for subsequent incoming
 //      pair requests
 //
-//    - #INTflag# - 0 : Do not store pairing information (Donâ€™t bond)
+//    - #INTflag# - 0 : Do not store pairing information (Don’t bond)
 //                  1 : Store pairing information (Bond)
 //
 // -----------------------------------------------------------------------------
 // btc pair #HEXaddr6Bytes# #INTflag#
 //    --- bluetooth classic functionality ---
 //    - Pair with device with address #HEXaddr6Bytes# and specify whether to bond
-//      with #INTflag# - 0 : Do not store pairing information (Donâ€™t bond)
+//      with #INTflag# - 0 : Do not store pairing information (Don’t bond)
 //                       1 : Store pairing information (Bond)
 //                       2 : Use default as specified by 'btc savepairings'
 //
@@ -799,11 +799,12 @@ function HandlerSppDataCmd()
     dim hPort, data$, rLen
     
     '//read and print data while there is data available to read
-    while BtcSppRead(hPort, data$, rLen) == 0    
+	do
+		rc = BtcSppRead(hPort, data$, rLen)
         if rLen>0 then
             print"\nPort Handle: ";hPort; " Length: ";rLen;"\nData: ";data$;pr$
         endif
-    endwhile
+	dowhile rLen>0
 endfunc 1
 
 
@@ -814,11 +815,12 @@ function HandlerSppData()
     dim hPort, data$, rLen
     
     '//read and print data while there is data available to read
-    while BtcSppRead(hPort, data$, rLen) == 0    
+	do
+		rc = BtcSppRead(hPort, data$, rLen)
         if rLen>0 then
             print data$
         endif
-    endwhile
+	dowhile rLen>0
 endfunc 1
 
 
