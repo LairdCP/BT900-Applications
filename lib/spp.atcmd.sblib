@@ -255,7 +255,7 @@ er$    = "\nERROR "
 pr$    = "\r\n>"
 nc$    = "\nNO CARRIER"
 uc$    = "\nUNKNOWN COMMAND"
-t$ = "\nType 'y' to pair and 'n' to decline - and press Enter\n"
+t$ = "\nType 'y' to pair, 'n' to decline or 'cancel' to cancel - and press Enter\n"
 e$ = "\nEnter Pin and press Enter: "
 p$ = "\nEnter 'pair #HEX12bytes#' followed by Enter to pair\nExample 'pair 943g0aa92a3c'"
 
@@ -974,29 +974,42 @@ endfunc 1
 //------------------------------------------------------------------------------
 // Called when data arrives through the UART - Pair response
 //------------------------------------------------------------------------------
-function HandlerUartRxPair()
+function HandlerUartRxPair()     
     i[2] = UartReadMatch(s$[2],13)
     if i[2] !=0 then                            //if any data was read
         s$[2] = StrSplitLeft$(s$[2],i[2]-1)     //split string to include everything up to the carriage return
+        
         if strcmp(s$[2],"quit")==0 || strcmp(s$[2],"exit")==0 then
             rc=BtcSppDisconnect(hC)
             rc=BtcSppClose(hSppPort)
             print "\nVersion ";APP_VERSION
             exitfunc 0
-    
+            
+        elseif StrCmp(s$[2],"cancel")==0 then
+            rc=BtcSendPAIRResp(0)
+            UartRsp(rc)
+            
+            OnEvent  EVUARTRX            call HandlerUartRx
+            
         elseif StrCmp(s$[2],"y")==0 then
             rc=BtcSendPairResp(1)
-            print "\n\nPairing...";pr$         
-            OnEvent  EVUARTRX            call HandlerUartRx
+            print "\n\nPairing...";pr$   
+
+            OnEvent  EVUARTRX            call HandlerUartRx            
             
         elseif StrCmp(s$[2],"n")==0 then
             rc=BtcSendPairResp(0)
             print "\nDeclined"   
             UartRsp(0)
             
+            OnEvent  EVUARTRX            call HandlerUartRx
+            
         else
             print t$
         endif
+  
+        s$[2] = ""
+        i[2] = 0  
         
     endif
 endfunc 1
@@ -1023,6 +1036,7 @@ function HandlerUartRxPIN()
             print e$
         endif  
         s$[2] = ""
+        i[2] = 0
     endif
     
 endfunc 1
@@ -1034,8 +1048,8 @@ endfunc 1
 function HandlerPairReq()
     rc=BtcGetPAIRRequestBDAddr(s$[3])       //setting it to s$[3] so it doesn't get mixed up with any other strings (command params etc) that may be stored in s$[1]
     rc=BtcBondingEraseKey(s$[3])            //erase link key for this bluetooth device incase already bonded with it
-    print "\nPair Req: "; StrHexize$(s$[3]);pr$
-    print t$
+    print "\nPair Req: "; StrHexize$(s$[3])
+    print t$;"\n"
     UartFlush(1)    //flush the uart rx buffer
     onevent evuartrx call HandlerUartRxPair
 endfunc 1
