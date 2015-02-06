@@ -396,7 +396,6 @@ hCharUUIDs[REM_CONN_TME_INDEX] = BleHandleUuidSibling(hBseUuid, IBEACON_REMCONNT
 hCharUUIDs[BATTLVL_INDEX] = BleHandleUuid16(BATTLVL_CHAR_UUID)
 
 
-
 //******************************************************************************
 // Register Error Handler as early as possible
 //******************************************************************************
