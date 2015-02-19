@@ -811,7 +811,7 @@ endfunc 1
 // Called when data is received via UART when bridged to SPP
 //------------------------------------------------------------------------------
 function HandlerUartRxSpp()
-    dim uLen, wLen : uLen = 0 : wLen = 0
+    dim uLen, wLen
     if buffer ==0 then        
         //read data that has arrived through dia the UART
         uLen  = UartRead(u$) 
@@ -842,7 +842,7 @@ endfunc 1
 // Called when txbuffer is empty
 //------------------------------------------------------------------------------
 function HandlerSppTxEmpty(i)
-    dim uLen, wLen : uLen = 0 : wLen = 0
+    dim uLen, wLen
     if buffer == 1 then
         uLen = strlen(u$)
         rc = BtcSppWrite(hC, u$, wLen)
@@ -906,7 +906,7 @@ endfunc 1
 //------------------------------------------------------------------------------
 function HandlerSppData()
     if (strlen(RecBuf$) == 0) then
-    dim hPort, data$, rLen, UartSent : rLen = 0 : UartSent = 0
+    dim hPort, data$, rLen, UartSent
         while BtcSppRead(hPort, data$, rLen) == 0    
             while rLen>0
                 UartSent = UARTWRITE(data$)
@@ -1161,7 +1161,7 @@ endfunc 1
 // Called when the UART transmit bufffer is empty
 //------------------------------------------------------------------------------
 function HandlerUartTxEmpty()
-    dim hPort, data$, rLen, UartSent : rLen = 0 : UartSent = 0
+    dim hPort, data$, rLen, UartSent
     while strlen(RecBuf$) > 0
         UartSent = UARTWRITE(RecBuf$)
         STRSHIFTLEFT(RecBuf$, UartSent)
