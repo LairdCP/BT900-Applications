@@ -1,3 +1,17 @@
+ //******************************************************************************
+ // Laird Technologies (c) 2014
+ //
+ // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ // +++++                                                                      ++
+ // +++++  When UwTerminal downloads the app it will store it as a filenname   ++
+ // +++++  which consists of all characters up to the first . and excluding it ++
+ // +++++                                                                      ++
+ // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ //
+ // BT900 custom VSP service
+ //
+ //******************************************************************************
+
 //SPI example script.
 //* Allows reading and writing to SPI memory
 //* Supports running on BT900

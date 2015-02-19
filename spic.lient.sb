@@ -1,3 +1,17 @@
+ //******************************************************************************
+ // Laird Technologies (c) 2014
+ //
+ // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ // +++++                                                                      ++
+ // +++++  When UwTerminal downloads the app it will store it as a filenname   ++
+ // +++++  which consists of all characters up to the first . and excluding it ++
+ // +++++                                                                      ++
+ // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ //
+ // BT900 custom VSP service
+ //
+ //******************************************************************************
+
  // Commands:
  //
  // set address <address>	: Sets the memory location to the address specified (0-FFF7)
@@ -19,7 +33,7 @@
  #define WRITE_MEMORY 3
  
  dim rc //Function return code
- dim TargetMAC$ : TargetMAC$ = "\00\00\16\a4\09\3a\99" //MAC of the device to connect too
+ dim TargetMAC$ : TargetMAC$ = "\00\16\A4\09\3C\26" //MAC of the device to connect too
  dim ConnectionStatus : ConnectionStatus = 0 //0 = disconnected, 1 = connected
  dim nCtxG //Global BLE handler
  dim APP_VERSION$ : APP_VERSION$ = "0.1" //Version of client program
