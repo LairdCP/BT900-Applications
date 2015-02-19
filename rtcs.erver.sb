@@ -1,9 +1,23 @@
-//RTC Advert script.
-//* Sends BLE adverts with time from RTC
-//* Allows remote time setting
-//* Supports alarm wakeup with broadcast on event
-//* Allows remote wakeup configuration
-//* Uses buzzer as a wake-up alarm (SIO_12) when jumped is enabled
+ //******************************************************************************
+ // Laird Technologies (c) 2014
+ //
+ // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ // +++++                                                                      ++
+ // +++++  When UwTerminal downloads the app it will store it as a filenname   ++
+ // +++++  which consists of all characters up to the first . and excluding it ++
+ // +++++                                                                      ++
+ // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ //
+ // BT900 custom Real Time Clock (RTC) Service
+ //
+ //******************************************************************************
+ //
+ // -> Sends BLE adverts with time from RTC
+ // -> Allows remote time setting
+ // -> Supports alarm wakeup with broadcast on event
+ // -> Allows remote wakeup configuration
+ // -> Uses buzzer as a wake-up alarm (SIO_12) when jumped is enabled
+ //
 
 #DEFINE BLE_SERVICE_SECONDARY                           0
 #DEFINE BLE_SERVICE_PRIMARY                             1
@@ -433,7 +447,7 @@ rc = BleSvcRegDevInfo("Laird", "BT900", "", "1.0", "1.0", "", "", "")
 AssertRC(rc,432)
 
 //Create service
-rc = BleServicgeNew(BLE_SERVICE_PRIMARY, Service1UUID, Service1)
+rc = BleServiceNew(BLE_SERVICE_PRIMARY, Service1UUID, Service1)
 AssertRC(rc,436)
 
 //Add first characteristics (all read only)
