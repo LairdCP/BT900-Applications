@@ -1,0 +1,39 @@
+// ******************** RTCSetFormat.sb*********************************
+dim rc
+dim strTime$
+dim nFormat
+dim nYear
+dim nMonth
+dim nDay
+dim nHour
+dim nMin
+dim nSec
+
+function handleTimer0()
+  strTime$ = ""
+  nFormat = nFormat + 1
+  if nFormat > 7 then
+	exitfunc 0
+  endif
+  rc = RTCSetFormat(nFormat)
+  rc = RTCGetTime$(strTime$)
+  print "\n";strTime$
+  rc = RTCGetTime(nYear,nMonth,nDay,nHour,nMin,nSec)
+  print "\n";nHour;" ";nMin;" ";nSec;" ";nDay;" ";nMonth;" ";nYear
+endfunc 1
+
+onevent EvTmr0 call handleTimer0
+
+rc = RTCSetFormat(4)
+rc = RTCSetTime(15,1,8,23,55,0)		// Sets date to 23:55:00 25/2/11
+print "\nSetting Time ";integer.h' rc
+rc = RTCGetTime$(strTime$)
+print "\n";strTime$
+rc = RTCGetTime(nYear,nMonth,nDay,nHour,nMin,nSec)
+print "\n";nHour;" ";nMin;" ";nSec;" ";nDay;" ";nMonth;" ";nYear
+nFormat = 0
+
+TimerStart(0,1000,1)
+
+WAITEVENT
+print "\nfinished"

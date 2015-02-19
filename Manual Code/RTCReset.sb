@@ -1,0 +1,16 @@
+// ******************** RTCReset.sb*********************************
+dim rc
+dim strTime$
+
+rc = RTCSetFormat(4)					// outputs time as hh:mm:ss dd/mm/yy
+rc = RTCSetTime(15,1,8,23,55,0)	// Sets date to 23:55:00 08/01/15
+print "\nSetting Time ";integer.h' rc
+rc = RTCGetTime$(strTime$)
+print "\n";strTime$
+rc = RTCReset()						// Resets time to 00:00:00 01/01/00
+print "\nSetting Time ";integer.h' rc
+strTime$ = ""
+rc = RTCGetTime$(strTime$)			
+print "\n";strTime$
+
+print "\nfinished"

@@ -1,0 +1,24 @@
+//************RTCSetDuration.sb**************
+dim rc
+dim strAlarm$
+
+function handleTimer0()
+  strAlarm$ = ""
+  rc = RTCSetAlarmDuration(0,0,6,0)	// set to trigger in 6 minutes
+  rc = RTCGetAlarm$(0,strAlarm$)
+  print "\nAlarm set to ";strAlarm$
+  print "\nsleep"
+  rc = SystemStateSet(0)
+  // or
+  // rc = RTCSetAlarmDuration(0,0,6,1)
+endfunc 0
+
+onevent EvTmr0 call handleTimer0
+
+rc = RTCSetFormat(4)
+rc = RTCGetTime$(strAlarm$)
+print "\n";strAlarm$
+TimerStart(0,1000,0)
+
+WAITEVENT
+print "\nfinished"

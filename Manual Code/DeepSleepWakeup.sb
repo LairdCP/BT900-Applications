@@ -1,0 +1,24 @@
+// ******************** DeepSleepWakeup.sb*********************************
+dim rc
+dim strTime$
+
+function handleTimer0()
+  rc = RTCGetTime$(strTime$)
+  print "\n";strTime$
+  strTime$ = ""
+endfunc 1
+
+function handleTimer1()
+  rc = GpioSetFunc(20,1,16)
+  print "\nSleep"
+  rc = SystemStateSet(0)
+endfunc 0
+
+onevent EvTmr0 call handleTimer0
+onevent EvTmr1 call handleTimer1
+
+TimerStart(0,2000,1)
+TimerStart(1,10000,0)
+
+WAITEVENT
+print "\nfinished"

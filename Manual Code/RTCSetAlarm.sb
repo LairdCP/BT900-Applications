@@ -1,0 +1,21 @@
+//************RTCSetAlarm.sb**************
+dim rc
+dim strAlarm$
+
+function handleTimer0()
+  print "\nsleep"
+  rc = RTCSetAlarm(0,15,1,9,0,2,1)	// set to wake up at 00:02 9/1/15
+  if rc != 0 then
+	print "\nfailed to set alarm ",integer.h' rc
+  endif
+endfunc 0
+
+onevent EvTmr0 call handleTimer0
+
+rc = RTCSetFormat(4)
+rc = RTCGetTime$(strAlarm$)
+print "\n";strAlarm$
+TimerStart(0,1000,0)
+
+WAITEVENT
+print "\nfinished"

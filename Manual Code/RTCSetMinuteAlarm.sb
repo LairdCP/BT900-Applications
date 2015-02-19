@@ -1,0 +1,21 @@
+//************RTCSetMinuteAlarm.sb****************
+dim rc
+dim strAlarm$
+
+function handleTimer0()
+  print "\nsleep"
+  rc = RTCSetMinuteAlarm(0,1)
+  // or
+  // rc = RTCSetMinuteAlarm(0,0)
+  // rc = SystemStateSet(0)
+endfunc 0
+
+onevent EvTmr0 call handleTimer0
+
+rc = RTCSetFormat(4)
+rc = RTCGetTime$(strAlarm$)
+print "\n";strAlarm$
+TimerStart(0,1000,0)
+
+WAITEVENT
+print "\nfinished"
