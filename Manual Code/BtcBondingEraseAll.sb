@@ -1,0 +1,22 @@
+dim rc, nRoll, nPers
+
+'//------------------------------------------------------------------------------
+'// For debugging
+'// --- rc = result code
+'// --- ln = line number         
+'//------------------------------------------------------------------------------
+Sub AssertRC(rc,ln)   
+    if rc!=0 then
+        print "\nFail :";integer.h' rc;" at tag ";ln
+    else
+        print "\nAll link keys in the bonding manager database erased\n"
+    endif
+EndSub
+
+rc=BtcBondingEraseAll()
+AssertRC(rc,17)
+
+print "\n:Bonding Manager Database Statistics:"
+print "\nCapacity:  ","", BtcBondingStats(nRoll, nPers)
+print "\nRolling: ","",nRoll
+print "\nPersistent: ",nPers

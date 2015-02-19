@@ -1,0 +1,33 @@
+dim rc, hPort, n$, a$
+
+function HandlerSppCon(hConn, result) as integer
+	dim addr$, len
+    print "\n --- Connect : ",hConn
+	print "\nResult: ",integer.h' result
+    
+    rc=BtcGetBDAddrFromHandle(hConn, addr$)
+    if rc==0 then
+        print "\nConnected to device: "; StrHexize$(addr$)
+        
+        dim h
+        rc=BtcGetHandleFromBDAddr(addr$, h)
+        print "\nConnection Handle obtained from BT Address: ";h
+    else
+        print "\nError obtaining Bluetooth address: "; integer.h'rc
+    endif
+    rc=BtcSppDisconnect(hConn)
+endfunc 1
+    
+    
+onevent EvSppConn call HandlerSppCon
+
+rc=BtcSetConnectable(1)
+rc=BtcSetDiscoverable(1,60)
+rc=BtcSppOpen(hPort)
+
+rc=BtcGetFriendlyName(n$)
+a$ = SysInfo$(4)
+print "\n";n$;" : ";StrHexize$(a$)
+print "\nModule is Discoverable. Make an SPP connection\n"
+
+waitevent

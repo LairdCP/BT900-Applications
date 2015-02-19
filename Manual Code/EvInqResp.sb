@@ -1,0 +1,63 @@
+dim rc
+dim adr$
+
+adr$=""
+
+
+//==============================================================================
+// This handler is called when there is an inquiry report waiting to be read
+// Algorithm will prevent display of data from the same peer consecutively
+//==============================================================================
+function HandlerInqResp(respType) as integer
+    dim ad$,dta$,ndx,rsi,tag
+    rc = BtcInquiryGetReport(ad$,dta$,ndx,rsi)
+  
+    //if MAC address is different from the previous one
+    if strcmp(adr$,ad$)!= 0 then
+        print "\nMAC: "; StrHexize$(ad$)
+      
+        if respType > 0 then
+            print " ";rsi
+            
+            if respType == 2 then
+                print "\n  EIR: "; StrHexize$(dta$)
+                dim tg$
+                while BtcGetEIRbyIndex(ndx,dta$,tag,ad$)==0
+                    //write tag value as hex to string tg$
+                    sprint #tg$,integer.h'tag
+                    
+                    //hexize eir tag data if not a shortened or complete local name
+                    if tag < 0x08 || tag > 0x09 then
+                        
+                        ad$ = StrHexize$(ad$)
+                    else
+                        StrDeescape(ad$)
+                    endif
+                    
+                    //print the last 2 hex digits of the tag, and the data
+                    if strlen(ad$)!=0 then
+                        print "\n  - Tag 0x" + RIGHT$(tg$,2) +": "; ad$
+                    endif
+                                           
+                    ndx=ndx+1
+                endwhile
+                print "\n"
+            endif
+        endif
+    endif
+endfunc 1
+
+
+function HandlerBtcInqTimOut() as integer
+  print  "\nScanning stopped via timeout"
+endfunc 0
+
+
+OnEvent  EVINQRESP              call HandlerInqResp
+OnEvent  EVBTC_INQUIRY_TIMEOUT  call HandlerBtcInqTimOut
+
+
+rc = BtcInquiryConfig(1,2)      //extended inquiry mode
+rc = BtcInquiryStart(10)
+
+WaitEvent

@@ -1,0 +1,25 @@
+dim rc, mac$, key$, nRoll, nPers
+
+'//------------------------------------------------------------------------------
+'// For debugging
+'// --- rc = result code
+'// --- ln = line number         
+'//------------------------------------------------------------------------------
+Sub AssertRC(rc,ln)   
+    if rc!=0 then
+        print "\nFail :";integer.h' rc;" at tag ";ln
+    else
+        print "\nLink key for device ";StrHexize$(mac$); " now persistent\n"
+    endif
+EndSub
+
+
+'//Make a link key persistent
+mac$="\00\80\98\04\4E\91"
+rc=BtcBondingPersistKey(mac$)
+AssertRC(rc,35)
+
+print "\n:Bonding Manager Database Statistics:"
+print "\nCapacity:  ","", BtcBondingStats(nRoll, nPers)
+print "\nRolling: ","",nRoll
+print "\nPersistent: ",nPers

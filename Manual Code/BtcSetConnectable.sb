@@ -1,0 +1,6 @@
+dim rc
+
+rc=BtcSetConnectable(1)
+if rc==0 then
+    print "\nModule is now connectable"
+endif

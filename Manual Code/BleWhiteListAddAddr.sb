@@ -1,0 +1,16 @@
+DIM rc
+DIM hWhiteList : hWhiteList = BleWhiteListCreate(20,10)
+DIM macAddr$ : macAddr$ = "\01\D8\CF\CF\14\49\8D"
+
+IF hWhiteList == 0 THEN
+    PRINT "\nWhitelist not created, not enough memory"
+ELSE
+    PRINT "\nWhitelist created. Handle: ";hWhiteList
+ENDIF
+
+rc = BleWhiteListAddAddr(hWhiteList, macAddr$)
+IF rc==0 THEN
+    PRINT "\nMAC Address "; StrHexize$(macAddr$);" was added to the whitelist"
+ELSE
+    PRINT "\nError: "; integer.h'rc
+ENDIF

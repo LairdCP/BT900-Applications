@@ -1,0 +1,62 @@
+//Example :: StreamBridge.sb (See in BT900CodeSnippets.zip)
+dim rc, nSHandleG, nHandleB, nSppHandle
+
+SUB AssertRC(rc,line)
+        IF rc != 0 THEN
+            PRINT "Error at line ";line;", code: ";rc;"\n"
+        ENDIF
+ENDSUB
+
+FUNCTION HandlerPairReq()
+        //Pair request
+        dim BTA$
+        rc=BtcGetPairRequestBDAddr(BTA$)
+        AssertRC(rc, 12)
+        PRINT "\nPairing requested from device: "; StrHexize$(BTA$)
+        PRINT "\nAccepting pair request"
+        rc=BtcSendPairResp(1)
+        AssertRC(rc, 16)
+ENDFUNC 1
+
+FUNCTION SPPConnect(nHandle, Result)
+        //SPP connected
+        dim UARTStream, SPPStream
+        nSppHandle = nHandle
+        PRINT "Connected\n"
+    
+        //Bridge to UART
+        rc = StreamGetUartHandle(UARTStream)
+        AssertRC(rc, 27)
+        rc = StreamGetSPPHandle(nSppHandle, SPPStream)
+        AssertRC(rc, 29)
+        rc = StreamBridge(UARTStream, SPPStream, nHandleB)
+        AssertRC(rc, 31)
+ENDFUNC 1
+
+FUNCTION SPPTimeout()
+        //SPP connection timeout
+        PRINT "Timeout\n"
+ENDFUNC 1
+
+FUNCTION SPPDisconnect(nHandle)
+        //SPP disconnection. Remove UART bridge
+        rc = StreamUnBridge(nHandleB)
+        AssertRC(rc, 42)
+        PRINT "Disconnected\n"
+ENDFUNC 1
+
+//Create SPP host connection
+rc=BtcDiscoveryConfig(0, 0)
+rc=BtcSetConnectable(1)
+rc=BtcSetPairable(1)
+rc=BtcSavePairings(1)
+rc=BtcSetDiscoverable(1, 0)
+rc=BtcSppOpen(nSHandleG)
+
+//SPP Events
+ONEVENT EVSPPCONN CALL SPPConnect //SPP connected
+ONEVENT EVBTC_SPP_CONN_TIMEOUT CALL SPPTimeout //SPP connection timeout
+ONEVENT EVSPPDISCON CALL SPPDisconnect //SPP disconnection
+ONEVENT EVBTC_PAIR_REQUEST CALL HandlerPairReq //Pair request
+
+WAITEVENT

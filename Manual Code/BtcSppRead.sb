@@ -1,0 +1,45 @@
+dim rc 
+dim hSpp
+dim n$, a$
+
+function HandlerSppConn(portHandle, result)
+	print "\n --- Connect : ",portHandle
+	print "\nResult: ";integer.h' result	
+endfunc 1
+
+'//called when data is received via spp
+function HandlerSppData() 
+	dim hPort
+	dim data$
+	dim readLen
+	
+	'//read and print data while there is data available to read
+    while BtcSppRead(hPort, data$, readLen) == 0	
+        if readLen>0 then
+            print"\nPort Handle: ";hPort; "\nData: ";data$;"\nLength: ";readLen
+         endif
+    endwhile
+endfunc 1
+
+
+rc=BtcSppOpen(hSpp)
+
+if rc == 0 then
+    print "\nSPP service open. Handle: ";hSpp
+else
+    print "\nError: ";rc
+endif
+
+OnEvent  EVSPPCONN                call HandlerSppConn
+OnEvent  EVBTC_SPP_DATA_RECEIVED  call HandlerSppData
+
+rc=BtcSetConnectable(1)
+rc=BtcSetDiscoverable(1,60)
+rc=BtcSppOpen(hSpp)
+
+rc=BtcGetFriendlyName(n$)
+a$ = SysInfo$(4)
+print "\n";n$;" : ";StrHexize$(a$)
+print "\nModule is Discoverable. Make an SPP connection\n"
+
+WaitEvent

@@ -1,0 +1,25 @@
+dim rc
+
+rc=BtcInquiryStart(10)
+if rc == 0 then
+    print "\nInquiry Started"
+else
+    print "\nError: ";rc
+endif
+
+TimerStart(0,2000,0)
+
+
+Function TimerExpr()
+    rc=BtcInquiryCancel()
+    if rc == 0 then
+        print "\nInquiry Cancelled"
+    else
+        print "\nError: ";rc
+    endif
+EndFunc 0
+
+
+OnEvent EvTmr0 call TimerExpr
+
+waitevent

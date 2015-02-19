@@ -1,0 +1,42 @@
+dim rc, hConn, n$, hPort, a$
+
+function HandlerSppConn(portHndl, result) as integer
+	dim s$, len
+    hConn = portHndl
+    print "\n --- Connect :","", hConn
+	print "\nResult: ";integer.h' result
+    
+    rc=BtcSppDisconnect(hConn)
+    if rc==0 then
+        print "\n\nDisconnecting..."
+    else
+        print "\nError:", integer.h'rc
+    endif
+endfunc 1
+
+//------------------------------------------------------------------------------
+// Called on an SPP disconnection
+//------------------------------------------------------------------------------
+function HandlerSppDiscon(hConn) as integer
+	print "\n --- Disconnected :", hConn
+    // rc=BtcSppClose(hPort)
+endfunc 0
+
+onevent EvSppConn    call HandlerSppConn
+onevent EvSppDiscon call HandlerSppDiscon
+
+rc=BtcGetFriendlyName(n$)
+a$ = SysInfo$(4)
+print "\n";n$;" : ";StrHexize$(a$)
+print "\nModule is Discoverable. Make an SPP connection\n"
+
+rc=BtcSetConnectable(1)
+rc=BtcSetDiscoverable(1,60)
+rc=BtcSppOpen(hPort)
+
+
+waitevent
+
+
+
+

@@ -1,0 +1,7 @@
+dim rc
+
+//erase all bondings in database
+rc=BleBondingEraseAll()
+if rc==0 then
+    print "\nBonding database cleared"
+endif

@@ -1,0 +1,24 @@
+dim rc, n$
+n$ = "My BT900"
+
+function HandlerDiscTimeout()
+    print "\nNo longer discoverable"
+endfunc 0
+
+rc=BtcSetFriendlyName(n$)
+    
+'//Enable discoverability for 10 seconds
+rc=BtcSetDiscoverable(1,10)
+if rc==0 then
+    print "\nDiscoverable for 10 seconds"  
+else
+    print "\nFailed: ";integer.h'rc
+endif
+
+
+onevent evbtc_discov_timeout call HandlerDiscTimeout
+
+waitevent
+
+print "\nExiting..."
+

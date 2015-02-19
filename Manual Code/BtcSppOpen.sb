@@ -1,0 +1,11 @@
+dim rc, hSpp
+rc=BtcSppOpen(hSpp)
+
+if rc == 0 then
+    print "\nSPP service open. Handle: ";hSpp
+else
+    print "\nError: ";rc
+endif
+
+rc=BtcSppClose(hSpp)
+

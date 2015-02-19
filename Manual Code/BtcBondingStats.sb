@@ -1,0 +1,5 @@
+dim rc, nRoll, nPers
+print "\n:Bonding Manager Database Statistics:"
+print "\nCapacity:  ","", BtcBondingStats(nRoll, nPers)
+print "\nRolling: ","",nRoll
+print "\nPersistent: ",nPers

@@ -1,0 +1,30 @@
+dim rc, a$
+
+rc=BleSecMngrJustWorksConf(0)
+rc=BleAdvertStart(0,a$,250,0,0)
+
+function HandlerBleMsg(nMsgId, nCtx)
+    select nMsgId
+        case 0
+            print "\nConnected"
+        case 1
+            print "\nDisconnected"
+        case 11
+            print "\nPairing in progress, key requested. Type: ";nCtx
+        case 10
+            print "\nNew bond created"
+        case 17
+            print "\nNew pairing replaced old key"
+        case 16
+            print "\nConnected to bonded master"
+        case else
+            print "\nnMsgId: ";nMsgId;" nCtx: ";nCts
+    endselect
+endfunc 1
+
+
+onevent evblemsg call HandlerBleMsg
+
+waitevent
+
+

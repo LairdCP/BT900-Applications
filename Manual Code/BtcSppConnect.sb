@@ -1,0 +1,29 @@
+dim rc, i
+
+'//BT address of device to connect to. You will have to change this
+dim mac$
+mac$ = "\00\16\A4\09\3A\5F"
+
+
+'//array with handles for spp connections 
+dim hSpp
+
+rc=BtcSetConnectable(1)
+rc=BtcSetDiscoverable(1,60)
+
+
+'//make spp connection 
+rc=BtcSppConnect(mac$)
+print "\nConnecting to device ";StrHexize$(mac$)
+
+function HandlerSppConn(portHndl, result) as integer
+    hSpp = portHndl
+    print "\n --- Connect : ",hSpp, StrHexize$(mac$)
+	print "\nResult: ",integer.h' result
+endfunc 0
+
+onevent EvSppConn call HandlerSppConn
+
+waitevent
+
+print "\nExiting..."

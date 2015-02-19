@@ -1,0 +1,3 @@
+dim rc, name$
+rc=BleGetLocalName(name$)
+print "\n"; name$

@@ -1,0 +1,4 @@
+dim rc
+rc=BtcSavePairings(1)
+print "\nrc: "; rc
+    

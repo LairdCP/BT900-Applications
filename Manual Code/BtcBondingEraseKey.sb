@@ -1,0 +1,18 @@
+dim rc, mac$
+
+'//------------------------------------------------------------------------------
+'// For debugging
+'// --- rc = result code
+'// --- ln = line number         
+'//------------------------------------------------------------------------------
+Sub AssertRC(rc,ln)   
+    if rc!=0 then
+        print "\nFail :";integer.h' rc;" at tag ";ln
+    else
+        print "\nLink key for device "; StrHexize$(mac$); " erased"
+    endif
+EndSub
+
+mac$ = "\00\80\98\04\4e\91" 
+rc=BtcBondingEraseKey(mac$)
+AssertRC(rc,17)

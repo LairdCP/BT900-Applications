@@ -1,0 +1,10 @@
+dim rc, hSpp
+rc=BtcSppOpen(hSpp)
+rc=BtcSppClose(hSpp)
+
+if rc == 0 then
+    print "\nSPP port closed ";hSpp
+else
+    print "\nError: ";rc
+endif
+

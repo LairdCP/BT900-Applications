@@ -1,0 +1,29 @@
+dim rc,s$
+
+//==============================================================================
+// Called on a PIN request from another device
+//==============================================================================
+function HandlerPinReq() 
+    dim mac$
+    rc=BtcGetPinRequestBDAddr(mac$)
+    if rc==0 then
+        print "\nPIN requested from device: "; StrHexize$(mac$)
+        print "\nSending PIN respose with PIN '271192'"
+        rc=BtcSendPINResp("271192")
+    else
+        print "\nErr: "; integer.h'rc
+    endif
+endfunc 1
+
+
+OnEvent  EVBTC_PIN_REQUEST      call HandlerPinReq
+
+
+rc=BtcGetFriendlyName(s$)
+print "\n";s$
+
+rc=BtcSetConnectable(1)
+rc=BtcSetDiscoverable(1,60)
+rc=BtcSetPairable(1)
+
+WaitEvent

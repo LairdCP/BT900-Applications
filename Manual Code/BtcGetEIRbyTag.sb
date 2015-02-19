@@ -1,0 +1,53 @@
+dim rc
+dim adr$
+
+adr$=""
+
+
+//==============================================================================
+// This handler is called when there is an inquiry report waiting to be read
+// Algorithm will prevent display of data from the same peer consecutively
+//==============================================================================
+function HandlerInqRpt(cType) as integer
+  dim ad$,dta$,ndx,rsi,tag
+  rc = BtcInquiryGetReport(ad$,dta$,ndx,rsi)
+  
+  while rc==0
+     if strcmp(adr$,ad$)!= 0 then
+      //address is not as before so display the data	  
+      adr$=ad$
+      print "\nINQ:";strhexize$(ad$);" ";rsi
+	  
+	  if cType == 2 then
+		  // If its extended print the raw EIR data, then the complete local name
+		  print "\n EIR RAW:";strhexize$(dta$)
+		  print "\n EIR:"
+          
+          tag = 0x09        //complete local name
+		  rc=BtcGetEIRbyTag(dta$,tag,ad$)
+		  print "Complete Local Name: ";ad$
+		  print "Hex: ";strhexize$(ad$)
+	  endif
+    endif
+    //get the next advert in the cache
+    rc = BtcInquiryGetReport(ad$,dta$,ndx,rsi)
+  endwhile
+endfunc 1
+
+
+function HandlerBtcInqTimOut() as integer
+
+  print  "\nScanning stopped via timeout"
+
+endfunc 0
+
+
+OnEvent  EVINQRESP    call HandlerInqRpt
+OnEvent  EVBTC_INQUIRY_TIMEOUT  call HandlerBtcInqTimOut
+
+
+rc = BtcInquiryConfig(1,2) //Mode with Extended
+
+rc = BtcInquiryStart(5)
+
+WaitEvent

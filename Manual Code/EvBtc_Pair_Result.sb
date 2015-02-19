@@ -1,0 +1,59 @@
+dim rc,mac$,pin$,n$,a$
+pin$ = "271192"
+
+//==============================================================================
+// Called on a Pairing request from another device
+//==============================================================================
+function HandlerPairReq() 
+    rc=BtcGetPairRequestBDAddr(mac$)
+    if rc==0 then
+        print "\nPairing requested from device: "; StrHexize$(mac$)
+        print "\nAccepting pair request"
+        rc=BtcSendPairResp(1)
+    else
+        print "\nErr: "; integer.h'rc
+    endif
+endfunc 1
+
+//==============================================================================
+// Called on a PIN request from another device
+//==============================================================================
+function HandlerPinReq() 
+    rc=BtcGetPinRequestBDAddr(mac$)
+    if rc==0 then
+        print "\nPIN requested from device: "; StrHexize$(mac$)
+        print "\nSending PIN respose with PIN '271192'"
+        rc=BtcSendPINResp(pin$)
+    else
+        print "\nErr: "; integer.h'rc
+    endif
+endfunc 1
+
+
+//==============================================================================
+// Called after a pairing attempt
+//==============================================================================
+function HandlerPairRes(nRes) 
+    if nRes == 0 then
+        print "\n --- Successfully paired with device ";StrHexize$(mac$)
+    else
+        print "\n --- Pairing attempt error: (";integer.h'nRes;")"
+    endif
+endfunc 1
+
+
+OnEvent  EVBTC_PIN_REQUEST       call HandlerPinReq
+OnEvent  EVBTC_PAIR_REQUEST      call HandlerPairReq
+OnEvent  EVBTC_PAIR_RESULT       call HandlerPairRes
+
+rc=BtcSetConnectable(1)
+rc=BtcSetDiscoverable(1,60)
+rc=BtcSetPairable(1)
+
+rc=BtcGetFriendlyName(n$)
+a$ = SysInfo$(4)
+print "\n";n$;" : ";StrHexize$(a$)
+print "\nModule is Discoverable and Pairable. Pair with the module.\n"
+
+
+WaitEvent

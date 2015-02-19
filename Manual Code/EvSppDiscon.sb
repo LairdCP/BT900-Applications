@@ -1,0 +1,43 @@
+dim rc, hPort, n$, a$
+
+function HandlerSppConn(hConn, result) as integer
+	dim s$, len
+    print "\n --- Connect : ",hConn
+	print "\nResult: ",integer.h' result
+    
+    s$ = "Hello"
+    rc=BtcSppWrite(hConn, s$, len)
+    if rc==0 then
+        print "\nWrote ";len;" bytes"
+    else
+        print "\nError: "; integer.h'rc
+    endif
+    rc=BtcSppDisconnect(hConn)
+endfunc 1
+
+function HandlerSppDiscon(portHndl) as integer
+	print "\n --- Disconnect : ", portHndl
+endfunc 0
+
+
+
+onevent EvSppConn   call HandlerSppConn
+onevent EvSppDiscon call HandlerSppDiscon
+
+
+rc=BtcSetConnectable(1)
+rc=BtcSetDiscoverable(1,60)
+rc=BtcSppOpen(hPort)
+
+if rc == 0 then
+    print "\nSPP service open. Handle: ";hPort
+else
+    print "\nError: ";rc
+endif
+
+rc=BtcGetFriendlyName(n$)
+a$ = SysInfo$(4)
+print "\n";n$;" : ";StrHexize$(a$)
+print "\nModule is Discoverable. Make an SPP connection to the module.\n"
+
+waitevent

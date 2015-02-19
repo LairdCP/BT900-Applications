@@ -1,0 +1,15 @@
+DIM rc
+
+rc = BtcSetDiscoverable(1, 0)
+//rc = BtcSetDiscoverable(1, 10)
+print "\n";integer.h'rc
+
+print  "\nDiscoverable started"
+
+function HandlerDiscovTimout() as integer
+  print  "\nDiscoverable ended"
+endfunc 0
+
+OnEvent  EVBTC_DISCOV_TIMEOUT  call HandlerDiscovTimout
+
+WaitEvent

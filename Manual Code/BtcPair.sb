@@ -1,0 +1,78 @@
+dim rc, adr$, n$, m$
+
+#define BOND_WHEN_PAIRING   1
+
+//You will need to change the following #defines
+#define PIN             "0000"
+#define DEV_BT_ADDR         "\94\35\0A\A9\9A\3C"   
+
+adr$ = DEV_BT_ADDR
+// adr$ = StrDehexize$(adr$)
+
+'//------------------------------------------------------------------------------
+'// For debugging
+'// --- rc = result code
+'// --- ln = line number         
+'//------------------------------------------------------------------------------
+Sub AssertRC(rc,ln)   
+    if rc!=0 then
+        print "\nFail :";integer.h' rc;" at tag ";ln
+    else
+        print "\nInitiating Pairing..."
+    endif
+EndSub
+
+//==============================================================================
+// Called when there is a pairing request from another device
+//==============================================================================
+function HandlerPairReq()
+    rc=BtcGetPAIRRequestBDAddr(adr$)
+    print "\nPair Req: "; StrHexize$(adr$)
+    rc=BtcSendPairResp(1)
+    print "\nAccepted, Pairing..."
+endfunc 1
+
+//==============================================================================
+// Called on a PIN request from another device
+//==============================================================================
+function HandlerPINReq() 
+    rc=BtcGetPinRequestBDAddr(adr$)
+    print "\nPIN Req. Sending pin " + PIN
+    rc=BtcSendPinResp(PIN)
+endfunc 1
+
+
+//==============================================================================
+// Called after a pairing attempt
+//==============================================================================
+function HandlerPairRes(res)
+    dim i : i=res
+    print "\n --- Pair Result: ("; integer.h'res; ") ";StrHexize$(adr$);"\n";
+endfunc 0
+
+
+onevent evbtc_pin_request  call HandlerPINReq
+//These two events MUST have handlers registered for them
+onevent evbtc_pair_result  call HandlerPairRes
+onevent evbtc_pair_request call HandlerPairReq
+
+'//get friendly name, print it and the BT address
+rc=BtcGetFriendlyName(n$)
+m$ = SysInfo$(4)
+print n$;" : "; StrHexize$(m$)
+
+'//Set connectable and pairable
+rc=BtcSetConnectable(1)
+if rc==0 then
+    print "\nConnectable"
+endif
+
+rc=BtcSetPairable(1)
+if rc==0 then
+    print "\nPairable"
+endif
+
+rc=BtcPair(adr$, BOND_WHEN_PAIRING)
+AssertRC(rc,51)
+
+waitevent

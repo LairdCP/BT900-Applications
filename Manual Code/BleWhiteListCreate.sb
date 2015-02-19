@@ -1,0 +1,7 @@
+DIM hWhiteList : hWhiteList = BleWhiteListCreate(20,10)
+
+IF hWhiteList == 0 THEN
+    PRINT "\nWhitelist not created, not enough memory"
+ELSE
+    PRINT "\nWhitelist created. Handle: "; hWhiteList
+ENDIF

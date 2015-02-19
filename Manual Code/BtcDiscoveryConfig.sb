@@ -1,0 +1,23 @@
+'//------------------------------------------------------------------------------
+'// For debugging
+'// --- rc = result code
+'// --- ln = line number         
+'//------------------------------------------------------------------------------
+Sub AssertRC(rc,ln)   
+    if rc!=0 then
+        print "\nFail :";integer.h' rc;" at line ";ln
+    else
+        print "\nDiscovery Parameter set: line ";ln
+    endif
+EndSub
+
+
+dim rc
+
+rc=BtcDiscoveryConfig(0,0)          //general
+AssertRC(rc,17)
+rc=BtcDiscoveryConfig(1,0x320)      //inquiry scan interval of 500ms (0x0320)
+AssertRC(rc,19)
+rc=BtcDiscoveryConfig(2,0x190)      //inquiry scan interval of 250ms (0x0190)
+AssertRC(rc,21)
+

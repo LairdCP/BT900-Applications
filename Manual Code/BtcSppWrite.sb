@@ -1,0 +1,38 @@
+dim rc, hPort, n$, m$
+
+function HandlerSppCon(hConn, result) as integer
+	dim s$, len
+    print "\n --- Connect : ",hConn
+	print "\nResult: ",integer.h' result
+    
+    s$ = "Hello"
+    rc=BtcSppWrite(hConn, s$, len)
+    if rc==0 then
+        print "\nWrote ";len;" bytes"
+    else
+        print "\nError: "; integer.h'rc
+    endif
+endfunc 1
+
+
+function HandlerSppTxEmpty(hSppConn)
+endfunc 0
+
+
+onevent EvSppConn    call HandlerSppCon
+onevent EvSppTxEmpty call HandlerSppTxEmpty
+
+rc=BtcSppOpen(hPort)
+rc=BtcDiscoveryConfig(0,0)      //general discoverability
+rc=BtcSetDiscoverable(1,60)     //discoverable for 1 minute
+rc=BtcSetConnectable(1)         //connectable
+rc=BtcSetPairable(0)            //not pairable
+
+rc=BtcGetFriendlyName(n$)
+m$ = SysInfo$(4)
+print "\n";n$;" : ";StrHexize$(m$);"\n"
+
+
+waitevent
+
+print "\nExiting.."
