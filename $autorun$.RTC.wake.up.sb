@@ -1,0 +1,87 @@
+'//******************************************************************************
+'// Laird Technologies (c) 2014
+'//
+'// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+'// +++++                                                                      ++
+'// +++++  When UwTerminal downloads the app it will store it as a filenname   ++
+'// +++++  which consists of all characters up to the first . and excluding it ++
+'// +++++                                                                      ++
+'// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+'//
+'// RTC (Every Minute) Wakeup sample
+'//      This sample reads in a value from the trim pot on the BT900-DVK (CON14
+'//      TrimPot needs to be moved into the ON position) and advertises the value
+'//      in a BLE advertisement for 5 seconds, then enters deep sleep mode and
+'//      waits for the RTC timer to wake the module up a minute later.
+'//      (And will repeat this forever if the application is named $autorun$)
+'//
+'//      (This sample requires firmware version 9.1.4.0 or above)
+'//
+'//******************************************************************************
+
+'//******************************************************************************
+'// Global Variable Declarations
+'//******************************************************************************
+dim rc, AnalogueIn : AnalogueIn = 0
+
+'//******************************************************************************
+'// Function and Subroutine definitions
+'//******************************************************************************
+
+'//==============================================================================
+'// Error handling sub-routine
+'//==============================================================================
+SUB AssertRC(rc, line)
+    IF (rc != 0) THEN
+        //Error code
+        PRINT "Error code ";INTEGER.H'rc;" on line ";line;"\n"
+    ENDIF
+ENDSUB
+
+'//==============================================================================
+'// This handler is called when a BLE advertisement times out
+'//==============================================================================
+FUNCTION HndlrBlrAdvTimOut()
+    //Advertising timed out. Enable wakeup and enter deep sleep
+    rc = RTCSETMINUTEALARM(0, 1)
+    AssertRC(rc, 0)
+ENDFUNC 1
+
+'//------------------------------------------------------------------------------
+'// Read in analogue value from trim pot
+'//------------------------------------------------------------------------------
+rc = GPIOSETFUNC(20, 3, 0)
+AnalogueIn = GPIOREAD(20)
+
+'//------------------------------------------------------------------------------
+'// Create BLE advert
+'//------------------------------------------------------------------------------
+dim advRpt$ : advRpt$ = ""
+dim scanRpt$ : scanRpt$ = ""
+dim attr$ : attr$ = ""
+rc = BLEADVRPTINIT(advRpt$, 0, 1, 10)
+AssertRC(rc, 1)
+rc = BLEENCODE16(attr$, AnalogueIn, 0)
+AssertRC(rc, 2)
+rc = BLEADVRPTAPPENDAD(advRpt$, 0xFF, attr$)
+AssertRC(rc, 3)
+rc = BLEADVRPTSCOMMIT(advRpt$, scanRpt$)
+AssertRC(rc, 4)
+
+'//------------------------------------------------------------------------------
+'// Start BLE advertising
+'//------------------------------------------------------------------------------
+dim Addr$ : Addr$ = ""
+rc = BLEADVERTSTART(3, Addr$, 500, 5000, 0)
+AssertRC(rc, 5)
+
+'//------------------------------------------------------------------------------
+'// Enable synchronous event handlers
+'//------------------------------------------------------------------------------
+ONEVENT EVBLE_ADV_TIMEOUT CALL HndlrBlrAdvTimOut
+
+'//------------------------------------------------------------------------------
+'// Wait for a synchronous event.
+'// A Script can have multiple <WaitEvent> statements
+'//------------------------------------------------------------------------------
+WAITEVENT
