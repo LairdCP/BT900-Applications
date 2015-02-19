@@ -801,10 +801,10 @@ function HandlerSppDataCmd()
     '//read and print data while there is data available to read
 	do
 		rc = BtcSppRead(hPort, data$, rLen)
-        if rLen>0 then
+        if rLen>0 && rc ==0 then
             print"\nPort Handle: ";hPort; " Length: ";rLen;"\nData: ";data$;pr$
         endif
-	dowhile rLen>0
+	dowhile rLen>0 && rc ==0
 endfunc 1
 
 
@@ -817,10 +817,10 @@ function HandlerSppData()
     '//read and print data while there is data available to read
 	do
 		rc = BtcSppRead(hPort, data$, rLen)
-        if rLen>0 then
+        if rLen>0 && rc ==0 then
             print data$
         endif
-	dowhile rLen>0
+	dowhile rLen>0 && rc ==0
 endfunc 1
 
 
