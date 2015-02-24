@@ -1,0 +1,1158 @@
+//******************************************************************************
+// Laird Technologies (c) 2014
+//
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// +++++                                                                      ++
+// +++++  When UwTerminal downloads the app it will store it as a filenname   ++
+// +++++  which consists of all characters up to the first . and excluding it ++
+// +++++                                                                      ++
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//
+// This app allows you to experiment with using LED profiles for different Bluetooth
+// operations (advertising, inquiries etc.) and provides for a command interface 
+// over the uart and the protocol is as follows:-
+//
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// Convention : (1) Case sensitive, and commands are presented in alphabetic order
+//              (2) If line ends with \ then it continues on next line. That does
+//                  not mean that it should be sent as multiple lines
+//              (3) Replace anything between ## 
+//              (4) #INTaaaa# means a number in decimal, hex, octal or binary
+//                      format -> 23 == 0x17 == h'17 == o'23 == b'10111
+//                      aaaa is just a description
+//              (5) #HEXaaaa# means a string without delimitors consisting of hex 
+//                      characters only aaaa is just a description
+//              (6) #STRaaaa# means a string without delimitors
+//                      aaaa is just a description
+//              (7) "STRaaaa" means a string which must have the " delimitor
+//                      aaaa is just a description
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// -----------------------------------------------------------------------------
+// preview #INTledProfile#
+//    - Module will perform the given LED profile once
+//
+//      #INTprofile# - See 'LED Profiles' below
+//
+// -----------------------------------------------------------------------------
+// advert start
+//    - Start advertising (BLE)
+//
+// -----------------------------------------------------------------------------
+// advert stop
+//    - Stop advertising (BLE)
+//
+// -----------------------------------------------------------------------------
+// advert ledprofile ? OR 
+//                   = #INTledProfile
+//    - Get or Set the advertising LED profile e.g. 'advertise ledprofile ?'
+//                                                  'advertise ledprofile = 2'
+//
+//    NOTE: BLE advertising and being discoverable in BT Classic use the same
+//          LED profile
+//
+// -----------------------------------------------------------------------------
+// scan start
+//    - Start advertising (BLE)
+//
+// -----------------------------------------------------------------------------
+// scan stop
+//    - Stop advertising (BLE)
+//
+// -----------------------------------------------------------------------------
+// scan ledprofile ? OR 
+//                 = #INTledProfile
+//    - Get or Set the scanning LED profile e.g. 'scan ledprofile ?'
+//                                               'scan ledprofile = 2'
+//
+//    NOTE: BLE scanning and BT Classic inquiring use the same
+//          LED profile
+//
+// -----------------------------------------------------------------------------
+// connect #HEXaddr7Bytes#
+//    - Make a BLE connection to device with given address
+//    - If no address is given, a connection will be made to the last device that
+//      was discovered after issuing the command 'scan start'
+//
+// -----------------------------------------------------------------------------
+// disconnect
+//    - Disconnects with the device currently connected to
+//
+// -----------------------------------------------------------------------------
+// connecting ledprofile ? OR 
+//                       = #INTledProfile
+//    - Get or Set the connecting LED profile e.g. 'connecting ledprofile ?'
+//                                                 'connecting ledprofile = 2'
+//
+// -----------------------------------------------------------------------------
+// connected ledprofile ? OR 
+//                       = #INTledProfile
+//    - Get or Set the connected LED profile e.g. 'connected ledprofile ?'
+//                                                 'connected ledprofile = 2'
+//
+// -----------------------------------------------------------------------------
+// pair 
+//    - Pair with the BLE device currently connected to
+//
+// -----------------------------------------------------------------------------
+// pair ledprofile ? OR 
+//                       = #INTledProfile
+//    - Get or Set the pairing LED profile e.g. 'pairing ledprofile ?'
+//                                              'pairing ledprofile = 2'
+//
+// -----------------------------------------------------------------------------
+// inquiry start
+//    - Start BT Classic inquiry
+//
+// -----------------------------------------------------------------------------
+// inquiry stop
+//    - Stop BT Classic inquiry
+//
+// -----------------------------------------------------------------------------
+// inquiry ledprofile ? OR 
+//                 = #INTledProfile
+//    - Get or Set the inquiry LED profile e.g. 'scan ledprofile ?'
+//                                              'scan ledprofile = 2'
+//
+//    NOTE: BLE scanning and BT Classic inquiring use the same
+//          LED profile
+//
+// -----------------------------------------------------------------------------
+// disc start
+//    - Make module discoverable (BT Classic)
+//
+// -----------------------------------------------------------------------------
+// disc stop
+//    - Stop the module being discoverable (BT Classic)
+//
+// -----------------------------------------------------------------------------
+// disc ledprofile ? OR 
+//                 = #INTledProfile
+//    - Get or Set the discoverability LED profile e.g. 'disc ledprofile ?'
+//                                                      'disc ledprofile = 2'
+//
+//    NOTE: BLE advertising and BT Classic discoverability use the same
+//          LED profile
+//
+// -----------------------------------------------------------------------------
+//
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// misc i  clearall
+//    - make all elements of the entire i[] array equal to 0
+//
+// -----------------------------------------------------------------------------
+// misc i  set #INTidx# #INTval#
+//    - i[#INTidx#] = #INTval#
+//    - #INTidx# will be checked for valid index 
+//
+// -----------------------------------------------------------------------------
+// misc s$ clearall
+//    - make all elements of the entire s$[] array empty
+//
+// -----------------------------------------------------------------------------
+// misc s$ set #INTidx# #STRescapedvalue#
+//    - s$[#INTidx#] = #STRescapedvalue#
+//    - #INTidx# will be checked for valid index 
+//
+// -----------------------------------------------------------------------------
+// misc s$ sethex #INTidx# #HEXdigitsvalue#
+//    - s$[#INTidx#] = #HEXdigitsvalue#
+//    - #INTidx# will be checked for valid index 
+//
+// -----------------------------------------------------------------------------
+// quit
+//    - exit to command mode
+//
+//******************************************************************************
+
+//******************************************************************************
+// Library Import
+//******************************************************************************
+#include "lib\gpio.bt9xx.sblib"
+#include "lib\ble.sblib"
+
+//******************************************************************************
+// Definitions
+//******************************************************************************
+
+#define APP_VERSION                         "1.0"
+
+        //Set this to 0 to disable all debugging messages
+#define ENABLE_DEBUG_PRINTS                  1
+ 
+        // size of i[]
+#define NUM_OF_I_PARAMS                     (10)
+        // size of s$[] and must be at least 8 elements for BleSvcRegDevInfo()     
+#define NUM_OF_S_PARAMS                     (10)
+
+
+#define NUM_OF_LED_PROFILES                  5
+
+#define NUM_OF_USE_CASES                     5
+
+#define LED_DUR_TIMER                        0
+
+#define LED_INTVL_TIMER                      1
+
+#define MAX_DEV_SCAN_TABLE                   10  //max number of devices to store in table when scanning
+
+        //Set to 1 to cache mac addresses on a scan so you don't see repeated advert reports from same device
+        //Otherwise every advert report will be printed
+#define CACHE_MAC_ADDRESSES                  1
+
+//------------------------------------------------------------------------------
+// LED Profiles
+//------------------------------------------------------------------------------
+        //LED Profile 0 - LED off
+#define LED_PROFILE_0                        0
+        
+        //LED Profile 1 - Short flash, long interval (2 second period)
+#define LED_PROFILE_1                        1
+#define LED_PROF1_FLASH_DUR_MS               25
+#define LED_PROF1_FLASH_INVL_MS              1925     
+
+        //LED Profile 2 - Short flash, short interval (500ms period)
+#define LED_PROFILE_2                        2
+#define LED_PROF2_FLASH_DUR_MS               25
+#define LED_PROF2_FLASH_INVL_MS              475  
+
+        //LED Profile 3 - Medium flash, long interval (4 second period)
+#define LED_PROFILE_3                        3
+#define LED_PROF3_FLASH_DUR_MS               1000
+#define LED_PROF3_FLASH_INVL_MS              3000   
+
+        //LED Profile 4 - Medium flash, Medium interval (4 second period)
+#define LED_PROFILE_4                        4
+#define LED_PROF4_FLASH_DUR_MS               1000
+#define LED_PROF4_FLASH_INVL_MS              1000  
+
+        //LED Profile 5 - Constantly on 
+#define LED_PROFILE_5                        5
+#define LED_PROF5_FLASH_DUR_MS               0
+#define LED_PROF5_FLASH_INVL_MS              1  
+
+
+//------------------------------------------------------------------------------
+// Use Cases (indexes for setLedProfile[] array)
+//------------------------------------------------------------------------------               
+        //BLE Advertising
+#define USE_CASE_ADV_DISCOV                  0
+
+#define USE_CASE_SCN_INQR                    1
+
+#define USE_CASE_CONNECTING                  2
+
+#define USE_CASE_CONNECTED                   3
+
+#define USE_CASE_PAIRING                     4
+
+
+//------------------------------------------------------------------------------
+// Connection Parameters
+//------------------------------------------------------------------------------ 
+        //Connection timeout ms
+#define CONN_TMT                            10000
+        //Min Connection interval us
+#define MIN_CONN_INTVL                      7500
+        //Max Connection interval us
+#define MAX_CONN_INTVL                      40000
+        //Link supervision timeout us
+#define LINK_SUP_TMT                        3000000
+        //Scan timeout ms
+#define SCAN_TMT                            10000  
+
+
+//******************************************************************************
+// Register Error Handler as early as possible
+//******************************************************************************
+sub HandlerOnErr()
+  if (ENABLE_DEBUG_PRINTS!=0) then
+    print "\n OnErr - ";GetLastError();"\n"
+  endif
+endsub
+onerror next HandlerOnErr
+
+
+//******************************************************************************
+// Debugging resource as early as possible
+//******************************************************************************
+
+//==============================================================================
+//==============================================================================
+sub AssertRC(byval rc as integer,byval tag as integer)
+  if (ENABLE_DEBUG_PRINTS!=0) && (rc!=0) then
+    print "\nFailed with ";integer.h' rc;" at tag ";tag
+  endif
+endsub
+
+//==============================================================================
+//==============================================================================
+sub DbgMsg(byval msg$ as string)
+  if (ENABLE_DEBUG_PRINTS!=0) then
+    print "\n";msg$
+  endif
+endsub
+
+//==============================================================================
+//==============================================================================
+sub DbgMsgVal(byval msg$ as string, byval vl as integer)
+  if (ENABLE_DEBUG_PRINTS!=0) then
+    print "\n";msg$;" ";vl
+  endif
+endsub
+
+//==============================================================================
+//==============================================================================
+sub DbgPrnAdvReport(byref rp$ as string)
+  if (ENABLE_DEBUG_PRINTS!=0) then
+    print "\nRpt=";strhexize$(rp$)
+  endif
+endsub
+
+
+//******************************************************************************
+// Global Variable Declarations
+//******************************************************************************
+dim rc
+dim stRsp$ as string                            // Uart rx data is stored here
+
+dim ok$,er$,pr$, nc$, uc$, ip$, ac$
+
+dim i[NUM_OF_I_PARAMS]                          // index 0 used for return values
+dim s$[NUM_OF_S_PARAMS]                         // must be at least 8 elements
+
+dim urtcmd$                                     // cmd line from uart
+dim tkn$,tlen                                   // used by command parser
+
+dim ledFlashDurMs[NUM_OF_LED_PROFILES + 1]      // will be set according to chosen LED profile - time LED will be on for
+dim ledFlashIntvlMs[NUM_OF_LED_PROFILES + 1]    // time between LED flashes
+dim setLedProfile[NUM_OF_USE_CASES]             // holds what led profile is set for which use case. Index refers to use case
+dim currLedProf                                 // the Use case currently active - will be 0 if none in use
+dim intrptdLedProf                              // Holds last active LED profile if it was interrupted.
+                                                // - For example if in BLE connection and we start scanning
+                                                //   the scanning LED profile will take over. This variable 
+                                                //   allows us to switch back to the connection LED profile 
+                                                //   after scanning.
+                                                                                                                                  
+dim ledProfDescr$[NUM_OF_LED_PROFILES + 1]      // holds a description of each LED profile    
+dim previewing                                  // 1 if previewing an LED profile, 0 if not  
+dim flashCnt                                    // number of times LED has flashed            
+dim tb$                                         //table for storing discovered MAC addresses - instantiated in _Scan()
+dim tbIDs                                       //number of items in the table
+dim hConn                                       // connection handle
+dim lastAddr$                                   // the last BT address found when scanning
+
+
+//******************************************************************************
+// Initialisse Global Variable
+//******************************************************************************
+
+ok$    = "\nOK"
+er$    = "\nERROR "
+pr$    = "\r\n>"
+nc$    = "\nNO CARRIER"
+uc$    = "\nUNKNOWN COMMAND"
+ip$    = "\nINVALID LED PROFILE"
+ac$    = "\nALREADY IN A CONNECTION"
+
+ledProfDescr$[0] = "\nLED Constantly Off\n"
+ledProfDescr$[1] = "\n25ms Flash (Short) + 1925ms Interval (Long) = 2s Period\n"
+ledProfDescr$[2] = "\n25ms Flash (Short) + 475ms Interval (Short) = 500ms Period\n"
+ledProfDescr$[3] = "\n1000ms Flash (Medium) + 3000ms Interval (Long) = 4s Period\n"
+ledProfDescr$[4] = "\n1000ms Flash (Medium) + 1000ms Interval (Medium) = 2s Period\n"
+ledProfDescr$[5] = "\nLED Constantly On (Will preview for 5 seconds)\n"
+
+ledFlashDurMs[0] = 0
+ledFlashDurMs[1] = LED_PROF1_FLASH_DUR_MS
+ledFlashDurMs[2] = LED_PROF2_FLASH_DUR_MS
+ledFlashDurMs[3] = LED_PROF3_FLASH_DUR_MS
+ledFlashDurMs[4] = LED_PROF4_FLASH_DUR_MS
+ledFlashDurMs[5] = LED_PROF5_FLASH_DUR_MS
+
+ledFlashIntvlMs[0] = 0
+ledFlashIntvlMs[1] = LED_PROF1_FLASH_INVL_MS
+ledFlashIntvlMs[2] = LED_PROF2_FLASH_INVL_MS
+ledFlashIntvlMs[3] = LED_PROF3_FLASH_INVL_MS
+ledFlashIntvlMs[4] = LED_PROF4_FLASH_INVL_MS
+ledFlashIntvlMs[5] = LED_PROF5_FLASH_INVL_MS
+
+//Default LED Profiles set for the use cases
+setLedProfile[USE_CASE_ADV_DISCOV] = LED_PROFILE_1
+setLedProfile[USE_CASE_SCN_INQR]   = LED_PROFILE_2
+setLedProfile[USE_CASE_CONNECTING] = LED_PROFILE_3
+setLedProfile[USE_CASE_CONNECTED]  = LED_PROFILE_5
+setLedProfile[USE_CASE_PAIRING]    = LED_PROFILE_4
+
+currLedProf    = 0
+intrptdLedProf = 0
+previewing     = 0
+hConn          = -1                 // -1 means not in a connection
+
+
+//******************************************************************************
+// Function and Subroutine definitions
+//******************************************************************************
+
+//==============================================================================
+//==============================================================================
+function ClearS() 
+  dim j
+  for j = 0 to (NUM_OF_S_PARAMS-1)
+    s$[j]=""
+  next
+endfunc 0
+
+//==============================================================================
+//==============================================================================
+function ClearI()
+  dim j
+  for j = 0 to (NUM_OF_I_PARAMS-1)
+    i[j]=0
+  next
+endfunc 0
+
+//==============================================================================
+//==============================================================================
+sub UartRsp(rsp as integer)
+    if rsp == 0 then
+        print ok$;pr$
+    elseif rsp == -2 then
+        print pr$
+    elseif rsp == -3 then
+        print ok$
+    elseif rsp == -4 then
+        print uc$;pr$
+    elseif rsp > 0 then 
+        print er$;integer.h' rsp;pr$
+    endif
+endsub
+
+//==============================================================================
+//==============================================================================
+function ExtractIntTokens(u$,stIdx,num)
+  while num>0
+    tlen = ExtractIntToken(u$,i[stIdx])
+    if tlen == 0 then
+      exitfunc 4
+    endif
+    num=num-1
+    stIdx = stIdx+1
+  endwhile
+endfunc 0
+
+//==============================================================================
+//==============================================================================
+function ExtractStrTokens(u$,stIdx,num)
+  while num>0
+    tlen = ExtractStrToken(u$,s$[stIdx])
+    if tlen == 0 then
+      exitfunc 3
+    endif
+    num=num-1
+    stIdx = stIdx+1
+  endwhile
+endfunc 0
+
+//==============================================================================
+//==============================================================================
+function ExtractHexTokens(u$,stIdx,num)
+  while num>0
+    tlen = ExtractStrToken(u$,tkn$)
+    if tlen == 0 then
+      exitfunc 3
+    endif
+    s$[stIdx] = StrDehexize$(tkn$)
+    num=num-1
+    stIdx = stIdx+1
+  endwhile
+endfunc 0
+
+
+//==============================================================================
+//#CMD#//  misc i  clearall
+//#CMD#//  misc i  set #INTidx# #INTval#
+//#CMD#//  misc s$ clearall
+//#CMD#//  misc s$ set #INTidx# #STRescapedvalue#
+//#CMD#//  misc s$ sethex #INTidx# #HEXdigitsvalue#
+//==============================================================================
+function _Misc()  
+  tlen = ExtractStrToken(urtcmd$,tkn$)
+  if tlen == 0 then
+    exitfunc 5
+  endif
+  //=================================================
+  if strcmp(tkn$,"s$")==0 then
+    tlen = ExtractStrToken(urtcmd$,tkn$)
+    if tlen == 0 then
+      exitfunc 5
+    endif
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"clearall")==0 then
+      exitfunc ClearS()
+    endif  
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"set")==0 then
+      //extract 1 (#INTidx#) and store starting at i[1]
+      rc = ExtractIntTokens(urtcmd$,1,1)
+      if rc != 0 then
+        exitfunc rc
+      endif
+      if (i[1] < 0) || (i[1] >= NUM_OF_S_PARAMS) then 
+        exitfunc 6
+      endif
+      //extract 1 (#STRescapedvalue#) and store starting at s$[1]
+      rc = ExtractStrTokens(urtcmd$,i[1],1)
+      if rc != 0 then
+        exitfunc rc
+      endif
+      StrDeEscape(s$[i[1]])
+      exitfunc 0
+    endif  
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"sethex")==0 then
+      //extract 1 (#INTidx#) and store starting at i[1]
+      rc = ExtractIntTokens(urtcmd$,1,1)
+      if rc != 0 then
+        exitfunc rc
+      endif
+      if (i[1] < 0) || (i[1] >= NUM_OF_S_PARAMS) then 
+        exitfunc 6
+      endif
+      //extract 1 (#STRescapedvalue#) and store starting at s$[1]
+      rc = ExtractStrTokens(urtcmd$,i[1],1)
+      if rc != 0 then
+        exitfunc rc
+      endif
+      StrDeEscape(s$[i[1]])
+      exitfunc 0
+    endif  
+  endif
+  //=================================================
+  if strcmp(tkn$,"i")==0 then
+    tlen = ExtractStrToken(urtcmd$,tkn$)
+    if tlen == 0 then
+      exitfunc 5
+    endif
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"clearall")==0 then
+      exitfunc ClearI()
+    endif  
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"set")==0 then
+      dim idx
+      tlen = ExtractIntToken(urtcmd$,idx)
+      if tlen == 0 then
+        exitfunc 5
+      endif
+      if (idx < 0) || (idx >= NUM_OF_I_PARAMS) then 
+        exitfunc 6
+      endif
+      tlen = ExtractIntToken(urtcmd$,i[idx])
+      if tlen == 0 then
+        exitfunc 5
+      endif
+      exitfunc 0
+    endif  
+  endif
+endfunc 5
+
+
+//==============================================================================
+// Stop the LED from flashing without tampering with current profile
+//  - Used for example when previewing an LED profile while another one is in 
+//    progress
+//
+//  - Resets duration and interval timers, and flash count
+//==============================================================================
+sub TurnLedOff() 
+    TimerCancel(LED_DUR_TIMER)
+    TimerCancel(LED_INTVL_TIMER)
+    GpioWrite(GPIO_LED0, 0)
+    flashCnt = 0
+endsub
+
+
+//==============================================================================
+// Start provided led profile
+//------------------------------------------------------------------------------
+//  - stops and saves ongoing led profile if there is one
+//  - stops timer and turns off LED
+//  - starts timer with flash duration time of given LED profile
+//  - sets event handler for flash duration expiry
+//  - switches on LED
+//==============================================================================
+sub StartLedProfile(ledProf)  
+    
+    //if an LED profile is in use and it isn't the one being requested to start
+    if currLedProf != 0 && currLedProf != ledProf then     
+        //save current LED profile for later
+        intrptdLedProf = currLedProf
+    endif
+    
+    TurnLedOff()
+    
+    '//start requested LED profile    
+    currLedProf = ledProf
+    
+    '//no point turning on led or starting timer if led profile 0 (off) or 5 (constantly on) is chosen
+    if ledProf == LED_PROFILE_0 then
+        exitsub
+    endif
+    
+    GpioWrite(GPIO_LED0, 1)
+    
+    '//Have LED on for 5 seconds if previewing profile 5. Otherwise don't set timer
+    if ledProf == LED_PROFILE_5 then
+        if previewing == 1 then
+            TimerStart(LED_DUR_TIMER, 5000, 0)
+            flashCnt = 4
+        endif
+        exitsub
+    endif   
+     
+    TimerStart(LED_DUR_TIMER, ledFlashDurMs[currLedProf], 0)
+endsub   
+
+
+//==============================================================================
+// Stop the current LED profile
+//  - Resumes a previously interrupted LED profile if any
+//==============================================================================
+sub StopLedProfile()
+    TimerCancel(LED_DUR_TIMER)
+    TimerCancel(LED_INTVL_TIMER)
+    GpioWrite(GPIO_LED0, 0)
+    currLedProf = 0
+    flashCnt = 0
+    
+    if intrptdLedProf !=0 then
+        StartLedProfile(intrptdLedProf)
+        intrptdLedProf = 0
+    endif
+endsub
+
+
+//==============================================================================
+// Stop BLE scanning or BT Classic inquiries
+//  - stops scanning LED profile
+//  - flushes scanning ring buffer
+//  - erases table storing BT addresses of found devices
+//==============================================================================
+function StopScanInq()
+    if currLedProf == setLedProfile[USE_CASE_SCN_INQR] then
+        StopLedProfile()
+    endif
+    
+    rc=BtcInquiryCancel()
+    rc=BleScanFlush()
+    rc=BleScanStop()
+    tb$=""         
+endfunc rc
+
+
+//==============================================================================
+// Stop BLE advertisment, set module not discoverable
+//  - stops advertising/discoverable LED profile
+//==============================================================================
+function StopAdvDisc()
+    if currLedProf == setLedProfile[USE_CASE_ADV_DISCOV] then
+        StopLedProfile()
+    endif
+    
+    rc=BtcSetDiscoverable(0,0)
+    rc=BleAdvertStop()
+endfunc rc
+
+
+//==============================================================================
+//#CMD#//  .. ledprofile ? 
+//#CMD#//  .. ledprofile = #INTledProfile#
+//==============================================================================
+function _ledProf(useCase)  
+    tlen = ExtractStrToken(urtcmd$,tkn$)
+    if tlen > 0 then
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        if strcmp(tkn$,"?")==0 then    
+            print "\n";setLedProfile[useCase];":"
+            //get set led profile for selected use case and print its description
+            print ledProfDescr$[setLedProfile[useCase]]
+            exitfunc -2
+        
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        elseif strcmp(tkn$,"=")==0 then    
+            tlen = ExtractIntToken(urtcmd$,i[1])
+            if tlen > 0 then
+                //check given profile is in range
+                if i[1] > LED_PROFILE_5 || i[1] < LED_PROFILE_0 then
+                    print ip$
+                    exitfunc -2
+                else 
+                    setLedProfile[useCase] = i[1]
+                    exitfunc 0
+                endif
+            endif
+        endif
+    endif
+endfunc -4
+
+
+//-----------------------------------------------------------------------------
+//#CMD#//  preview #INTledProfile#
+//-----------------------------------------------------------------------------
+function _preview()  
+    tlen = ExtractIntToken(urtcmd$,i[1])
+    if tlen > 0 then   
+        //check given profile is in range
+        if i[1] > LED_PROFILE_5 || i[1] < LED_PROFILE_0 then
+            print ip$
+            exitfunc -2
+        else        
+            print ledProfDescr$[i[1]]; 
+            TurnLedOff()
+            previewing = 1
+            StartLedProfile(i[1])      
+            exitfunc -1     //don't print any response to user yet
+        endif
+    endif
+endfunc -4
+
+
+//==============================================================================
+//#CMD#//  advert start 
+//#CMD#//  advert stop 
+//#CMD#//  advert ledprofile ? 
+//#CMD#//  advert ledprofile = #INTledProfile#
+//#CMD#//  disc start 
+//#CMD#//  disc stop 
+//#CMD#//  disc ledprofile ? 
+//#CMD#//  disc ledprofile = #INTledProfile#
+//==============================================================================
+function _advertDisc(op$)  
+    tlen = ExtractStrToken(urtcmd$,tkn$)
+    if tlen > 0 then
+    
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        if strcmp(tkn$,"start")==0 then
+            dim addr$
+            
+            if strcmp(op$,"advert")==0 then
+                rc = BleAdvertStart(0, addr$, 100, 0, 0)
+            elseif strcmp(op$,"disc")==0 then
+                rc = BtcSetDiscoverable(1,0)
+            endif
+            
+            StartLedProfile(setLedProfile[USE_CASE_ADV_DISCOV])
+            exitfunc rc
+   
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        elseif strcmp(tkn$,"stop")==0 then
+            exitfunc StopAdvDisc()
+                 
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        elseif strcmp(tkn$,"ledprofile")==0 then    
+            exitfunc _ledProf(USE_CASE_ADV_DISCOV)        
+        endif
+    endif
+endfunc -4
+
+
+//==============================================================================
+//#CMD#//  scan start 
+//#CMD#//  scan stop 
+//#CMD#//  scan ledprofile ? 
+//#CMD#//  scan ledprofile = #INTledProfile#
+//#CMD#//  inquiry start 
+//#CMD#//  inquiry stop 
+//#CMD#//  inquiry ledprofile ? 
+//#CMD#//  inquiry ledprofile = #INTledProfile#
+//==============================================================================
+function _scanInq(op$)
+    tlen = ExtractStrToken(urtcmd$,tkn$)
+    if tlen > 0 then 
+    
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        if strcmp(tkn$,"start")==0 then
+            dim addr$
+            
+            
+            if CACHE_MAC_ADDRESSES == 1 then
+                rc=TableInit(tb$)   //table is used to store peer BT addresses
+                AssertRC(rc,151)
+            endif
+                        
+            if strcmp(op$,"scan")==0 then
+                rc = BleScanStart(0,0)
+            elseif strcmp(op$,"inquiry")==0 then
+                rc = BtcInquiryStart(0)
+            endif
+            
+            StartLedProfile(setLedProfile[USE_CASE_SCN_INQR])
+            exitfunc rc
+        
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        elseif strcmp(tkn$,"stop")==0 then     
+            exitfunc StopScanInq()          
+        
+        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        elseif strcmp(tkn$,"ledprofile")==0 then    
+            exitfunc _ledProf(USE_CASE_SCN_INQR)        
+        else    
+            exitfunc -4 
+        endif
+    endif
+endfunc rc
+
+
+//==============================================================================
+//#CMD#//  connect  #HEXaddr7Bytes#
+//==============================================================================
+function _connect()
+    if hConn > -1 then          //if already in a connection 
+        print ac$;pr$
+        exitfunc -1 
+    else
+        tlen = ExtractStrToken(urtcmd$,tkn$)
+        if tlen == 0 && StrLen(lastAddr$) != 0 then
+            tkn$ = StrHexize$(lastAddr$)
+        endif
+        
+        rc=StopScanInq()
+        
+        tkn$ = StrDehexize$(tkn$)
+        
+        rc = BleConnect(tkn$, CONN_TMT, MIN_CONN_INTVL, MAX_CONN_INTVL, LINK_SUP_TMT)
+        if rc == 0 then
+            StartLedProfile(setLedProfile[USE_CASE_CONNECTING])
+        endif
+    endif
+endfunc rc
+
+
+//==============================================================================
+//#CMD#//  pair
+//#CMD#//  pair ledprofile ? OR = #INTledProfile#
+//==============================================================================
+function _pair()
+    tlen = ExtractStrToken(urtcmd$,tkn$)
+    if tlen == 0 then      
+        if hConn == -1 then
+            print "\nNO CARRIER"
+            exitfunc -2
+        endif
+        
+        rc=BlePair(hConn, 1)
+        if rc == 0 then
+            print "\n --- Pairing...";
+            StartLedProfile(setLedProfile[USE_CASE_PAIRING])
+        endif
+    else
+        if strcmp(tkn$, "ledprofile")==0 then
+            rc=_ledProf(USE_CASE_PAIRING)
+        else
+            exitfunc -4
+        endif
+    endif
+endfunc rc
+  
+
+
+//==============================================================================
+//#CMD#//  other ...
+//==============================================================================
+function _other()  
+  tlen = ExtractStrToken(urtcmd$,tkn$)
+  if tlen > 0 then
+    //if strcmp(tkn$,"something")==0 then
+    //  exitfunc _Something()
+    //endif
+  endif
+endfunc 5
+
+//==============================================================================
+//==============================================================================
+function OnUartCmd() as integer
+    rc=-2 //assume there is no error
+    tlen = ExtractStrToken(urtcmd$,tkn$) //get first token
+    if tlen > 0 then
+        
+        if strcmp(tkn$,"misc")==0 then
+            rc = _misc()
+          
+        elseif strcmp(tkn$,"preview")==0 then
+            rc = _preview()
+            
+        elseif strcmp(tkn$,"advert")==0 || strcmp(tkn$,"disc")==0 then
+            dim s$ : s$ = tkn$
+            rc = _advertDisc(s$)
+            
+        elseif strcmp(tkn$,"scan")==0 || strcmp(tkn$,"inquiry")==0  then
+            s$ = tkn$
+            rc = _scanInq(s$)
+            
+        elseif strcmp(tkn$,"connect")==0 then
+            rc = _connect()
+            if rc == 0 then
+                UartRsp(-3)
+            else    
+                UartRsp(rc)
+            endif
+            exitfunc 1
+            
+        elseif strcmp(tkn$,"disconnect")==0 then
+            rc = BleDisconnect(hConn)
+            if rc == 0 then
+                UartRsp(-3)
+            elseif rc == 0x6026 then
+                print nc$
+            else    
+                UartRsp(rc)
+            endif
+            exitfunc 1
+            
+        elseif strcmp(tkn$,"connecting")==0 then
+            //remove next token - should be "ledprofile"
+            tlen = ExtractStrToken(urtcmd$,tkn$)
+            rc = _ledProf(USE_CASE_CONNECTING)
+            
+        elseif strcmp(tkn$,"connected")==0 then
+            //remove next token - should be "ledprofile"
+            tlen = ExtractStrToken(urtcmd$,tkn$)
+            rc = _ledProf(USE_CASE_CONNECTED)
+            
+        elseif strcmp(tkn$,"pair")==0 then
+            rc = _pair()
+        
+        elseif strcmp(tkn$,"other")==0 then
+            rc = _other()
+        
+        elseif strcmp(tkn$,"quit")==0 || strcmp(tkn$,"exit")==0 then
+            StopLedProfile()
+            rc=StopScanInq()
+            rc=StopAdvDisc()
+            rc=BleDisconnect(hConn)
+            print "\nVersion ";APP_VERSION
+            exitfunc 0 
+        else
+            rc=-4   //send an "UNKNOWN COMMAND" response to user
+        endif
+    endif
+    // send a response back to the user
+    UartRsp(rc)
+endfunc 1
+
+//==============================================================================
+//==============================================================================
+sub Initialise()
+    rc=GpioSetFunc(GPIO_LED0, 2, 0)
+    GpioWrite(GPIO_LED0, 0)
+    TimerCancel(LED_DUR_TIMER)
+    TimerCancel(LED_INTVL_TIMER)
+    
+    '//we are only using BLE connecting and pairing
+    rc=BtcSetConnectable(0)
+    rc=BtcSetPairable(0)
+    
+    '//configuration for BLE pairing
+    rc=BleSecMngrIoCap(0)
+    rc=BleSecMngrBondReq(1)
+    rc=BleSecMngrJustWorksConf(0)
+endsub
+
+
+//******************************************************************************
+// Handler definitions
+//******************************************************************************
+
+//==============================================================================
+// This handler is called when data has arrived at the serial port
+//==============================================================================
+function HandlerUartRx() as integer
+  dim nMatch
+
+  //check if CR has been received
+  nMatch=UartReadMatch(stRsp$,13)
+  if nMatch!=0 then
+    //CR exists in the input buffer
+    urtcmd$ = strsplitleft$(stRsp$,nMatch)
+    exitfunc OnUartCmd()
+  endif
+endfunc 1
+
+
+//==============================================================================
+// Called when LED flash duration timer expires
+//------------------------------------------------------------------------------
+//  - turns led off
+//  - sets event handler for flash interval expiry
+//  - starts timer with flash interval time
+//==============================================================================
+function HandlerFlashDur() 
+    GpioWrite(GPIO_LED0, 0)
+    
+    TimerStart(LED_INTVL_TIMER, ledFlashIntvlMs[currLedProf], 0)  
+    flashCnt = flashCnt + 1
+endfunc 1
+
+
+//==============================================================================
+// Called when LED flash interval timer expires
+//------------------------------------------------------------------------------
+//  - turns led on
+//  - sets event handler for flash duration expiry
+//  - starts timer with flash duration time
+//==============================================================================
+function HandlerFlashIntvl() 
+    if previewing then
+        if flashCnt >=4 then
+            UartRsp(0)
+            StopLedProfile()
+            previewing = 0
+            exitfunc 1      
+        endif
+    endif
+     
+    GpioWrite(GPIO_LED0, 1)
+    TimerStart(LED_DUR_TIMER, ledFlashDurMs[currLedProf], 0)  
+endfunc 1
+
+
+
+
+
+//==============================================================================
+// This handler is called when there is an advert report waiting to be read
+//==============================================================================
+function HandlerAdvRpt() as integer
+    dim ad$,dta$,ndisc,rsi,nme$
+
+    while BleScanGetAdvReport(ad$,dta$,ndisc,rsi)==0
+
+        if CACHE_MAC_ADDRESSES == 1 then   
+            '//add device to table if not in there
+            if TableLookup(tb$,ad$)<0 then
+                rc=TableAdd(tb$, ad$, tbIDs)
+                tbIDs = tbIDs + 1
+                lastAddr$ = ad$
+            else
+                break
+            endif
+        endif
+
+        '//get and print name of device
+        rc=BleGetADByTag(dta$,0x09,nme$)
+        print "\nAddress: "; StrHexize$(ad$), rsi, nme$
+
+        '// if there are MAX_DEV_SCAN_TABLE mac addresses in the table
+        if tbIDs == MAX_DEV_SCAN_TABLE then
+            rc=BleScanStop()
+            tb$=""
+            UartRsp(0)
+            print "\n";pr$
+            break       
+        endif
+
+    endwhile   
+endfunc 1
+
+
+//==============================================================================
+// This handler is called when there at least one inquiry response waiting to be read
+//==============================================================================
+function HandlerInqResp(respType) as integer
+    dim ad$,dta$,rsi,nme$,ndx
+    
+    while BtcInquiryGetReport(ad$,dta$,ndx,rsi)==0     
+        lastAddr$ = ad$
+        '//get and print name of device
+        rc=BtcGetEIRByTag(dta$,0x09,nme$)
+        print "\nINQ: "; StrHexize$(ad$), rsi, nme$        
+    endwhile 
+endfunc 1
+
+
+//==============================================================================
+// This handler is called when there is a BLE message
+//==============================================================================
+function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as integer
+    select nMsgId  
+        case BLE_EVBLEMSGID_CONNECT
+            hConn = nCtx
+            print "\nCONNECTED";pr$
+            
+            '//Stop the 'connecting' led profile so that it won't be resumed when we disconnect
+            if currLedProf == setLedProfile[USE_CASE_CONNECTING] then
+                StopLedProfile()
+            elseif intrptdLedProf == setLedProfile[USE_CASE_CONNECTING] then
+                intrptdLedProf = 0
+            endif
+            
+            StartLedProfile(setLedProfile[USE_CASE_CONNECTED])
+
+        case BLE_EVBLEMSGID_DISCONNECT
+            hConn = -1
+            print "\nDISCONNECTED";pr$
+            
+            //stop the 'connected' LED profile
+            StopLedProfile()
+
+        case BLE_EVBLEMSGID_NEW_BOND  
+            print "\n --- Paired"
+            if currLedProf == setLedProfile[USE_CASE_PAIRING] then
+                StopLedProfile()
+            endif  
+
+            '//prevent 'pairing' led profile from resuming
+            if intrptdLedProf == setLedProfile[USE_CASE_PAIRING] then
+                intrptdLedProf = 0
+            endif
+            
+        case else      
+    endselect    
+endfunc 1
+
+
+//==============================================================================
+// This handler is called when there is a connection attempt timeout
+//==============================================================================
+function HandlerBleConnTO() as integer
+    print"\nConnection attempt stopped via timeout";pr$
+    StopLedProfile()        //assuming the 'connecting' led profile is active
+endfunc 1
+
+
+//******************************************************************************
+//******************************************************************************
+// Equivalent to main() in C
+//******************************************************************************
+
+//------------------------------------------------------------------------------
+// Enable synchronous event handlers
+//------------------------------------------------------------------------------
+onevent   evuartrx               call HandlerUartRx
+onevent   evtmr0                 call HandlerFlashDur
+onevent   evtmr1                 call HandlerFlashIntvl
+onevent   evble_adv_report       call HandlerAdvRpt
+onevent   evblemsg               call HandlerBleMsg
+onevent   evinqresp              call HandlerInqResp
+onevent   evble_conn_timeout     call HandlerBleConnTO
+
+
+//------------------------------------------------------------------------------
+// Initialise Services and then wait for events
+//------------------------------------------------------------------------------
+
+Initialise()
+
+//Send user prompt for uart based command interface
+print "\n\r";BleGetDeviceName$();"\n\r"
+
+//Send an OK response
+UartRsp(0)
+
+//------------------------------------------------------------------------------
+// Wait for a synchronous event.
+// An application can have multiple <WaitEvent> statements
+//------------------------------------------------------------------------------
+WaitEvent
+
+
