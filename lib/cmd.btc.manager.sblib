@@ -59,6 +59,11 @@
 //   - Open the serial port service and listen for SPP connections. Service handle is returned
 //
 // -----------------------------------------------------------------------------
+// spp param #INTframesize# #INTincomingcredits#
+//    --- bluetooth classic functionality ---
+//   - Sets parameters for SPP connections (must be used before connections/servers are established)
+//
+// -----------------------------------------------------------------------------
 // spp connect #HEXaddr6Bytes#
 //    --- bluetooth classic functionality ---
 //   - Connect to an SPP device defined by mac address #HEXaddr6Bytes#. Handle is returned
@@ -322,7 +327,8 @@ endfunc 5
 
 
 //-------------------------------------------------------------------------
-//#CMD#//  spp open 
+//#CMD#//  spp open
+//#CMD#//  spp param #INTframesize# #INTincomingcredits#
 //#CMD#//  spp connect #HEXaddr6Bytes#
 //#CMD#//  spp disconnect #INThConnSpp#
 //#CMD#//  spp close #INThSpp# 
@@ -344,8 +350,16 @@ function _spp()
             exitfunc rc
         endif
     
+    elseif strcmp(tkn$,"param")==0 then
+        //extract 2 : (framesize), (incomingcredits) and store starting at i[1]
+        rc = ExtractIntTokens(urtcmd$,1,2)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        exitfunc BtcSppSetParams(i[0], i[1])
+
     elseif strcmp(tkn$,"connect")==0 then
-        //extract 2 : (cfgID value) and store starting at i[1]
+        //extract 1 : (addr6Bytes) and store starting at s$[1]
         rc = ExtractStrTokens(urtcmd$,1,1)
         if rc != 0 then
             exitfunc rc
@@ -796,13 +810,14 @@ endfunc 1
 // Called when data is received via SPP - CMD mode
 //==============================================================================
 function HandlerSppDataCmd()
-    dim hPort, data$, rLen
-    
+    dim hPort, data$, rLen, hz
+
     '//read and print data while there is data available to read
 	do
 		rc = BtcSppRead(hPort, data$, rLen)
         if rLen>0 && rc ==0 then
-            print"\nPort Handle: ";hPort; " Length: ";rLen;"\nData: ";data$;pr$
+            hz = GetConnHandle(hPort)
+            print"\nPort Handle: ";hz; " Length: ";rLen;"\nData: ";data$;pr$
         endif
 	dowhile rLen>0 && rc ==0
 endfunc 1
