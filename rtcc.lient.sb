@@ -148,7 +148,7 @@
  dim Status : Status = 0 //0 = waiting for user input, 1 = scanning, 2 = ?, 3 = ?, 4 = ?
  dim ConnectionStatus : ConnectionStatus = 0 //0 = disconnected, 1 = connected
  dim nCtxG //Global BLE handler
- dim APP_VERSION$ : APP_VERSION$ = "0.9" //Version of client program
+ dim APP_VERSION$ : APP_VERSION$ = "0.95" //Version of client program
  dim TmpStr$ : TmpStr$ = "" //Temporary string for inter-function passing
  
  //List of UUID's
@@ -255,22 +255,22 @@ ENDFUNC 1
                         dim adval$
                         dim Tmp
                         rc=BLEGETADBYTAG(advData$, 0x16, ADval$)
-IF (strlen(ADval$) == 10) THEN
-                        PRINT "From: "; StrHexize$(periphAddr$);" (RSSI: ";nRssi;")\n"
-                        PRINT "Date & Time: "
-                        rc=BleDecodeU8(ADVal$,Tmp,5)
-                        PRINT Tmp;":"
-                        rc=BleDecodeU8(ADVal$,Tmp,4)
-                        PRINT Tmp;":"
-                        rc=BleDecodeU8(ADVal$,Tmp,3)
-                        PRINT Tmp;" on "
-                        rc=BleDecodeU8(ADVal$,Tmp,6)
-                        PRINT Tmp;"/"
-                        rc=BleDecodeU8(ADVal$,Tmp,7)
-                        PRINT Tmp;"/"
-                        rc=BleDecodeU16(ADVal$,Tmp,8)
-                        PRINT Tmp;"\n"
-ENDIF
+                        IF (strlen(ADval$) == 10) THEN
+                            PRINT "From: "; StrHexize$(periphAddr$);" (RSSI: ";nRssi;")\n"
+                            PRINT "Date & Time: "
+                            rc=BleDecodeU8(ADVal$,Tmp,4)
+                            PRINT Tmp;":"
+                            rc=BleDecodeU8(ADVal$,Tmp,5)
+                            PRINT Tmp;":"
+                            rc=BleDecodeU8(ADVal$,Tmp,6)
+                            PRINT Tmp;" on "
+                            rc=BleDecodeU8(ADVal$,Tmp,3)
+                            PRINT Tmp;"/"
+                            rc=BleDecodeU8(ADVal$,Tmp,2)
+                            PRINT Tmp;"/"
+                            rc=BleDecodeU16(ADVal$,Tmp,0)
+                            PRINT Tmp;"\n"
+                        ENDIF
 //                ENDIF
          UNTIL rc!=0
  ENDFUNC 1
@@ -548,17 +548,17 @@ FUNCTION HndlrGCData(nCtx, nHndl, nStat)
                 IF nHndl == TimeUUID THEN
                         //We have the time & date data
                         PRINT "Date & Time: "
-                        rc=BleDecodeU8(attrData$,Tmp,5)
-                        PRINT Tmp;":"
                         rc=BleDecodeU8(attrData$,Tmp,4)
                         PRINT Tmp;":"
-                        rc=BleDecodeU8(attrData$,Tmp,3)
-                        PRINT Tmp;" on "
+                        rc=BleDecodeU8(attrData$,Tmp,5)
+                        PRINT Tmp;":"
                         rc=BleDecodeU8(attrData$,Tmp,6)
+                        PRINT Tmp;" on "
+                        rc=BleDecodeU8(attrData$,Tmp,3)
                         PRINT Tmp;"/"
-                        rc=BleDecodeU8(attrData$,Tmp,7)
+                        rc=BleDecodeU8(attrData$,Tmp,2)
                         PRINT Tmp;"/"
-                        rc=BleDecodeU16(attrData$,Tmp,8)
+                        rc=BleDecodeU16(attrData$,Tmp,0)
                         PRINT Tmp;"\n"
                 ELSEIF nHndl == AlarmTimeUUID THEN
                         //We have the alarm data

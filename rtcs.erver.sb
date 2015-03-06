@@ -36,7 +36,7 @@ DIM Char7 //Characteristic 7 (Version)
 DIM Timezone : Timezone = 0 //Hours off from UTC, see https://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.time_zone.xml
 DIM DST : DST = 0 //0 for no DST, 4 for +1 hour DST, see https://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.dst_offset.xml
 DIM SendNotify : SendNotify = 0 //Set to 1 when notifications are enabled
-dim APP_VERSION$ : APP_VERSION$ = "0.85"
+dim APP_VERSION$ : APP_VERSION$ = "0.90"
 dim BuzzerFunc : BuzzerFunc = 0 //Which function to do with the buzzer next
 dim I2CSpeed : I2CSpeed = 250000 //250KHz
 dim RTCAddr : RTCAddr = 111 //I2C Address of RTC
@@ -89,15 +89,15 @@ FUNCTION HndlrTmr0()
 	
 	//Encode data
 	dim TmpStr$ : TmpStr$ = ""
-	rc = BleEncode8(TmpStr$, 0, 0) //Adjust reason
-	rc = BleEncode8(TmpStr$, 0, 1) //1/256 seconds
-	rc = BleEncode8(TmpStr$, 0, 2) //Day of week	
-	rc = BleEncode8(TmpStr$, Seconds, 3)
-	rc = BleEncode8(TmpStr$, Minutes, 4)
-	rc = BleEncode8(TmpStr$, Hours, 5)
-	rc = BleEncode8(TmpStr$, Day, 6)
-	rc = BleEncode8(TmpStr$, Month, 7)
-	rc = BleEncode16(TmpStr$, Year, 8)
+	rc = BleEncode8(TmpStr$, 0, 9) //Adjust reason
+	rc = BleEncode8(TmpStr$, 0, 8) //1/256 seconds
+	rc = BleEncode8(TmpStr$, 0, 7) //Day of week	
+	rc = BleEncode8(TmpStr$, Seconds, 6)
+	rc = BleEncode8(TmpStr$, Minutes, 5)
+	rc = BleEncode8(TmpStr$, Hours, 4)
+	rc = BleEncode8(TmpStr$, Day, 3)
+	rc = BleEncode8(TmpStr$, Month, 2)
+	rc = BleEncode16(TmpStr$, Year, 0)
 	
 	//Update GATT information
 	rc = BleCharValueWrite(Char1, TmpStr$)
@@ -355,11 +355,11 @@ FUNCTION GetAlarmTime()
 	
 	//Write this to the characteristic
 	dim TmpStr$ : TmpStr$ = ""
-	rc = BleEncode8(TmpStr$, AlmSec, 0) //Seconds
-	rc = BleEncode8(TmpStr$, AlmMin, 1) //Minutes
+	rc = BleEncode8(TmpStr$, AlmSec, 4) //Seconds
+	rc = BleEncode8(TmpStr$, AlmMin, 3) //Minutes
 	rc = BleEncode8(TmpStr$, AlmHour, 2) //Hours
-	rc = BleEncode8(TmpStr$, AlmDate, 3) //Day
-	rc = BleEncode8(TmpStr$, AlmMonth, 4) //Month
+	rc = BleEncode8(TmpStr$, AlmDate, 1) //Day
+	rc = BleEncode8(TmpStr$, AlmMonth, 0) //Month
 
 	//Update GATT information
 	rc = BleCharValueWrite(Char6, TmpStr$)
@@ -493,8 +493,7 @@ rc = BleCharCommit(Service1, hrs$, Char6)
 assertrc(rc,478)
 
 //Seventh (and final) characteristic
-hrs$ = "000"
-rc = BleCharNew(0x2, BleHandleUuid16(0x2B04), BleAttrMetadata(1,0,3,0,rc), 0, 0) //Version (Read)
+rc = BleCharNew(0x2, BleHandleUuid16(0x2B04), BleAttrMetadata(1,0,5,0,rc), 0, 0) //Version (Read)
 assertrc(rc,483)
 rc = BleCharCommit(Service1, APP_VERSION$, Char7)
 assertrc(rc,485)
@@ -505,18 +504,18 @@ AssertRC(rc,489)
 
 //Setup local time information characteristic
 dim TmpStr$ : TmpStr$ = ""
-rc = BleEncode8(TmpStr$, DST, 0) //DST
-rc = BleEncode8(TmpStr$, Timezone, 1) //Timezone
+rc = BleEncode8(TmpStr$, DST, 1) //DST
+rc = BleEncode8(TmpStr$, Timezone, 0) //Timezone
 	
 //Update GATT information
 rc = BleCharValueWrite(Char2, TmpStr$)
 
 //Setup reference time information characteristic
 TmpStr$ = ""
-rc = BleEncode8(TmpStr$, 255, 0) //Hours since update
-rc = BleEncode8(TmpStr$, 255, 1) //Days since update
-rc = BleEncode8(TmpStr$, 255, 2) //Accuracy is unknown
-rc = BleEncode8(TmpStr$, 4, 3) //Source is manual
+rc = BleEncode8(TmpStr$, 255, 3) //Hours since update
+rc = BleEncode8(TmpStr$, 255, 2) //Days since update
+rc = BleEncode8(TmpStr$, 255, 1) //Accuracy is unknown
+rc = BleEncode8(TmpStr$, 4, 0) //Source is manual
 
 //Update GATT information
 rc = BleCharValueWrite(Char3, TmpStr$)
