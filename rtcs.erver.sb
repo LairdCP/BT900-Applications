@@ -1,5 +1,5 @@
  //******************************************************************************
- // Laird Technologies (c) 2014
+ // Laird Technologies (c) 2014-2015
  //
  // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  // +++++                                                                      ++
@@ -16,7 +16,7 @@
  // -> Allows remote time setting
  // -> Supports alarm wakeup with broadcast on event
  // -> Allows remote wakeup configuration
- // -> Uses buzzer as a wake-up alarm (SIO_12) when jumped is enabled
+ // -> Uses buzzer as a wake-up alarm (SIO_12) when jumper is fitted
  //
 
 #DEFINE BLE_SERVICE_SECONDARY                           0

@@ -1,5 +1,5 @@
 //******************************************************************************
-// Laird Technologies (c) 2014
+// Laird Technologies (c) 2014-2015
 //
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // +++++                                                                      ++
@@ -71,22 +71,27 @@
 // -----------------------------------------------------------------------------
 //
 // set time <timestamp>
-//    - 
+//    - Sets the time on the connected device to be that of the provided
+//       timestamp
 //
 // -----------------------------------------------------------------------------
 //
-// set alarm time <>
-//    - 
+// set alarm time <timestamp>
+//    - Sets the alarm time on the connected device to be that of the provided
+//       timestamp
 //
 // -----------------------------------------------------------------------------
 //
-// set alarm mode <> <>
-//    - 
+// set alarm mode <on/off> <match>
+//    - Enables or disables the alarm on the connected device, and changes what
+//       the alarm should match on which can be one of: seconds, minutes,
+//       hours, date
 //
 // -----------------------------------------------------------------------------
 //
-// set addr <>
-//    - 
+// set addr <BTAddr>
+//    - Sets the bluetooth address of the host device to connect to using the
+//       `connect` command
 //
 // -----------------------------------------------------------------------------
 //
@@ -117,22 +122,7 @@
 // quit or exit
 //    - Exits the application and returns the interactive mode.
 //
-//
 // -----------------------------------------------------------------------------
-// atd #HEXbdAddr7bytes# OR
-
- // scan                            : Listens for RTC packets from devices
- // set time <timestamp>            : Sets the RTC time
- // set alarm time <timestamp>      : Sets the alarm time
- // set alarm mode <on/off> <match> : Sets the alarm mode
- // set addr <btaddr>               : Changes the target Bluetooth address to connect to
- // connect                         : Connects to the host BT900
- // disconnect                      : Disconnects from the BT900
- // help                            : Shows list of commands
- // timestamp                       : Shows format of timestamp
- // version                         : Shows the version
- // quit/exit                       : Exits the application
- // 
 
  //Defines for the DoFunc variable
  #define READ_TIME 0
