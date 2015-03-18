@@ -1,4 +1,4 @@
-//Example :: BleAdvAddUuid1628.sb (See in BL600CodeSnippets.zip)
+//Example :: BleAdvAddUuid16.sb
 DIM advRpt$, rc
 DIM discovMode : discovMode=0 
 DIM advAppearance : advAppearance = 1

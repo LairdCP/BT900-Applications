@@ -1,3 +1,5 @@
+//Example :: BleEncodeSFloatEx.sb
+
 DIM rc, mantissa, exp
 DIM attr$ : attr$=""
 

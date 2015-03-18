@@ -1,3 +1,5 @@
+//Example :: BleServiceNew.sb
+
 #DEFINE BLE_SERVICE_SECONDARY                           0
 #DEFINE BLE_SERVICE_PRIMARY                             1
 
@@ -6,10 +8,8 @@
 //----------------------------------------------------------------------------
 DIM hHtsSvc    //composite handle for hts primary service
 DIM hUuidHT : hUuidHT = BleHandleUuid16(0x1809)     //HT Svc UUID Handle
-DIM rc
 
 IF BleServiceNew(BLE_SERVICE_PRIMARY,hUuidHT,hHtsSvc)==0 THEN
-	rc = BleServiceCommit(hHtsSvc)
     PRINT "\nHealth Thermometer Service attribute written to GATT table"
     PRINT "\nUUID Handle value: ";hUuidHT
     PRINT "\nService Attribute Handle value: ";hHtsSvc
@@ -26,7 +26,6 @@ DIM hBatSvc    //composite handle for battery primary service
 DIM hUuidBatt : hUuidBatt = BleHandleUuid16(0x180F)     //Batt Svc UUID Handle
 
 IF BleServiceNew(BLE_SERVICE_PRIMARY,hUuidBatt,hBatSvc)==0 THEN
-	rc = BleServiceCommit(hBatSvc)
     PRINT "\n\nBattery Service attribute written to GATT table"
     PRINT "\nUUID Handle value: ";hUuidBatt
     PRINT "\nService Attribute Handle value: ";hBatSvc

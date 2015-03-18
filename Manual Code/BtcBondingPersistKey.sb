@@ -1,3 +1,4 @@
+//Example :: BtcBondingPersistKey.sb
 dim rc, mac$, key$, nRoll, nPers
 
 '//------------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-// Example :: UARTRX.sb (See in BL600CodeSnippets.zip)
+// Example :: EVUARTRX.sb
 DIM rc
 FUNCTION HndlrUartRx()
   PRINT "\nData has arrived\r"

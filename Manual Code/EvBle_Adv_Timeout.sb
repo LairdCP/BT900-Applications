@@ -1,4 +1,4 @@
-//Example :: EvBle_Adv_Timeout.sb (See in BL600CodeSnippets.zip)
+//Example :: EvBle_Adv_Timeout.sb
 DIM peerAddr$
 
 //handler to service an advert timeout

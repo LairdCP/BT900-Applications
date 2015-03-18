@@ -1,7 +1,8 @@
+//Example :: BleSvcRegDevInfo.sb
 DIM rc,manfNme$,mdlNum$,srlNum$,hwRev$,swRev$,sysId$,regDtaLst$,pnpId$
 
 manfNme$ = "Laird Technologies"
-mdlNum$ = "BL600BT900"             
+mdlNum$ = "BT900"             
 srlNum$ = ""                   //empty to omit submission          
 hwRev$ = "1.0"       
 swRev$ = "1.0"               

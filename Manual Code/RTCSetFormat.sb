@@ -1,4 +1,5 @@
-// ******************** RTCSetFormat.sb*********************************
+//Example :: RTCSetFormat.sb
+
 dim rc
 dim strTime$
 dim nFormat

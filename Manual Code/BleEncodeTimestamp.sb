@@ -1,3 +1,5 @@
+//Example :: BleEncodeTimestamp.sb
+
 DIM rc, ts$
 DIM attr$ : attr$=""
 

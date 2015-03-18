@@ -1,3 +1,4 @@
+//Example :: EvDiscon.sb
 DIM addr$ : addr$=""
 
 FUNCTION HndlrBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) 

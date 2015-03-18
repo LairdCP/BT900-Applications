@@ -1,3 +1,4 @@
+//Example :: BtcSetConnectable.sb
 dim rc
 
 rc=BtcSetConnectable(1)

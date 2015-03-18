@@ -1,3 +1,4 @@
+//Example :: BleScanConfig.sb
 DIM rc, startTick
 
 PRINT "\nScan Interval: "; SysInfo(2150)    //get current scan interval

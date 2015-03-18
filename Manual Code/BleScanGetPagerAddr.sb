@@ -1,3 +1,4 @@
+//Example :: BleScanGetPagerAddr.sb
 DIM rc
 
 '//Scan for 20 seconds with no filtering

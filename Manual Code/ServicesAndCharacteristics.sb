@@ -1,4 +1,4 @@
-//Example :: ServicesAndCharacteristics.sb (See in BL600CodeSnippets.zip)
+//Example :: ServicesAndCharacteristics.sb
 
 //==============================================================================
 //Register two Services in the GATT Table. Service 1 with 2 Characteristics and
@@ -51,7 +51,7 @@ DIM hUuidC21  // handles for uuid of characteristic 1 in Service 2
 
 //---Register Service 1
 hUuidS1 = BleHandleUuid16(0x180D)
-rc = BleSvcCommit(BLE_SERVICE_PRIMARY, hUuidS1,hSvc)
+rc = BleServiceNew(BLE_SERVICE_PRIMARY, hUuidS1, hSvc)
 
 //---Register Characteristic 1 in Service 1
 mdAttr = BleAttrMetadata(BLE_ATTR_ACCESS_OPEN,BLE_ATTR_ACCESS_OPEN,10,0,rc)
@@ -72,10 +72,11 @@ hUuidC12 = BleHandleUuid16(0x2A39)
 rc = BleCharNew(chProp, hUuidC12,mdAttr,mdCccd,mdSccd)
 attr$="\00\00"
 rc = BleCharCommit(hSvc,attr$,hChar21)
+rc = BleServiceCommit(hSvc)
 
 //---Register Service 2  (can now reuse the service handle)
 hUuidS2 = BleHandleUuid16(0x1856)
-rc = BleSvcCommit(BLE_SERVICE_PRIMARY, hUuidS2,hSvc)
+rc = BleServiceNew(BLE_SERVICE_PRIMARY, hUuidS2, hSvc)
 
 //---Register Characteristic 1 in Service 2
 mdAttr = BleAttrMetadata(BLE_ATTR_ACCESS_NONE,BLE_ATTR_ACCESS_NONE,10,0,rc)
@@ -86,16 +87,14 @@ hUuidC21 = BleHandleUuid16(0x2A54)
 rc = BleCharNew(chProp, hUuidC21,mdAttr,mdCccd,mdSccd)
 attr$="\00\00\00\00"
 rc = BleCharCommit(hSvc,attr$,hChar12)
+rc = BleServiceCommit(hSvc)
 
 //===The 2 services are now visible in the gatt table
-
-
 
 //------------------------------------------------------------------------------
 // To deal with writes from a gatt client into characteristic 1 of Service 1
 // which has the handle hChar11
 //------------------------------------------------------------------------------
-
 
 // This handler is called when there is a EVCHARVAL message
 FUNCTION HandlerCharVal(BYVAL hChar AS INTEGER, BYVAL offset, BYVAL len) AS INTEGER
@@ -103,7 +102,6 @@ FUNCTION HandlerCharVal(BYVAL hChar AS INTEGER, BYVAL offset, BYVAL len) AS INTE
   IF hChar == hChar11 THEN
     rc = BleCharValueRead(hChar11,attr$)
     print "Svc1/Char1 has been writen with = ";attr$
-    
   ENDIF
 ENDFUNC 1
 
@@ -113,16 +111,12 @@ OnEvent  EVCHARVAL          call HandlerCharVal
 //wait for events
 WAITEVENT
 
-
-
 //------------------------------------------------------------------------------
 // Notify a value for characteristic 1 in service 2
 //------------------------------------------------------------------------------
 
 attr$="somevalue"
-rc = BleCharValueNotIFy(hChar12,attr$)
-
-
+rc = BleCharValueNotify(hChar12,attr$)
 
 //------------------------------------------------------------------------------
 // indicate  a value for characteristic 2 in service 1
@@ -140,6 +134,3 @@ OnEvent  EVCHARHVC          CALL HandlerCharHvc
 
 attr$="somevalue"
 rc = BleCharValueIndicate(hChar12,attr$)
-
-
-

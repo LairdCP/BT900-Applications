@@ -1,4 +1,4 @@
-//Example :: GpioConfigPwm.sb (See in BT900CodeSnippets.zip)
+//Example :: GpioConfigPwm.sb
 dim retval
 dim i
 dim nFreq

@@ -1,4 +1,5 @@
-//************RTCSetHourAlarm.sb**************
+//Example :: RTCSetHourAlarm.sb
+
 dim rc
 dim strAlarm$
 

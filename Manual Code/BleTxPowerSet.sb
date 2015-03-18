@@ -1,4 +1,4 @@
-//Example :: BleTxPowerSet.sb (See in BL600CodeSnippets.zip)
+//Example :: BleTxPowerSet.sb
 DIM rc,dp
 
 dp=1000 : rc = BleTxPowerSet(dp)

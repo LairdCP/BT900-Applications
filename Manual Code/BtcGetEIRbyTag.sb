@@ -1,3 +1,4 @@
+//Example :: BtcGetEIRbyTag.sb
 dim rc
 dim adr$
 

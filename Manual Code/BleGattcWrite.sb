@@ -1,3 +1,5 @@
+//Example :: BleGattcWrite.sb
+//
 //Remote server has 3 prim services with 16 bit uuid. First service has one
 //characteristic whose value attribute is at handle 3 and has read/write props
 //

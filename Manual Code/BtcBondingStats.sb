@@ -1,3 +1,4 @@
+//Example :: BtcBondingStats.sb
 dim rc, nRoll, nPers
 print "\n:Bonding Manager Database Statistics:"
 print "\nCapacity:  ","", BtcBondingStats(nRoll, nPers)

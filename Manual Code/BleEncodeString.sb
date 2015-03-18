@@ -1,3 +1,5 @@
+//Example :: BleEncodeString.sb
+
 DIM rc, ts$
 DIM attr$ : attr$=""
 

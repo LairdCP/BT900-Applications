@@ -1,3 +1,5 @@
+//Example :: BleDiscDescFirst.Next.sb
+//
 //Remote server has 1 prim service with 16 bit uuid and 1 characteristics
 // which contains 8 descriptors, that are ...
 // 5 uuids are 16 bit and 3 are 128 bit

@@ -1,5 +1,5 @@
+//Example :: EvCharVal.sb
 DIM hMyChar,rc,at$,conHndl
-
 
 //==============================================================================
 // Initialise and instantiate service, characteristic, start adverts
@@ -8,14 +8,14 @@ FUNCTION OnStartup()
     DIM rc, hSvc, attr$, adRpt$, addr$, scRpt$ : attr$="Hi"
     
     //commit service
-    rc=BleServiceNew(1,BleHandleUuid16(0x18EE),hSvc)            
+    rc=BleSvcCommit(1,BleHandleUuid16(0x18EE),hSvc)            
+	rc=BleServiceNew(1, BleHandleUuid16(0x18EE), hSvc)
     //initialise char, write/read enabled, accept signed writes
     rc=BleCharNew(0x0A,BleHandleUuid16(1),BleAttrMetaData(1,1,20,0,rc),0,0)     
     //commit char initialised above, with initial value "hi" to service 'hSvc'
     rc=BleCharCommit(hSvc,attr$,hMyChar)
-    //commit service to gatt table
+	//commit changes to service
     rc=BleServiceCommit(hSvc)
-    
     rc=BleScanRptInit(scRpt$) 
     //Add 1 service handle to scan report
     //rc=BleAdvRptAddUuid16(scRpt$,hSvc,-1,-1,-1,-1,-1)
@@ -24,7 +24,6 @@ FUNCTION OnStartup()
     rc=BleAdvertStart(0,addr$,20,300000,0)
 ENDFUNC rc
 
-
 //==============================================================================
 // Close connections so that we can run another app without problems
 //==============================================================================
@@ -32,7 +31,6 @@ SUB CloseConnections()
     rc=BleDisconnect(conHndl)
     rc=BleAdvertStop()
 ENDSUB
-
 
 //==============================================================================
 // Ble event handler
@@ -47,7 +45,6 @@ FUNCTION HndlrBleMsg(BYVAL nMsgId, BYVAL nCtx)
     ENDIF
 ENDFUNC 1
 
-
 //==============================================================================
 // New char value handler
 //==============================================================================
@@ -59,11 +56,8 @@ FUNCTION HandlerCharVal(BYVAL charHandle, BYVAL offset, BYVAL len)
         rc=BleCharValueRead(hMyChar,s$)
         PRINT "\nNew Char Value: ";s$
     ENDIF
-    
-    
     CloseConnections()
 ENDFUNC 1
-
 
 ONEVENT  EVCHARVAL CALL HandlerCharVal
 ONEVENT  EVBLEMSG  CALL HndlrBleMsg
@@ -75,7 +69,6 @@ IF OnStartup()==0 THEN
 ELSE
     PRINT "\nFailure OnStartup"
 ENDIF
-
 
 WAITEVENT
 

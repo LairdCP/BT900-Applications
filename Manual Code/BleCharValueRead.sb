@@ -1,3 +1,4 @@
+//Example :: BleCharValueRead.sb
 DIM hMyChar,rc, conHndl
 
 //==============================================================================
@@ -7,13 +8,13 @@ FUNCTION OnStartup()
     DIM rc, hSvc, scRpt$, adRpt$, addr$, attr$ : attr$="Hi"
 
     //commit service
-    rc=BleServiceNew(1,BleHandleUuid16(0x18EE),hSvc)            
+	rc=BleServiceNew(1, BleHandleUuid16(0x18EE), hSvc)
     //initialise char, write/read enabled, accept signed writes
     rc=BleCharNew(0x0A,BleHandleUuid16(1),BleAttrMetaData(1,1,20,0,rc),0,0)     
     //commit char initialised above, with initial value "hi" to service 'hSvc'
     rc=BleCharCommit(hSvc,attr$,hMyChar)
-    //commit service to gatt table
-    rc=BleServiceCommit(hSvc)
+	//commit changes to service
+	rc=BleServiceCommit(hSvc)
     //initialise scan report
     rc=BleScanRptInit(scRpt$) 
     //Add 1 service handle to scan report
@@ -22,7 +23,6 @@ FUNCTION OnStartup()
     rc=BleAdvRptsCommit(adRpt$,scRpt$)
     rc=BleAdvertStart(0,addr$,150,0,0)
 ENDFUNC rc
-
 
 //==============================================================================
 // New char value handler
@@ -39,7 +39,6 @@ FUNCTION HndlrChar(BYVAL chrHndl, BYVAL offset, BYVAL len)
     rc=BleDisconnect(conHndl)
 ENDFUNC 0
 
-
 //==============================================================================
 // Get the connnection handle 
 //==============================================================================
@@ -47,10 +46,9 @@ FUNCTION HndlrBleMsg(BYVAL nMsgId, BYVAL nCtn)
     conHndl=nCtn
 ENDFUNC 1
 
-
 IF OnStartup()==0 THEN
     DIM at$ : rc = BleCharValueRead(hMyChar,at$)
-    PRINT "\nCharacteristic value attribute: ";at$;"\nConnect to BL600 and send a new value\n"
+    PRINT "\nCharacteristic value attribute: ";at$;"\nConnect to BT900 and send a new value\n"
 ELSE
     PRINT "\nFailure OnStartup"
 ENDIF

@@ -1,4 +1,4 @@
-//Example :: StreamBridge.sb (See in BT900CodeSnippets.zip)
+//Example :: StreamBridge.sb
 dim rc, nSHandleG, nHandleB, nSppHandle
 
 SUB AssertRC(rc,line)

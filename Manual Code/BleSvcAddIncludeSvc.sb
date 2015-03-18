@@ -1,3 +1,4 @@
+//Example :: BleSvcAddIncludeSvc.sb
 #define BLE_SERVICE_SECONDARY                           0
 #define BLE_SERVICE_PRIMARY                             1
 
@@ -11,7 +12,7 @@ DIM charMet : charMet = BleAttrMetaData(1,1,10,1,metaSuccess)
 DIM s$ : s$ = "Hello"       //initial value of char in Battery Service
 DIM hBatChar
 
-rc = BleServiceNew(BLE_SERVICE_SECONDARY,BleHandleUuid16(0x180F),hBatSvc)
+rc = BleServiceNew(BLE_SERVICE_SECONDARY, BleHandleUuid16(0x180F), hBatSvc)
 rc = BleCharNew(3,BleHandleUuid16(0x2A1C),charMet,0,0)
 rc = BleCharCommit(hBatSvc, s$ ,hBatChar)
 rc = BleServiceCommit(hBatSvc)
@@ -21,7 +22,8 @@ rc = BleServiceCommit(hBatSvc)
 //----------------------------------------------------------------------------
 DIM hHtsSvc    //composite handle for hts primary service
 
-rc = BleSvcCommit(BLE_SERVICE_PRIMARY,BleHandleUuid16(0x1809),hHtsSvc)
+rc = BleServiceNew(BLE_SERVICE_PRIMARY, BleHandleUuid16(0x1809), hHtsSvc)
+rc = BleServiceCommit(hHtsSvc)
 
 //Have to add includes before any characteristics are committed
 PRINT INTEGER.h'BleSvcAddIncludeSvc(hBatSvc)

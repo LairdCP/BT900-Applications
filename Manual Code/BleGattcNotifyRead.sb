@@ -1,3 +1,5 @@
+//Example :: BleGattcNotifyRead.sb
+//
 // Server created using BleGattcTblNotifyRead.sub invoked in _OpenMcp.scr
 // using Nordic Usb Dongle PC10000
 //

@@ -1,4 +1,4 @@
-//Example :: BleAdvertStart.sb (See in BL600CodeSnippets.zip)
+//Example :: BleAdvertStart.sb
 DIM addr$ : addr$=""
 
 FUNCTION HndlrBlrAdvTimOut() 
@@ -10,7 +10,7 @@ ENDFUNC 0
 //advertising after 60000 ms (1 minute)                                             
 IF BleAdvertStart(0,addr$,25,60000,0)==0 THEN	  
     PRINT "\nAdverts Started\n"					
-	PRINT "\nIf you search for bluetooth devices on your device, you should see 'Laird BL600'\n"
+	PRINT "\nIf you search for bluetooth devices on your device, you should see 'Laird BT900'\n"
 ELSE											
     PRINT "\n\nAdvertisement not successful"
 ENDIF

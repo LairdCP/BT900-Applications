@@ -1,3 +1,4 @@
+//Example :: BleBondingEraseAll.sb
 dim rc
 
 //erase all bondings in database

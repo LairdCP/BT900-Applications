@@ -1,3 +1,5 @@
+//Example :: BleEncode32.sb
+
 DIM rc
 DIM attr$ : attr$="Laird"
 

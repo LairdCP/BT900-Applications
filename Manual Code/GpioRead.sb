@@ -1,4 +1,4 @@
-//Example :: GpioRead.sb (See in BT900CodeSnippets.zip)
+//Example :: GpioRead.sb
 //This example reads from the trim pot, for it to work, TrimPot on CON14 needs to be in the ON position
 #define GPIO_TRIM_POT           20
 

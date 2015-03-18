@@ -1,3 +1,5 @@
+//Example :: BleEncodeFloat.sb
+
 DIM rc
 DIM attr$ : attr$=""
 

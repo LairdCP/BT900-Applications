@@ -1,4 +1,4 @@
-//Example :: BleTxPwrWhilePairing.sb (See in BL600CodeSnippets.zip)
+//Example :: BleTxPwrWhilePairing.sb
 DIM rc,dp
 
 dp=1000 : rc = BleTxPwrWhilePairing(dp)

@@ -1,9 +1,11 @@
+//Example :: BleGetDeviceName$.sb
+
 DIM rc,dvcNme$,nmeWrtble,apprnce,MinConnInt,MaxConnInt,ConnSupTO,sL
 
 PRINT "\n --- DevName : "; BleGetDeviceName$()
 
 // Changing device name manually
-dvcNme$= "My BL600"
+dvcNme$= "My BT900"
 nmeWrtble = 0                
 apprnce = 768            
 MinConnInt = 500000          

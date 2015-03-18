@@ -1,3 +1,5 @@
+//Example :: BleGapSvcInit.sb
+
 DIM rc,dvcNme$,nmeWrtble,apprnce,MinConnInt,MaxConnInt,ConnSupTO,sL,s$
 
 dvcNme$= "Laird_TS"

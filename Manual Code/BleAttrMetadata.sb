@@ -1,3 +1,5 @@
+//Example :: BleAttrMetadata.sb
+
 DIM mdVal    //metadata for value attribute of Characteristic
 DIM mdCccd   //metadata for CCCD attribute of Characteristic
 DIM mdSccd   //metadata for SCCD attribute of Characteristic

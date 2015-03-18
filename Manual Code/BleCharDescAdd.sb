@@ -1,3 +1,5 @@
+//Example :: BleCharDescAdd.sb
+
 DIM rc, metaSuccess,usrDesc$ : usrDesc$="A description" 
 DIM charUuid : charUuid = BleHandleUuid16(1)
 DIM charMet : charMet = BleAttrMetaData(1,1,20,0,metaSuccess)

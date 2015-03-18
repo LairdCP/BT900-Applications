@@ -1,3 +1,4 @@
+//Example :: BleSecMngrPasskey.sb
 DIM rc, connHandle
 DIM addr$ : addr$=""
 
@@ -26,7 +27,7 @@ ONEVENT  EVBLEMSG  CALL HandlerBleMsg
 
 IF BleAdvertStart(0,addr$,25,60000,0)==0 THEN	  
     PRINT "\nAdverts Started\n"					
-	PRINT "\nMake a connection to the BL600"
+	PRINT "\nMake a connection to the BT900"
 ELSE											
     PRINT "\n\nAdvertisement not successful"
 ENDIF

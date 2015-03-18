@@ -1,4 +1,4 @@
- //Example :: BleScanFlush.sb (See in BT900CodeSnippets.zip)
+ //Example :: BleScanFlush.sb
  DIM rc, startTick
 
  '//Scan for 20 seconds with no filtering

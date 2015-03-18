@@ -1,7 +1,5 @@
-//Example :: EvCharDesc.sb (See in BL600CodeSnippets.zip)
-
+//Example :: EvCharDesc.sb
 DIM hMyChar,rc,at$,conHndl, hOtherDescr
-
 
 //==============================================================================
 // Initialise and instantiate service, characteristic, start adverts
@@ -30,7 +28,6 @@ FUNCTION OnStartup$()
     rc=BleAdvertStart(0,addr$,20,300000,0)
 ENDFUNC attr$
 
-
 //==============================================================================
 // Close connections so that we can run another app without problems
 //==============================================================================
@@ -39,7 +36,6 @@ SUB CloseConnections()
     rc=BleAdvertStop()
     rc=GpioUnbindEvent(1)
 ENDSUB
-
 
 //==============================================================================
 // Ble event handler
@@ -53,7 +49,6 @@ FUNCTION HndlrBleMsg(BYVAL nMsgId, BYVAL nCtx)
         PRINT "\n--- Connected to client"
     ENDIF
 ENDFUNC 1
-
 
 //==============================================================================
 // Called when data arrives via UART
@@ -78,15 +73,12 @@ FUNCTION HndlrCharDesc(BYVAL hChar AS INTEGER, BYVAL hDesc AS INTEGER) AS INTEGE
     ENDIF
 ENDFUNC 1
 
-
 ONEVENT  EVBLEMSG    CALL HndlrBleMsg
 ONEVENT  EVCHARDESC  CALL HndlrCharDesc
 ONEVENT  EVUARTRX    CALL HndlrUartRx
 
-
 PRINT "\nOther Descriptor Value: ";OnStartup$()
 PRINT "\nWrite a new value \n--- Press any key to exit\n"
- 
 
 WAITEVENT
 

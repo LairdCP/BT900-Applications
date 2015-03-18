@@ -1,3 +1,5 @@
+//Example :: BleCharNew.sb
+
 DIM rc
 DIM charUuid : charUuid = BleHandleUuid16(2)       //Characteristic's UUID
 DIM mdVal : mdVal = BleAttrMetadata(1,0,20,0,rc)   //Metadata for value attribute

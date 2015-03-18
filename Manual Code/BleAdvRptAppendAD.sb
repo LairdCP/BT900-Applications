@@ -1,4 +1,4 @@
-//Example :: BleAdvRptAppendAD.sb (See in BL600CodeSnippets.zip)
+//Example :: BleAdvRptAppendAD.sb
 DIM scnRpt$,ad$  
 ad$="\01\02\03\04"
 

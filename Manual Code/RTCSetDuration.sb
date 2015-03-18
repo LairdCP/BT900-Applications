@@ -1,4 +1,5 @@
-//************RTCSetDuration.sb**************
+//Example :: RTCSetDuration.sb
+
 dim rc
 dim strAlarm$
 

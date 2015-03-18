@@ -1,3 +1,5 @@
+//Example :: BleCharDescRead.sb
+
 DIM rc,conHndl,hMyChar
 
 //----------------------------------------------------------------------------

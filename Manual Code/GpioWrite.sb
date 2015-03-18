@@ -1,4 +1,4 @@
-//Example :: GpioWrite.sb (See in BT900CodeSnippets.zip)
+//Example :: GpioWrite.sb
 dim rc, i1, i2
 i2 = 1
 i1 = 1

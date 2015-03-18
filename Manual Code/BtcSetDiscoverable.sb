@@ -1,3 +1,4 @@
+//Example :: BtcSetDiscoverable.sb
 dim rc, n$
 n$ = "My BT900"
 

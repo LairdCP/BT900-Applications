@@ -1,3 +1,5 @@
+//Example :: BleBondMngrGetInfo.sb
+
 #define BLE_INV_INDEX           24619
 
 DIM rc, addr$, exInfo

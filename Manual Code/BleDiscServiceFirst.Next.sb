@@ -1,3 +1,5 @@
+//Example :: BleDiscServiceFirst.Next.sb
+//
 //Remote server has 5 prim services with 16 bit uuid and 3 with 128 bit uuids
 //  3 of the 16 bit uuid are the same value 0xDEAD and 
 //  2 of the 128 bit uuids are also the same 112233445566778899AABBCCDDEEFF

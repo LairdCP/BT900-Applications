@@ -1,3 +1,5 @@
+//Example :: BleDiscCharFirst.Next.sb
+//
 //Remote server has 1 prim service with 16 bit uuid and 8 characteristics where
 // 5 uuids are 16 bit and 3 are 128 bit
 //  3 of the 16 bit uuid are the same value 0xDEAD and 

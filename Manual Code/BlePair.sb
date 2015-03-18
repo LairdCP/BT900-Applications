@@ -1,3 +1,4 @@
+//Example :: BlePair.sb
 dim rc, pr$, hC, hDesc
 dim s$ : s$ = "\02\00"      //value to write to cccd to enable indications
 

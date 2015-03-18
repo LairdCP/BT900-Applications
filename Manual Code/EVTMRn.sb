@@ -1,4 +1,4 @@
-//Example :: EVTMRn.sb (See in BL600CodeSnippets.zip)
+//Example :: EVTMRn.sb
 FUNCTION HandlerTimer0()
   PRINT "\nTimer 0 has expired"
 ENDFUNC 1 							//remain blocked in WAITEVENT

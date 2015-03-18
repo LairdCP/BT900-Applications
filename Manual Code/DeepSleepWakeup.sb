@@ -1,4 +1,5 @@
-// ******************** DeepSleepWakeup.sb*********************************
+//Example :: DeepSleepWakeup.sb
+
 dim rc
 dim strTime$
 

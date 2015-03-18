@@ -1,4 +1,5 @@
-// ******************** RTCReset.sb*********************************
+//Example :: RTCReset.sb
+
 dim rc
 dim strTime$
 

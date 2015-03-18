@@ -1,3 +1,4 @@
+//Example :: BleDisconnect.sb
 DIM addr$ : addr$=""
 DIM rc
 

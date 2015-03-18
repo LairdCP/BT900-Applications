@@ -1,4 +1,5 @@
-// ******************** RTCSet.sb*********************************
+//Example :: RTCSet.sb
+
 dim rc
 dim strTime$
 

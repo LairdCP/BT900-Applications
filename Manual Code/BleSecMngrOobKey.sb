@@ -1,3 +1,4 @@
+//Example :: BleSecMngrOobKey.sb
 DIM rc, connHandle
 DIM addr$ : addr$=""
 DIM oob$ : oob$ = "\11\22\33\44\55\66\77\88\99\11\aa\cc\bb\dd\ee\ff"
