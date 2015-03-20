@@ -19,7 +19,7 @@ function HandlerBleMsg(nMsgId, nCtx)
         case 16
             print "\nConnected to bonded master"
         case else
-            print "\nnMsgId: ";nMsgId;" nCtx: ";nCts
+            print "\nnMsgId: ";nMsgId;" nCtx: ";nCtx
     endselect
 endfunc 1
 

@@ -1,0 +1,4 @@
+//Example :: BtcGetFriendlyName.sb
+dim rc, name$
+rc=BtcGetFriendlyName(name$)
+print "\n"; name$
