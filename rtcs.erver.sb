@@ -9,6 +9,9 @@
  // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  //
  // BT900 custom Real Time Clock (RTC) Service
+ //       This sample application implements the BLE RTC service with additional
+ //       characteristics to allow control of the alarm and setting the time
+ //       remotely.
  //
  //******************************************************************************
  //
