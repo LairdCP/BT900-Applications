@@ -236,6 +236,21 @@
 //    - server and the data is specified as a string
 //
 // -----------------------------------------------------------------------------
+// gattc writecmd #INTconnHandle# #INTattrHandle# #HEXdata#
+//    --- gatt client functionality ---
+//    - Use this command to write a new value into an attribute of a remote
+//    - server and the data is specified as hex digits which will be converted
+//    - to binary before transmission, without waiting for a response from the
+//    - GATT server
+//
+// -----------------------------------------------------------------------------
+// gattc writecmd$ #INTconnHandle# #INTattrHandle# #STRdata#
+//    --- gatt client functionality ---
+//    - Use this command to write a new value into an attribute of a remote
+//    - server and the data is specified as a string, without waiting for a
+//    - response from the GATT server
+//
+// -----------------------------------------------------------------------------
 // gatts attrmetadata #INTmdindex# #INTreadrights# #INTwriterights# #INTmaxdatalen# #INTvlen#
 //    --- gatt server functionality ---
 //    - calls BleAttrMetaData()
@@ -488,6 +503,9 @@
 //    - i[0] will contain the uuid handle as well
 //
 // -----------------------------------------------------------------------------
+//
+// For a list of BTC and SPP commands please refer to lib/cmd.btc.manager.sblib
+//
 //******************************************************************************
 
 //******************************************************************************
@@ -1133,6 +1151,8 @@ endfunc 5
 //#CMD#//  gattc read #INTconnHandle# #INTattrHandle# #INToffset#
 //#CMD#//  gattc write #INTconnHandle# #INTattrHandle# #HEXdata#
 //#CMD#//  gattc write$ #INTconnHandle# #INTattrHandle# #STRdata#
+//#CMD#//  gattc writecmd #INTconnHandle# #INTattrHandle# #HEXdata#
+//#CMD#//  gattc writecmd$ #INTconnHandle# #INTattrHandle# #STRdata#
 //-------------------------------------------------------------------------
 function _Gattc()  
   dim cmdid
