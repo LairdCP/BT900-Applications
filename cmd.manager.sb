@@ -367,6 +367,10 @@
 //    - #INTidx# will be checked for valid index 
 //
 // -----------------------------------------------------------------------------
+// misc address
+//    - Outputs the modules bluetooth low energy address
+//
+// -----------------------------------------------------------------------------
 // uart set #INTnewspeed#
 //    - changes the baud rate for communication with the device with immediate
 //      effect. Valid values are  9600, 14400, 19200, 38400, 57600, 115200,
@@ -419,11 +423,25 @@
 //    - #INTconnHandle# sepecifies the connection handle
 //
 // -----------------------------------------------------------------------------
+// ble pair oobkey #INTconnHandle# #STRoobkey#
+//    - Security Manager related
+//    - This will result in BleSecMngrOOBkey() being called
+//TODO: comment
+//    - Valid value is 0 to 999999 for #INTpasscode# and 
+//    - #INTconnHandle# sepecifies the connection handle
+//
+// -----------------------------------------------------------------------------
 // ble pair bondreq #INTbondreq#
 //    - Security Manager related
 //    - This will result in BleSecMngrBondReq() being called
 //    - Enable or disable bonding when pairing
 //    - #INTbondreq# sepecifies whether to bond or not when pairing
+//
+// -----------------------------------------------------------------------------
+// ble pair oobpref #INTprefoob#
+//    - Security Manager related
+//    - This will result in BleSecMngrOOBPref() being called
+//    - Changes whether OOB pairing is preferred or not
 //
 // -----------------------------------------------------------------------------
 // ble bond stats
@@ -1592,8 +1610,10 @@ endfunc 5
 //#CMD#//  ble pair iocap      #INTiocap#
 //#CMD#//  ble pair justworks  #INTJWConf#
 //#CMD#//  ble pair passkey    #INTconnHandle# #INTpasscode#
+//#CMD#//  ble pair oobkey     #INTconnHandle# #STRoobcode#
 //#CMD#//  ble pair bondreq    #INTbondreq#
 //#CMD#/   ble pair accept     #INTconnHandle# #INTaccept#
+//#CMD#/   ble pair oobpref    #INTprefoob#
 //#CMD#//  ble pair            #INTconnHandle# #INTenablebonding#
 //-------------------------------------------------------------------------
 function _BlePair()
@@ -1643,6 +1663,24 @@ function _BlePair()
     endif 
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"oobkey")==0 then
+        //extract 1 (#INTconnHandle#) and store starting at i[1]
+        rc = ExtractIntTokens(urtcmd$,1,1)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        //extract 1 (#STRoobkey#) and store starting at s$[1]
+        tlen = ExtractStrToken(urtcmd$,s$[1])
+        if tlen<1  then
+          exitfunc 5
+        endif
+print "\ncode is [";s$[1];"]\n"
+        s$[1] = StrDehexize$(s$[1])
+print "\ncode hex [";s$[1];"]\n"
+        exitfunc BleSecMngrOOBKey(hc[i[1]],s$[1])
+    endif 
+
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if strcmp(tkn$,"bondreq")==0 then
         //extract 1 (#INTbondreq#) and store starting at i[1]
         rc = ExtractIntTokens(urtcmd$,1,1)
@@ -1660,6 +1698,17 @@ function _BlePair()
             exitfunc rc
         endif
         exitfunc BleAcceptPairing(hc[i[1]],i[2])
+    endif
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"oobpref")==0 then
+        //extract 1 (#INTprefoob#) and store starting at i[1]
+        rc = ExtractIntTokens(urtcmd$,1,1)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        exitfunc BLESECMNGROOBPREF(i[1])
+
     endif
     
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1789,6 +1838,7 @@ endfunc 5
 //#CMD#//  misc s$ set #INTidx# #STRescapedvalue#
 //#CMD#//  misc i  clearall
 //#CMD#//  misc i  set #INTidx# #INTval#
+//#CMD#//  misc address
 //-------------------------------------------------------------------------
 function _Misc()  
   tlen = ExtractStrToken(urtcmd$,tkn$)
@@ -1850,6 +1900,13 @@ function _Misc()
       endif
       exitfunc 0
     endif  
+  endif
+  //=================================================
+  if strcmp(tkn$,"address")==0 then
+    dim Tmp$ : Tmp$ = sysinfo$(4)
+    Tmp$ = strhexize$(Tmp$)
+    print "BLE Address: ";Tmp$;"\n"
+    exitfunc -2
   endif
 endfunc 5
 
@@ -2499,7 +2556,10 @@ Initialise()
 // Startup()
 
 //Send user prompt for uart based command interface
-print "\n\r";BleGetDeviceName$();"\n\r"
+dim Tmp$ : Tmp$ = sysinfo$(4)
+Tmp$ = strhexize$(Tmp$)
+print "\n\r";BleGetDeviceName$();" - ";Tmp$;"\n\r\n\r"
+Tmp$ = ""
 //Send an OK response
 UartRsp(0)
 
