@@ -452,7 +452,7 @@ AssertRC(rc,432)
 rc = BleServiceNew(BLE_SERVICE_PRIMARY, Service1UUID, Service1)
 AssertRC(rc,436)
 
-//Add first characteristics (all read only)
+//Add first characteristics
 dim hrs$ : hrs$ = "          "
 rc = BleCharNew(0x1A, BleHandleUuid16(0x2A2B), BleAttrMetadata(1,1,10,0,rc), BleAttrMetadata(1,1,2,0,rc),0) //Current time (Read, write & Notify) with CCCD
 assertrc(rc,441)
