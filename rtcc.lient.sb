@@ -138,7 +138,7 @@
  dim Status : Status = 0 //0 = waiting for user input, 1 = scanning, 2 = ?, 3 = ?, 4 = ?
  dim ConnectionStatus : ConnectionStatus = 0 //0 = disconnected, 1 = connected
  dim nCtxG //Global BLE handler
- dim APP_VERSION$ : APP_VERSION$ = "0.95" //Version of client program
+ dim APP_VERSION$ : APP_VERSION$ = "0.96" //Version of client program
  dim TmpStr$ : TmpStr$ = "" //Temporary string for inter-function passing
  
  //List of UUID's
