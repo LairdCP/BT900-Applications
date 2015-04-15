@@ -32,14 +32,13 @@ DIM Service1UUID : Service1UUID = BleHandleUuid16(0x1805) //HT Svc UUID Handle, 
 DIM Char1 //Characteristic 1 (Current time)
 DIM Char2 //Characteristic 2 (Local time)
 DIM Char3 //Characteristic 3 (Reference time)
-DIM Char4 //Characteristic 4 (Update clock)
-DIM Char5 //Characteristic 5 (Alarm mode control)
-DIM Char6 //Characteristic 6 (Alarm time control)
-DIM Char7 //Characteristic 7 (Version)
+DIM Char4 //Characteristic 4 (Alarm mode control)
+DIM Char5 //Characteristic 5 (Alarm time control)
+DIM Char6 //Characteristic 6 (Version)
 DIM Timezone : Timezone = 0 //Hours off from UTC, see https://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.time_zone.xml
 DIM DST : DST = 0 //0 for no DST, 4 for +1 hour DST, see https://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.dst_offset.xml
 DIM SendNotify : SendNotify = 0 //Set to 1 when notifications are enabled
-dim APP_VERSION$ : APP_VERSION$ = "0.90"
+dim APP_VERSION$ : APP_VERSION$ = "0.91"
 dim BuzzerFunc : BuzzerFunc = 0 //Which function to do with the buzzer next
 dim I2CSpeed : I2CSpeed = 250000 //250KHz
 dim RTCAddr : RTCAddr = 111 //I2C Address of RTC
@@ -175,7 +174,7 @@ FUNCTION HndlrCharVal(BYVAL charHandle, BYVAL offset, BYVAL len)
 	//When characteristic is written
 	dim attr$
 	dim TmpVal, TmpVal2
-	IF charHandle == Char4 THEN
+	IF charHandle == Char1 THEN
 		//Time & date has been updated
 		rc = BleCharValueRead(charHandle, attr$)
 		
@@ -245,7 +244,7 @@ FUNCTION HndlrCharVal(BYVAL charHandle, BYVAL offset, BYVAL len)
 
 		//Close I2C
 		I2CClose(I2Ch)
-	ELSEIF charHandle == Char5 THEN
+	ELSEIF charHandle == Char4 THEN
 		//Set/Disable alarm and alarm match
 		rc = BleCharValueRead(charHandle, attr$)
 		
@@ -270,7 +269,7 @@ FUNCTION HndlrCharVal(BYVAL charHandle, BYVAL offset, BYVAL len)
 		
 		//Close I2C
 		I2CClose(I2Ch)
-	ELSEIF charHandle == Char6 THEN
+	ELSEIF charHandle == Char5 THEN
 		//Change alarm time
 		rc = BleCharValueRead(charHandle, attr$)
 		
@@ -365,7 +364,7 @@ FUNCTION GetAlarmTime()
 	rc = BleEncode8(TmpStr$, AlmMonth, 0) //Month
 
 	//Update GATT information
-	rc = BleCharValueWrite(Char6, TmpStr$)
+	rc = BleCharValueWrite(Char5, TmpStr$)
 ENDFUNC 1
 
 FUNCTION GetAlarmMode()
@@ -455,7 +454,7 @@ AssertRC(rc,436)
 
 //Add first characteristics (all read only)
 dim hrs$ : hrs$ = "          "
-rc = BleCharNew(0x12, BleHandleUuid16(0x2A2B), BleAttrMetadata(1,0,10,0,rc), BleAttrMetadata(1,1,2,0,rc),0) //Current time (Read & Notify) with CCCD
+rc = BleCharNew(0x1A, BleHandleUuid16(0x2A2B), BleAttrMetadata(1,1,10,0,rc), BleAttrMetadata(1,1,2,0,rc),0) //Current time (Read, write & Notify) with CCCD
 assertrc(rc,441)
 rc = BleCharCommit(Service1, hrs$, Char1)
 assertrc(rc,443)
@@ -474,31 +473,24 @@ assertrc(rc,455)
 rc = BleCharCommit(Service1, hrs$, Char3)
 assertrc(rc,457)
 
-//Fourth characteristic
-hrs$ = "          "
-rc = BleCharNew(0x8, BleHandleUuid16(0x2B00), BleAttrMetadata(0,1,10,0,rc), 0, 0) //Update time (Write)
-assertrc(rc,462)
-rc = BleCharCommit(Service1, hrs$, Char4)
-assertrc(rc,464)
-
 //Fifth characteristic
 hrs$ = "00"
 rc = BleCharNew(0xA, BleHandleUuid16(0x2B02), BleAttrMetadata(1,1,2,0,rc), 0, 0) //Alarm mode control [on/off and match] (Read & Write)
 assertrc(rc,469)
-rc = BleCharCommit(Service1, hrs$, Char5)
+rc = BleCharCommit(Service1, hrs$, Char4)
 assertrc(rc,471)
 
 //Sixth characteristic
 hrs$ = "0000000"
 rc = BleCharNew(0xA, BleHandleUuid16(0x2B03), BleAttrMetadata(1,1,7,0,rc), 0, 0) //Alarm time control (Read & Write)
 assertrc(rc,476)
-rc = BleCharCommit(Service1, hrs$, Char6)
+rc = BleCharCommit(Service1, hrs$, Char5)
 assertrc(rc,478)
 
 //Seventh (and final) characteristic
 rc = BleCharNew(0x2, BleHandleUuid16(0x2B04), BleAttrMetadata(1,0,5,0,rc), 0, 0) //Version (Read)
 assertrc(rc,483)
-rc = BleCharCommit(Service1, APP_VERSION$, Char7)
+rc = BleCharCommit(Service1, APP_VERSION$, Char6)
 assertrc(rc,485)
 
 //Commit services
@@ -533,7 +525,7 @@ ELSE
 	rc = BleEncode8(TmpStr$, 0, 0)
 ENDIF
 rc = BleEncode8(TmpStr$, GetAlarmMatch(), 1)
-rc = BleCharValueWrite(Char5, TmpStr$)
+rc = BleCharValueWrite(Char4, TmpStr$)
 
 //Update alarm time in characteristic
 rc = GetAlarmTime()
