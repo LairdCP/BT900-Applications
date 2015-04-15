@@ -145,7 +145,7 @@ dim TargetBT$ : TargetBT$ = "\00\00\16\a4\09\3a\99" //Bluetooth address` of the 
 dim Status : Status = 0 //0 = waiting for user input, 1 = scanning
 dim ConnectionStatus : ConnectionStatus = 0 //0 = disconnected, 1 = connected
 dim nCtxG //Global BLE handler
-dim APP_VERSION$ : APP_VERSION$ = "0.97" //Version of client program
+dim APP_VERSION$ : APP_VERSION$ = "0.97b" //Version of client program
 dim TmpStr$ : TmpStr$ = "" //Temporary string for inter-function passing
  
 //List of UUID's
@@ -298,7 +298,7 @@ FUNCTION IsConnected()
 ENDFUNC 1
 
 FUNCTION OnUartCmd()
-dim tlen, tkn$, Buf$
+    dim tlen, tkn$, Buf$
     rc=-2 //assume there is no error
     tlen = ExtractStrToken(urtcmd$,tkn$) //get first token
     IF tlen > 0 THEN
@@ -372,12 +372,15 @@ dim tlen, tkn$, Buf$
                         IF ValidateTimestamp() == 1 THEN
                             //Valid timestamp
                             IF (TimeUUID > 0) THEN
-                                rc = BleEncode8(Buf$, TS_SS, 0)
-                                rc = BleEncode8(Buf$, TS_MM1, 1)
-                                rc = BleEncode8(Buf$, TS_HH, 2)
+                                rc = BleEncode8(Buf$, 1, 9) //Adjust reason (manual)
+                                rc = BleEncode8(Buf$, 0, 8) //1/256 seconds (0)
+                                rc = BleEncode8(Buf$, 0, 7) //Day of the week (unknown)
+                                rc = BleEncode8(Buf$, TS_SS, 6)
+                                rc = BleEncode8(Buf$, TS_MM1, 5)
+                                rc = BleEncode8(Buf$, TS_HH, 4)
                                 rc = BleEncode8(Buf$, TS_DD, 3)
-                                rc = BleEncode8(Buf$, TS_MM2, 4)
-                                rc = BleEncode16(Buf$, TS_YYYY, 5)
+                                rc = BleEncode8(Buf$, TS_MM2, 2)
+                                rc = BleEncode16(Buf$, TS_YYYY, 0)
                                 rc = BleGATTCWrite(nCtxG, TimeUUID, Buf$)
                             ELSE
                                 DoFunc = WRITE_TIME
@@ -718,7 +721,7 @@ FUNCTION HndlrNtfyDo()
     //Runs on notification received
     dim nCtX, Hndl, Dat$, discard, Tmp
     rc = BLEGATTCNOTIFYREAD(nCtX, Hndl, Dat$, discard)
-//    IF (Hndl == TimeUUID && strlen(Dat$) == 10) THEN - Might not have TimeUUID handle
+//    IF (Hndl == TimeUUID && strlen(Dat$) == 10) THEN - Might not have TimeUUID handle at this point
     IF (strlen(Dat$) == 10) THEN
         IF (strlen(Dat$) == 10) THEN
             //We have the time & date data from the notifications

@@ -38,10 +38,12 @@ DIM Char6 //Characteristic 6 (Version)
 DIM Timezone : Timezone = 0 //Hours off from UTC, see https://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.time_zone.xml
 DIM DST : DST = 0 //0 for no DST, 4 for +1 hour DST, see https://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.dst_offset.xml
 DIM SendNotify : SendNotify = 0 //Set to 1 when notifications are enabled
-dim APP_VERSION$ : APP_VERSION$ = "0.91"
+dim APP_VERSION$ : APP_VERSION$ = "0.92"
 dim BuzzerFunc : BuzzerFunc = 0 //Which function to do with the buzzer next
 dim I2CSpeed : I2CSpeed = 250000 //250KHz
 dim RTCAddr : RTCAddr = 111 //I2C Address of RTC
+dim AdjustReason : AdjustReason = 0 //Reason for last time adjustment
+dim DayOfWeek : DayOfWeek = 0 //The current day of the week (0 = unknown)
 
 '//******************************************************************************
 '// Command success handler
@@ -53,364 +55,377 @@ SUB AssertRC(rc,ln)
 ENDSUB
 
 FUNCTION StartBuzzer()
-	//Starts the buzzing for the alarm wakeup
-	GpioWrite(12, 5000)
-	BuzzerFunc = 0
-	TimerStart(1, 200, 1)
-	
+    //Starts the buzzing for the alarm wakeup
+    GpioWrite(12, 5000)
+    BuzzerFunc = 0
+    TimerStart(1, 200, 1)
 ENDFUNC 1
 
 FUNCTION StopBuzzer()
-	//Stops the buzzer from making a noise
-	GpioWrite(12, 0)
+    //Stops the buzzer from making a noise
+    GpioWrite(12, 0)
 ENDFUNC 1
 
 FUNCTION HndlrTmr0()
-	//Timer function to read RTC and output value
-	dim secVal, minVal, hourVal, dateVal, monthVal, yearVal
-	rc = I2COpen(I2CSpeed, 0, I2Ch)
-	rc = I2CReadReg8(RTCAddr, 0, secVal)
-	rc = I2CReadReg8(RTCAddr, 1, minVal)
-	rc = I2CReadReg8(RTCAddr, 2, hourVal)
-	rc = I2CReadReg8(RTCAddr, 4, dateVal)
-	rc = I2CReadReg8(RTCAddr, 5, monthVal)
-	rc = I2CReadReg8(RTCAddr, 6, yearVal)
-	
-	//Close I2C connection
-	I2CClose(I2Ch)
-	
-	//Convert I2C RTC values into time & date information
-	dim Seconds, Minutes, Hours, Day, Month, Year
-	Seconds = ((secVal & 15) + ((secVal & 112)>>4)*10)
-	Minutes = ((minVal & 15) + ((minVal & 112)>>4)*10)
-	Hours = ((hourVal & 15) + ((hourVal & 48)>>4)*10)
-	Day = ((dateVal & 15) + ((dateVal & 48)>>4)*10)
-	Month = ((monthVal & 15) + ((monthVal & 16)>>4)*10)
-	Year = (2001 + (yearVal & 15) + ((yearVal & 240)>>4)*10)
-	PRINT Hours;":";Minutes;":";Seconds;" on ";Day;"/";Month;"/";Year;"\n"
-	
-	//Encode data
-	dim TmpStr$ : TmpStr$ = ""
-	rc = BleEncode8(TmpStr$, 0, 9) //Adjust reason
-	rc = BleEncode8(TmpStr$, 0, 8) //1/256 seconds
-	rc = BleEncode8(TmpStr$, 0, 7) //Day of week	
-	rc = BleEncode8(TmpStr$, Seconds, 6)
-	rc = BleEncode8(TmpStr$, Minutes, 5)
-	rc = BleEncode8(TmpStr$, Hours, 4)
-	rc = BleEncode8(TmpStr$, Day, 3)
-	rc = BleEncode8(TmpStr$, Month, 2)
-	rc = BleEncode16(TmpStr$, Year, 0)
-	
-	//Update GATT information
-	rc = BleCharValueWrite(Char1, TmpStr$)
-	assertrc(rc,89)
-	
-	//Update BLE advert with new information
-	DIM advRpt$ : advRpt$ = ""
-	DIM scRpt$ : scRpt$ = ""
-	rc = BleAdvRptInit(advRpt$, 2, 1, 10)
-	AssertRC(rc,95)
-	rc = BleAdvRptAppendAD(advRpt$, 0x16, TmpStr$)
-	AssertRC(rc,97)
-	rc = BleAdvRptsCommit(advRpt$, scRpt$)
-	AssertRC(rc,99)
-		
-	//Send notification if enabled
-	IF SendNotify == 1 THEN
-		rc = BleCharValueNotify(Char1, TmpStr$)
-		AssertRC(rc,104)
-	ENDIF
+    //Timer function to read RTC and output value
+    dim secVal, minVal, hourVal, dateVal, monthVal, yearVal
+    rc = I2COpen(I2CSpeed, 0, I2Ch)
+    rc = I2CReadReg8(RTCAddr, 0, secVal)
+    rc = I2CReadReg8(RTCAddr, 1, minVal)
+    rc = I2CReadReg8(RTCAddr, 2, hourVal)
+    rc = I2CReadReg8(RTCAddr, 4, dateVal)
+    rc = I2CReadReg8(RTCAddr, 5, monthVal)
+    rc = I2CReadReg8(RTCAddr, 6, yearVal)
+
+    //Close I2C connection
+    I2CClose(I2Ch)
+
+    //Convert I2C RTC values into time & date information
+    dim Seconds, Minutes, Hours, Day, Month, Year
+    Seconds = ((secVal & 15) + ((secVal & 112)>>4)*10)
+    Minutes = ((minVal & 15) + ((minVal & 112)>>4)*10)
+    Hours = ((hourVal & 15) + ((hourVal & 48)>>4)*10)
+    Day = ((dateVal & 15) + ((dateVal & 48)>>4)*10)
+    Month = ((monthVal & 15) + ((monthVal & 16)>>4)*10)
+    Year = (2001 + (yearVal & 15) + ((yearVal & 240)>>4)*10)
+    PRINT Hours;":";Minutes;":";Seconds;" on ";Day;"/";Month;"/";Year;"\n"
+
+    //Check if the day has rolled over
+    IF (Seconds == 0 && Minutes == 0 && Hours == 0 && DayOfWeek > 0) THEN
+        DayOfWeek = DayOfWeek+1
+        IF (DayOfWeek > 7) THEN
+            DayOfWeek = 1
+        ENDIF
+    ENDIF
+
+    //Encode data
+    dim TmpStr$ : TmpStr$ = ""
+    rc = BleEncode8(TmpStr$, AdjustReason, 9) //Adjust reason
+    rc = BleEncode8(TmpStr$, 0, 8) //1/256 seconds
+    rc = BleEncode8(TmpStr$, DayOfWeek, 7) //Day of week
+    rc = BleEncode8(TmpStr$, Seconds, 6)
+    rc = BleEncode8(TmpStr$, Minutes, 5)
+    rc = BleEncode8(TmpStr$, Hours, 4)
+    rc = BleEncode8(TmpStr$, Day, 3)
+    rc = BleEncode8(TmpStr$, Month, 2)
+    rc = BleEncode16(TmpStr$, Year, 0)
+
+    //Update GATT information
+    rc = BleCharValueWrite(Char1, TmpStr$)
+    assertrc(rc,89)
+
+    //Update BLE advert with new information
+    DIM advRpt$ : advRpt$ = ""
+    DIM scRpt$ : scRpt$ = ""
+    rc = BleAdvRptInit(advRpt$, 2, 1, 10)
+    AssertRC(rc,95)
+    rc = BleAdvRptAppendAD(advRpt$, 0x16, TmpStr$)
+    AssertRC(rc,97)
+    rc = BleAdvRptsCommit(advRpt$, scRpt$)
+    AssertRC(rc,99)
+
+    //Send notification if enabled
+    IF SendNotify == 1 THEN
+         rc = BleCharValueNotify(Char1, TmpStr$)
+         AssertRC(rc,104)
+    ENDIF
 ENDFUNC 1
 
 FUNCTION HndlrTmr1()
-	//Stops the buzzer
-	IF BuzzerFunc == 0 THEN
-		GpioWrite(12, 2000)
-		//TimerStart(1, 200, 0)
-	ELSEIF BuzzerFunc == 1 THEN
-		GpioWrite(12, 6000)
-		//TimerStart(1, 200, 0)
-	ELSEIF BuzzerFunc == 2 THEN
-		GpioWrite(12, 3000)
-		//TimerStart(1, 200, 0)
-	ELSEIF BuzzerFunc == 3 THEN
-		GpioWrite(12, 12000)
-		//TimerStart(1, 200, 0)
-	ELSE
-		rc = StopBuzzer()
-		TimerCancel(1)
-	ENDIF
-	BuzzerFunc = BuzzerFunc+1
+    //Stops the buzzer
+    IF BuzzerFunc == 0 THEN
+         GpioWrite(12, 2000)
+         //TimerStart(1, 200, 0)
+    ELSEIF BuzzerFunc == 1 THEN
+         GpioWrite(12, 6000)
+         //TimerStart(1, 200, 0)
+    ELSEIF BuzzerFunc == 2 THEN
+         GpioWrite(12, 3000)
+         //TimerStart(1, 200, 0)
+    ELSEIF BuzzerFunc == 3 THEN
+         GpioWrite(12, 12000)
+         //TimerStart(1, 200, 0)
+    ELSE
+         rc = StopBuzzer()
+         TimerCancel(1)
+    ENDIF
+    BuzzerFunc = BuzzerFunc+1
 ENDFUNC 1
 
 FUNCTION HndlrCharCccd(BYVAL charHandle, BYVAL nVal)
-	//Runs when CCCD has been written
-	IF nVal == 1 THEN
-		SendNotify = 1
-	ELSE
-		SendNotify = 0
-	ENDIF
+    //Runs when CCCD has been written
+    IF nVal == 1 THEN
+         SendNotify = 1
+    ELSE
+         SendNotify = 0
+    ENDIF
 ENDFUNC 1
 
 FUNCTION BleEvent(BYVAL msgID, BYVAL msgCtx)
-	//Runs when a BLE connection trigger occurs
-	IF msgID == 0 THEN
-		//Connection
-		PRINT "Connect.\n"
-	ELSEIF msgID == 1 THEN
-		//Disconnection
-		PRINT "End!\n"
-		
-		//Stop notifications
-		SendNotify = 0
-		
-		//Restart BLE adverts
-		dim addr$ : addr$ = ""
-		PRINT BleAdvertStart(0,addr$,500,0,0)
-	ENDIF
+    //Runs when a BLE connection trigger occurs
+    IF msgID == 0 THEN
+         //Connection
+         PRINT "Connect.\n"
+    ELSEIF msgID == 1 THEN
+         //Disconnection
+         PRINT "End!\n"
+
+         //Stop notifications
+         SendNotify = 0
+
+         //Restart BLE adverts
+         dim addr$ : addr$ = ""
+         PRINT BleAdvertStart(0,addr$,500,0,0)
+    ENDIF
 ENDFUNC 1
 
 FUNCTION HndlrCharVal(BYVAL charHandle, BYVAL offset, BYVAL len) 
-	//When characteristic is written
-	dim attr$
-	dim TmpVal, TmpVal2
-	IF charHandle == Char1 THEN
-		//Time & date has been updated
-		rc = BleCharValueRead(charHandle, attr$)
-		
-		//Open I2C
-		rc = I2COpen(I2CSpeed, 0, I2Ch)
+    //When characteristic is written
+    dim attr$
+    dim TmpVal, TmpVal2
+    IF charHandle == Char1 THEN
+        //Time & date has been updated
+        rc = BleCharValueRead(charHandle, attr$)
 
-		//Seconds
-		rc = BleDecodeU8(attr$, TmpVal, 0)
-		TmpVal2 = 0
-		WHILE TmpVal > 10
-			TmpVal2 = TmpVal2 + 10
-			TmpVal = TmpVal - 10
-		ENDWHILE
-		TmpVal2 = (((TmpVal2/10)<<4) + (TmpVal & 15)) | 128
-		rc = I2CWriteReg8(RTCAddr, 0, TmpVal2) //Seconds
+        //Open I2C
+        rc = I2COpen(I2CSpeed, 0, I2Ch)
 
-		//Minutes
-		rc = BleDecodeU8(attr$, TmpVal, 1)
-		TmpVal2 = 0
-		WHILE TmpVal > 10
-			TmpVal2 = TmpVal2 + 10
-			TmpVal = TmpVal - 10
-		ENDWHILE
-		TmpVal2 = ((TmpVal2/10)<<4) + (TmpVal & 15)
-		rc = I2CWriteReg8(RTCAddr, 1, TmpVal2) //Minutes
-		
-		//Hours
-		rc = BleDecodeU8(attr$, TmpVal, 2)
-		TmpVal2 = 0
-		WHILE TmpVal > 10
-			TmpVal2 = TmpVal2 + 10
-			TmpVal = TmpVal - 10
-		ENDWHILE
-		TmpVal2 = (((TmpVal2/10)<<4) + (TmpVal & 15)) & 63
-		rc = I2CWriteReg8(RTCAddr, 2, TmpVal2) //Hour
-		
-		//Day
-		rc = BleDecodeU8(attr$, TmpVal, 3)
-		TmpVal2 = 0
-		WHILE TmpVal > 10
-			TmpVal2 = TmpVal2 + 10
-			TmpVal = TmpVal - 10
-		ENDWHILE
-		TmpVal2 = ((TmpVal2/10)<<4) + (TmpVal & 15)
-		rc = I2CWriteReg8(RTCAddr, 4, TmpVal2) //Day
-		
-		//Month
-		rc = BleDecodeU8(attr$, TmpVal, 4)
-		TmpVal2 = 0
-		WHILE TmpVal > 10
-			TmpVal2 = TmpVal2 + 10
-			TmpVal = TmpVal - 10
-		ENDWHILE
-		TmpVal2 = ((TmpVal2/10)<<4) + (TmpVal & 15)
-		rc = I2CWriteReg8(RTCAddr, 5, TmpVal2) //Month
-		
-		//Year
-		rc = BleDecodeU16(attr$, TmpVal, 5)
-		TmpVal2 = 0
-		TmpVal = TmpVal - 2001
-		WHILE TmpVal > 10
-			TmpVal2 = TmpVal2 + 10
-			TmpVal = TmpVal - 10
-		ENDWHILE
-		TmpVal2 = ((TmpVal2/10)<<4) + (TmpVal & 15)
-		rc = I2CWriteReg8(RTCAddr, 6, TmpVal2) //Year
+        //Adjust reason
+        rc = BleDecodeU8(attr$, AdjustReason, 9)
 
-		//Close I2C
-		I2CClose(I2Ch)
-	ELSEIF charHandle == Char4 THEN
-		//Set/Disable alarm and alarm match
-		rc = BleCharValueRead(charHandle, attr$)
-		
-		//Open I2C
-		rc = I2COpen(I2CSpeed, 0, I2Ch)
+        //Day of the week
+        rc = BleDecodeU8(attr$, DayOfWeek, 7)
 
-		//Write data to RTC
-		rc = BleDecodeU8(attr$, TmpVal, 0) //On/off
-		rc = BleDecodeU8(attr$, TmpVal2, 1) //Alarm match
-		TmpVal2 = ((TmpVal2 & 7) << 4) | 128 //Only use 3 bits and shift left, then enable MSB for high-level logic
-		
-		//Write match conditions to RTC
-		rc = I2CWriteReg8(RTCAddr, 0x0d, TmpVal2)
-		
-		IF TmpVal == 0 THEN
-			//Disable alarm
-			rc = I2CWriteReg8(RTCAddr, 0x07, 0)
-		ELSE
-			//Enable alarm
-			rc = I2CWriteReg8(RTCAddr, 0x07, 16)
-		ENDIF
-		
-		//Close I2C
-		I2CClose(I2Ch)
-	ELSEIF charHandle == Char5 THEN
-		//Change alarm time
-		rc = BleCharValueRead(charHandle, attr$)
-		
-		//Open I2C
-		rc = I2COpen(I2CSpeed, 0, I2Ch)
-		
-		//Seconds
-		rc = BleDecodeU8(attr$, TmpVal, 0)
-		TmpVal2 = 0
-		WHILE TmpVal > 10
-			TmpVal2 = TmpVal2 + 10
-			TmpVal = TmpVal - 10
-		ENDWHILE
-		TmpVal2 = (((TmpVal2/10)<<4) + (TmpVal & 15))
-		rc = I2CWriteReg8(RTCAddr, 0x0a, TmpVal2) //Seconds
+        //Seconds
+        rc = BleDecodeU8(attr$, TmpVal, 6)
+        TmpVal2 = 0
+        WHILE TmpVal > 10
+             TmpVal2 = TmpVal2 + 10
+             TmpVal = TmpVal - 10
+        ENDWHILE
+        TmpVal2 = (((TmpVal2/10)<<4) + (TmpVal & 15)) | 128
+        rc = I2CWriteReg8(RTCAddr, 0, TmpVal2) //Seconds
 
-		//Minutes
-		rc = BleDecodeU8(attr$, TmpVal, 1)
-		TmpVal2 = 0
-		WHILE TmpVal > 10
-			TmpVal2 = TmpVal2 + 10
-			TmpVal = TmpVal - 10
-		ENDWHILE
-		TmpVal2 = ((TmpVal2/10)<<4) + (TmpVal & 15)
-		rc = I2CWriteReg8(RTCAddr, 0x0b, TmpVal2) //Minutes
+        //Minutes
+        rc = BleDecodeU8(attr$, TmpVal, 5)
+        TmpVal2 = 0
+        WHILE TmpVal > 10
+             TmpVal2 = TmpVal2 + 10
+             TmpVal = TmpVal - 10
+        ENDWHILE
+        TmpVal2 = ((TmpVal2/10)<<4) + (TmpVal & 15)
+        rc = I2CWriteReg8(RTCAddr, 1, TmpVal2) //Minutes
 
-		//Hours
-		rc = BleDecodeU8(attr$, TmpVal, 2)
-		TmpVal2 = 0
-		WHILE TmpVal > 10
-			TmpVal2 = TmpVal2 + 10
-			TmpVal = TmpVal - 10
-		ENDWHILE
-		TmpVal2 = (((TmpVal2/10)<<4) + (TmpVal & 15)) & 63
-		rc = I2CWriteReg8(RTCAddr, 0x0c, TmpVal2) //Hour
+        //Hours
+        rc = BleDecodeU8(attr$, TmpVal, 4)
+        TmpVal2 = 0
+        WHILE TmpVal > 10
+             TmpVal2 = TmpVal2 + 10
+             TmpVal = TmpVal - 10
+        ENDWHILE
+        TmpVal2 = (((TmpVal2/10)<<4) + (TmpVal & 15)) & 63
+        rc = I2CWriteReg8(RTCAddr, 2, TmpVal2) //Hour
 
-		//Day
-		rc = BleDecodeU8(attr$, TmpVal, 3)
-		TmpVal2 = 0
-		WHILE TmpVal > 10
-			TmpVal2 = TmpVal2 + 10
-			TmpVal = TmpVal - 10
-		ENDWHILE
-		TmpVal2 = ((TmpVal2/10)<<4) + (TmpVal & 15)
-		rc = I2CWriteReg8(RTCAddr, 0x0e, TmpVal2) //Day
+        //Day
+        rc = BleDecodeU8(attr$, TmpVal, 3)
+        TmpVal2 = 0
+        WHILE TmpVal > 10
+             TmpVal2 = TmpVal2 + 10
+             TmpVal = TmpVal - 10
+        ENDWHILE
+        TmpVal2 = ((TmpVal2/10)<<4) + (TmpVal & 15)
+        rc = I2CWriteReg8(RTCAddr, 4, TmpVal2) //Day
 
-		//Month
-		rc = BleDecodeU8(attr$, TmpVal, 4)
-		TmpVal2 = 0
-		WHILE TmpVal > 10
-			TmpVal2 = TmpVal2 + 10
-			TmpVal = TmpVal - 10
-		ENDWHILE
-		TmpVal2 = ((TmpVal2/10)<<4) + (TmpVal & 15)
-		rc = I2CWriteReg8(RTCAddr, 0x0f, TmpVal2) //Month
-		
-		//Close I2C
-		I2CClose(I2Ch)
-	ENDIF
+        //Month
+        rc = BleDecodeU8(attr$, TmpVal, 2)
+        TmpVal2 = 0
+        WHILE TmpVal > 10
+             TmpVal2 = TmpVal2 + 10
+             TmpVal = TmpVal - 10
+        ENDWHILE
+        TmpVal2 = ((TmpVal2/10)<<4) + (TmpVal & 15)
+        rc = I2CWriteReg8(RTCAddr, 5, TmpVal2) //Month
+
+        //Year
+        rc = BleDecodeU16(attr$, TmpVal, 0)
+        TmpVal2 = 0
+        TmpVal = TmpVal - 2001
+        WHILE TmpVal > 10
+             TmpVal2 = TmpVal2 + 10
+             TmpVal = TmpVal - 10
+        ENDWHILE
+        TmpVal2 = ((TmpVal2/10)<<4) + (TmpVal & 15)
+        rc = I2CWriteReg8(RTCAddr, 6, TmpVal2) //Year
+
+        //Close I2C
+        I2CClose(I2Ch)
+    ELSEIF charHandle == Char4 THEN
+        //Set/Disable alarm and alarm match
+        rc = BleCharValueRead(charHandle, attr$)
+
+        //Open I2C
+        rc = I2COpen(I2CSpeed, 0, I2Ch)
+
+        //Write data to RTC
+        rc = BleDecodeU8(attr$, TmpVal, 0) //On/off
+        rc = BleDecodeU8(attr$, TmpVal2, 1) //Alarm match
+        TmpVal2 = ((TmpVal2 & 7) << 4) | 128 //Only use 3 bits and shift left, then enable MSB for high-level logic
+
+        //Write match conditions to RTC
+        rc = I2CWriteReg8(RTCAddr, 0x0d, TmpVal2)
+
+        IF TmpVal == 0 THEN
+             //Disable alarm
+             rc = I2CWriteReg8(RTCAddr, 0x07, 0)
+        ELSE
+             //Enable alarm
+             rc = I2CWriteReg8(RTCAddr, 0x07, 16)
+        ENDIF
+
+        //Close I2C
+        I2CClose(I2Ch)
+    ELSEIF charHandle == Char5 THEN
+        //Change alarm time
+        rc = BleCharValueRead(charHandle, attr$)
+
+        //Open I2C
+        rc = I2COpen(I2CSpeed, 0, I2Ch)
+
+        //Seconds
+        rc = BleDecodeU8(attr$, TmpVal, 0)
+        TmpVal2 = 0
+        WHILE TmpVal > 10
+             TmpVal2 = TmpVal2 + 10
+             TmpVal = TmpVal - 10
+        ENDWHILE
+        TmpVal2 = (((TmpVal2/10)<<4) + (TmpVal & 15))
+        rc = I2CWriteReg8(RTCAddr, 0x0a, TmpVal2) //Seconds
+
+        //Minutes
+        rc = BleDecodeU8(attr$, TmpVal, 1)
+        TmpVal2 = 0
+        WHILE TmpVal > 10
+             TmpVal2 = TmpVal2 + 10
+             TmpVal = TmpVal - 10
+        ENDWHILE
+        TmpVal2 = ((TmpVal2/10)<<4) + (TmpVal & 15)
+        rc = I2CWriteReg8(RTCAddr, 0x0b, TmpVal2) //Minutes
+
+        //Hours
+        rc = BleDecodeU8(attr$, TmpVal, 2)
+        TmpVal2 = 0
+        WHILE TmpVal > 10
+             TmpVal2 = TmpVal2 + 10
+             TmpVal = TmpVal - 10
+        ENDWHILE
+        TmpVal2 = (((TmpVal2/10)<<4) + (TmpVal & 15)) & 63
+        rc = I2CWriteReg8(RTCAddr, 0x0c, TmpVal2) //Hour
+
+        //Day
+        rc = BleDecodeU8(attr$, TmpVal, 3)
+        TmpVal2 = 0
+        WHILE TmpVal > 10
+             TmpVal2 = TmpVal2 + 10
+             TmpVal = TmpVal - 10
+        ENDWHILE
+        TmpVal2 = ((TmpVal2/10)<<4) + (TmpVal & 15)
+        rc = I2CWriteReg8(RTCAddr, 0x0e, TmpVal2) //Day
+
+        //Month
+        rc = BleDecodeU8(attr$, TmpVal, 4)
+        TmpVal2 = 0
+        WHILE TmpVal > 10
+             TmpVal2 = TmpVal2 + 10
+             TmpVal = TmpVal - 10
+        ENDWHILE
+        TmpVal2 = ((TmpVal2/10)<<4) + (TmpVal & 15)
+        rc = I2CWriteReg8(RTCAddr, 0x0f, TmpVal2) //Month
+
+        //Close I2C
+        I2CClose(I2Ch)
+    ENDIF
 ENDFUNC 1
 
 FUNCTION GetAlarmTime()
-	//Gets the alarm time
-	dim AlmSec, AlmMin, AlmHour, AlmDate, AlmMonth
-	
-	//Open I2C
-	rc = I2COpen(I2CSpeed, 0, I2Ch)
-	
-	//Check alarm status
-	rc = I2CReadReg8(RTCAddr, 0x0a, AlmSec)
-	rc = I2CReadReg8(RTCAddr, 0x0b, AlmMin)
-	rc = I2CReadReg8(RTCAddr, 0x0c, AlmHour)
-	rc = I2CReadReg8(RTCAddr, 0x0e, AlmDate)
-	rc = I2CReadReg8(RTCAddr, 0x0f, AlmMonth)
-	
-	//Close I2C
-	I2CClose(I2Ch)
+    //Gets the alarm time
+    dim AlmSec, AlmMin, AlmHour, AlmDate, AlmMonth
 
-	//Convert I2C RTC values into time & date information
-	AlmSec = ((AlmSec & 15) + ((AlmSec & 112)>>4)*10)
-	AlmMin = ((AlmMin & 15) + ((AlmMin & 112)>>4)*10)
-	AlmHour = ((AlmHour & 15) + ((AlmHour & 48)>>4)*10)
-	AlmDate = ((AlmDate & 15) + ((AlmDate & 48)>>4)*10)
-	AlmMonth = ((AlmMonth & 15) + ((AlmMonth & 16)>>4)*10)
-	
-	//Write this to the characteristic
-	dim TmpStr$ : TmpStr$ = ""
-	rc = BleEncode8(TmpStr$, AlmSec, 4) //Seconds
-	rc = BleEncode8(TmpStr$, AlmMin, 3) //Minutes
-	rc = BleEncode8(TmpStr$, AlmHour, 2) //Hours
-	rc = BleEncode8(TmpStr$, AlmDate, 1) //Day
-	rc = BleEncode8(TmpStr$, AlmMonth, 0) //Month
+    //Open I2C
+    rc = I2COpen(I2CSpeed, 0, I2Ch)
 
-	//Update GATT information
-	rc = BleCharValueWrite(Char5, TmpStr$)
+    //Check alarm status
+    rc = I2CReadReg8(RTCAddr, 0x0a, AlmSec)
+    rc = I2CReadReg8(RTCAddr, 0x0b, AlmMin)
+    rc = I2CReadReg8(RTCAddr, 0x0c, AlmHour)
+    rc = I2CReadReg8(RTCAddr, 0x0e, AlmDate)
+    rc = I2CReadReg8(RTCAddr, 0x0f, AlmMonth)
+
+    //Close I2C
+    I2CClose(I2Ch)
+
+    //Convert I2C RTC values into time & date information
+    AlmSec = ((AlmSec & 15) + ((AlmSec & 112)>>4)*10)
+    AlmMin = ((AlmMin & 15) + ((AlmMin & 112)>>4)*10)
+    AlmHour = ((AlmHour & 15) + ((AlmHour & 48)>>4)*10)
+    AlmDate = ((AlmDate & 15) + ((AlmDate & 48)>>4)*10)
+    AlmMonth = ((AlmMonth & 15) + ((AlmMonth & 16)>>4)*10)
+
+    //Write this to the characteristic
+    dim TmpStr$ : TmpStr$ = ""
+    rc = BleEncode8(TmpStr$, AlmSec, 4) //Seconds
+    rc = BleEncode8(TmpStr$, AlmMin, 3) //Minutes
+    rc = BleEncode8(TmpStr$, AlmHour, 2) //Hours
+    rc = BleEncode8(TmpStr$, AlmDate, 1) //Day
+    rc = BleEncode8(TmpStr$, AlmMonth, 0) //Month
+
+    //Update GATT information
+    rc = BleCharValueWrite(Char5, TmpStr$)
 ENDFUNC 1
 
 FUNCTION GetAlarmMode()
-	//Checks if the alarm is set or unset
-	dim AlmEna
-	
-	//Open I2C
-	rc = I2COpen(I2CSpeed, 0, I2Ch)
-	
-	//Check alarm status
-	rc = I2CReadReg8(RTCAddr, 7, AlmEna)
-	
-	//Close I2C
-	I2CClose(I2Ch)
-	
-	IF ((AlmEna & 16) == 0) THEN
-		//Alarm not set
-		EXITFUNC 0
-	ENDIF
+    //Checks if the alarm is set or unset
+    dim AlmEna
+
+    //Open I2C
+    rc = I2COpen(I2CSpeed, 0, I2Ch)
+
+    //Check alarm status
+    rc = I2CReadReg8(RTCAddr, 7, AlmEna)
+
+    //Close I2C
+    I2CClose(I2Ch)
+
+    IF ((AlmEna & 16) == 0) THEN
+        //Alarm not set
+        EXITFUNC 0
+    ENDIF
 ENDFUNC 1
 
 FUNCTION GetAlarmMatch()
-	//Gets the alarm match data
-	dim AlmMat
-	
-	//Open I2C
-	rc = I2COpen(I2CSpeed, 0, I2Ch)
-	
-	//Check alarm match
-	rc = I2CReadReg8(RTCAddr, 0x0d, AlmMat)
-	
-	//Shift to proper position
-	AlmMat = (AlmMat >> 4) & 7
-	
-	//Close I2C
-	I2CClose(I2Ch)
-	
-	//Return data
-	EXITFUNC AlmMat
+    //Gets the alarm match data
+    dim AlmMat
+
+    //Open I2C
+    rc = I2COpen(I2CSpeed, 0, I2Ch)
+
+    //Check alarm match
+    rc = I2CReadReg8(RTCAddr, 0x0d, AlmMat)
+
+    //Shift to proper position
+    AlmMat = (AlmMat >> 4) & 7
+
+    //Close I2C
+    I2CClose(I2Ch)
+
+    //Return data
+    EXITFUNC AlmMat
 ENDFUNC 1
 
 //Open I2C
 rc = I2COpen(I2CSpeed, 0, I2Ch)
 IF (rc != 0) THEN
-	//I2C isn't working
-	PRINT "Unable to communicate \n"
+    //I2C isn't working
+    PRINT "Unable to communicate \n"
 ENDIF
 
 //Check time
@@ -422,21 +437,21 @@ rc = I2CReadReg8(RTCAddr, 5, monthVal)
 rc = I2CReadReg8(RTCAddr, 6, yearVal)
 
 IF ((secVal & 112) == 0 && (minVal & 112) == 0 && (dayVal & 63) == 1 && (monthVal & 31) == 1 && yearVal == 1) THEN
-	//No settings configured! Set time to Monday, 8:15am
-	rc = I2CWriteReg8(RTCAddr, 3, 41) //Power and day of week (day 1/Monday)
-	rc = I2CWriteReg8(RTCAddr, 1, 16+5) //Minutes
-	rc = I2CWriteReg8(RTCAddr, 2, 8) //Hours (24-hour format)
+    //No settings configured! Set time to Monday, 8:15am
+    rc = I2CWriteReg8(RTCAddr, 3, 41) //Power and day of week (day 1/Monday)
+    rc = I2CWriteReg8(RTCAddr, 1, 16+5) //Minutes
+    rc = I2CWriteReg8(RTCAddr, 2, 8) //Hours (24-hour format)
 
-	//Set date to 15/04/2014
-	rc = I2CWriteReg8(RTCAddr, 4, 21) //15th
-	rc = I2CWriteReg8(RTCAddr, 5, 4) //April
-	rc = I2CWriteReg8(RTCAddr, 6, 19) //2014 (2014-2001 = 13)
-	
-	//Enable RTC
-	rc = I2CWriteReg8(RTCAddr, 0, 128)
-	
-	//Output
-	PRINT "RTC not configured, set to 15/04/2014 @ 8:15am.\n"
+    //Set date to 15/04/2014
+    rc = I2CWriteReg8(RTCAddr, 4, 21) //15th
+    rc = I2CWriteReg8(RTCAddr, 5, 4) //April
+    rc = I2CWriteReg8(RTCAddr, 6, 19) //2014 (2014-2001 = 13)
+
+    //Enable RTC
+    rc = I2CWriteReg8(RTCAddr, 0, 128)
+
+    //Output
+    PRINT "RTC not configured, set to 15/04/2014 @ 8:15am.\n"
 ENDIF
 
 //Close I2C
@@ -501,7 +516,7 @@ AssertRC(rc,489)
 dim TmpStr$ : TmpStr$ = ""
 rc = BleEncode8(TmpStr$, DST, 1) //DST
 rc = BleEncode8(TmpStr$, Timezone, 0) //Timezone
-	
+     
 //Update GATT information
 rc = BleCharValueWrite(Char2, TmpStr$)
 
@@ -518,11 +533,11 @@ rc = BleCharValueWrite(Char3, TmpStr$)
 //Update GATT information for alarm enabled/disabled
 TmpStr$ = ""
 IF GetAlarmMode() == 1 THEN
-	//Alarm enabled
-	rc = BleEncode8(TmpStr$, 1, 0)
+    //Alarm enabled
+    rc = BleEncode8(TmpStr$, 1, 0)
 ELSE
-	//Alarm disabled
-	rc = BleEncode8(TmpStr$, 0, 0)
+    //Alarm disabled
+    rc = BleEncode8(TmpStr$, 0, 0)
 ENDIF
 rc = BleEncode8(TmpStr$, GetAlarmMatch(), 1)
 rc = BleCharValueWrite(Char4, TmpStr$)
@@ -546,33 +561,33 @@ rc = GPIOBindEvent(1, 20, 0)
 AssertRC(rc,537)
 
 FUNCTION HndlrAlarm()
-	//Runs on RTC alarm wake up, send an advert to alert this
-	dim TmpStr$ : TmpStr$ = ""
-	rc=BleEncode16(TmpStr$, 0x2B02, 0)
+    //Runs on RTC alarm wake up, send an advert to alert this
+    dim TmpStr$ : TmpStr$ = ""
+    rc=BleEncode16(TmpStr$, 0x2B02, 0)
 
-	DIM advRpt$ : advRpt$ = ""
-	DIM scRpt$ : scRpt$ = ""
-	rc = BleAdvRptInit(advRpt$, 2, 1, 10)
-	AssertRC(rc,547)
-	rc = BleAdvRptAppendAD(advRpt$, 0x16, TmpStr$)
-	AssertRC(rc,549)
-	rc = BleAdvRptsCommit(advRpt$, scRpt$)
-	AssertRC(rc,551)
+    DIM advRpt$ : advRpt$ = ""
+    DIM scRpt$ : scRpt$ = ""
+    rc = BleAdvRptInit(advRpt$, 2, 1, 10)
+    AssertRC(rc,547)
+    rc = BleAdvRptAppendAD(advRpt$, 0x16, TmpStr$)
+    AssertRC(rc,549)
+    rc = BleAdvRptsCommit(advRpt$, scRpt$)
+    AssertRC(rc,551)
 
-	//Open I2C
-	rc = I2COpen(I2CSpeed, 0, I2Ch)
-	
-	//Clear alarm
-	dim TmpVal
-	rc = I2CReadReg8(RTCAddr, 0x0d, TmpVal)
-	TmpVal = (TmpVal&247)
-	rc = I2CWriteReg8(RTCAddr, 0x0d, TmpVal)
+    //Open I2C
+    rc = I2COpen(I2CSpeed, 0, I2Ch)
 
-	//Close I2C
-	I2CClose(I2Ch)
-	
-	//Start the buzzer
-	rc = StartBuzzer()
+    //Clear alarm
+    dim TmpVal
+    rc = I2CReadReg8(RTCAddr, 0x0d, TmpVal)
+    TmpVal = (TmpVal&247)
+    rc = I2CWriteReg8(RTCAddr, 0x0d, TmpVal)
+
+    //Close I2C
+    I2CClose(I2Ch)
+
+    //Start the buzzer
+    rc = StartBuzzer()
 ENDFUNC 1
 
 //Configure buzzer
