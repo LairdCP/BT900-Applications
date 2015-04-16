@@ -142,7 +142,7 @@
 //******************************************************************************
 // Definitions
 //******************************************************************************        
-#define APP_VERSION                          "1.0"
+#define APP_VERSION                          "1.1"
         // size of i[]
 #define NUM_OF_I_PARAMS                     (5)
         // size of s$[]     
@@ -965,8 +965,6 @@ function SetMode(msgID, cmd) as integer
         else
             OnEvent  EVBTC_SPP_DATA_RECEIVED disable
         endif
-        print ok$;"\n"
-    elseif cmd==CMD_MODE then
         OnEvent  EVUARTRX       call HandlerUartRx   
         carCnt=0
         UartRsp(0)
@@ -1206,7 +1204,7 @@ OnEvent  EVBTC_PAIR_REQUEST     call HandlerPairReq
 onevent  EVBTC_PIN_REQUEST      call HandlerPINReq
 OnEvent  EVBTC_SPP_CONN_TIMEOUT call HandlerSppConnTimOut
 OnEvent  EVBTC_DISCOV_TIMEOUT   call HandlerBtcDiscTimOut
-OnEvent  EVGPIOCHAN0            call HandlerGpioChan0 
+OnEvent  EVGPIOCHAN0            call HandlerGpioChan0
 OnEvent  EVTMR0                 call _disconnect
 OnEvent  EVBTC_DISCOV_TIMEOUT   call HandlerBtcDiscTimOut 
 OnEvent  EVUARTTXEMPTY        call HandlerUartTxEmpty
