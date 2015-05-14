@@ -1,0 +1,36 @@
+//Example :: BtcBondingGetFirst.sb
+dim rc, Addr$, Key$, Type, DB
+
+rc = BTCBondingGetFirst(Addr$, Key$, Type, DB)
+IF (rc == 0) THEN
+    PRINT "Address ";STRHEXIZE$(Addr$);", key: ";STRHEXIZE$(Key$);", type: ";Type;" in "
+    IF (DB == 1) THEN
+        //Rolling
+        PRINT "rolling"
+    ELSE
+        //Persistent
+        PRINT "persistent"
+    ENDIF
+    PRINT " database.\n"
+
+    //Get next key
+    rc = BTCBondingGetNext(Addr$, Key$, Type, DB)
+    IF (rc == 0) THEN
+        //Additional bond(s)
+        PRINT "Address ";STRHEXIZE$(Addr$);", key: ";STRHEXIZE$(Key$);", type: ";Type;" in "
+        IF (DB == 1) THEN
+            //Rolling
+            PRINT "rolling"
+        ELSE
+            //Persistent
+            PRINT "persistent"
+        ENDIF
+        PRINT " database.\n"
+    ELSE
+        //No additional bonds
+        PRINT "No additional bonds\n"
+    ENDIF
+ELSE
+    //No bonds
+    PRINT "No bonds to output.\n"
+ENDIF
