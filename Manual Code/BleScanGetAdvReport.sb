@@ -21,7 +21,7 @@ FUNCTION HndlrAdvRpt()
     
     '//Read all cached advert reports
     rc=BleScanGetAdvReport(periphAddr$, advData$, nDiscarded, nRssi)
-    WHILE (rc != 0)
+    WHILE (rc == 0)
         PRINT "\n\nPeer Address: "; StrHexize$(periphAddr$)
         PRINT "\nAdvert Data: ";StrHexize$(advData$)
         PRINT "\nNo. Discarded Adverts: ";nDiscarded
