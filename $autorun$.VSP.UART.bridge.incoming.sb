@@ -22,7 +22,7 @@
 #define MOUUID   "\56\9a\20\02\b8\7f\49\0c\92\cb\11\ba\5e\a5\16\7c"  //Modem out UUID
 #define RXUUID   "\56\9a\20\01\b8\7f\49\0c\92\cb\11\ba\5e\a5\16\7c"  //Receive VSP UUID
 #define TXUUID   "\56\9a\20\00\b8\7f\49\0c\92\cb\11\ba\5e\a5\16\7c"  //Transmit VSP UUID
-#define Version  "1.00"                                              //Version
+#define Version  "1.01"                                              //Version
 
 //******************************************************************************
 // Global Variable Declarations
@@ -133,6 +133,7 @@ ENDFUNC 1
 FUNCTION HndlrUartRx()
     //UART data received
     dim RdLen, Rd$
+
     IF UARTBlocked == 0 && DataQueued == 1 THEN
         //UART is not blocked
         rc = BleCharValueRead(MIchar, Rd$)
@@ -250,6 +251,18 @@ FUNCTION HndlrBleMsg(nMsgId, nCtn)
     IF nMsgId == 1 THEN
         //Disconnect - restart advertising
         rc = StartVSPAdvert()
+        ONEVENT  EVUARTRX       DISABLE            //Recieved UART data
+        BufferFull = 0
+        UARTBlocked = 0
+    ENDIF
+ENDFUNC 1
+
+//==============================================================================
+//Handler for CCCD written
+//==============================================================================
+FUNCTION HndlrCharCccd(charHandle, nVal)
+    IF (charHandle == TXchar && nVal == 1) THEN
+        ONEVENT  EVUARTRX       CALL HndlrUartRx   //Recieved UART data
     ENDIF
 ENDFUNC 1
 
@@ -274,10 +287,10 @@ ENDIF
 //------------------------------------------------------------------------------
 ONEVENT  EVCHARVAL      CALL HndlrCharVal      //BLE characteristic written
 ONEVENT  EVNOTIFYBUF    CALL HndlrNtfyBuf      //BLE NotIFy buffer free
-ONEVENT  EVUARTRX       CALL HndlrUartRx       //Recieved UART data
 ONEVENT  EVTMR0         CALL HndlrNtfyBuf      //Timer 0 expired
 ONEVENT  EVUARTTXEMPTY  CALL HndlrUartTxEmpty  //UART transmit buffer empty
 ONEVENT  EVBLEMSG       CALL HndlrBleMsg       //BLE event message
+ONEVENT  EVCHARCCCD     CALL HndlrCharCccd     //CCCD written
 
 //------------------------------------------------------------------------------
 // Wait for a synchronous event.
