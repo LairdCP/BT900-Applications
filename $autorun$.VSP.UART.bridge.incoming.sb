@@ -22,7 +22,7 @@
 #define MOUUID   "\56\9a\20\02\b8\7f\49\0c\92\cb\11\ba\5e\a5\16\7c"  //Modem out UUID
 #define RXUUID   "\56\9a\20\01\b8\7f\49\0c\92\cb\11\ba\5e\a5\16\7c"  //Receive VSP UUID
 #define TXUUID   "\56\9a\20\00\b8\7f\49\0c\92\cb\11\ba\5e\a5\16\7c"  //Transmit VSP UUID
-#define Version  "1.01"                                              //Version
+#define Version  "1.02"                                              //Version
 
 //******************************************************************************
 // Global Variable Declarations
@@ -262,7 +262,9 @@ ENDFUNC 1
 //==============================================================================
 FUNCTION HndlrCharCccd(charHandle, nVal)
     IF (charHandle == TXchar && nVal == 1) THEN
+        //TX CCCD written, enable handler to read from the UART
         ONEVENT  EVUARTRX       CALL HndlrUartRx   //Recieved UART data
+        rc = HndlrUartRx()
     ENDIF
 ENDFUNC 1
 
