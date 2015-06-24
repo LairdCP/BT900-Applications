@@ -173,7 +173,7 @@
 #define OPEN_SPP_ON_STARTUP                 0
 
         //if set to 1, on startup the module will connect to device PEER_BT_ADDR for SPP
-#define CONNECT_ON_STARTUP                  1
+#define CONNECT_ON_STARTUP                  0
 
 #define PAIRABLE_ON_STARTUP                 1
 

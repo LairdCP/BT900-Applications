@@ -133,7 +133,7 @@
 // Definitions
 //******************************************************************************
         //if set to 1, on startup the module will connect to device BTAddr for VSP
-#define CONNECT_ON_STARTUP                 1
+#define CONNECT_ON_STARTUP                 0
 
         //BLE Scan config parameters
 #define SCAN_TMT                           20000   //Scan timeout in mS
