@@ -188,6 +188,8 @@ dim pr$ : pr$ = "\r\n>" //
 dim nc$ : nc$ = "\nNO CARRIER" //No carrier response
 dim uc$ : uc$ = "\nUNKNOWN COMMAND" //Unknown command response
 
+
+
 //******************************************************************************
 // Register Error Handler as early as possible
 //******************************************************************************
@@ -253,28 +255,7 @@ FUNCTION HndlrConnTO()
     PRINT "Connection attempt timed out.\n"
 ENDFUNC 1
 
-//==============================================================================
-//BLE message
-//==============================================================================
-FUNCTION HndlrBleMsg(nMsgId, nCtx)
-    IF (nMsgId == 0) then
-        //Connected!
-        BleHandle = nCtx
-        Mode = 1
-        dim UUID1$, UUID2$
-        UUID1$ = BASEUUID
-        UUID2$ = MIUUID
-        rc = BLEGATTCFINDCHAR(nCtx, BleHandleUuid128(UUID1$), 0, BleHandleUuid128(UUID2$), 0)
-        AssertRC(rc, 2)
-        PRINT "Connected!\n"
-        InConnection = 1
-    ELSEIF (nMsgId == 1) then
-        //Disconnected!
-        PRINT "Disconnected!\n"
-        InConnection = 0
-        rc = SendMsgApp(0,CMD_MODE)
-    ENDIF
-ENDFUNC 1
+
 
 //==============================================================================
 //Characteristic found
@@ -343,6 +324,12 @@ ENDFUNC 1
 //Characteristic written
 //==============================================================================
 FUNCTION HndlrAttrWrite(cHndl,aHndl,nSts)
+    if (nSts !=0) then
+        rc = BlePair(cHndl,1)
+        AssertRC(rc, 349)
+        exitfunc 1
+    endif
+    
     IF (Mode == 7) THEN
         //Enable TX notIFications
         Mode = 8
@@ -509,6 +496,44 @@ FUNCTION HndlrAttrRead(nCtx, Hndl, Stat)
         ENDIF
     ENDIF
     Data$ = ""
+ENDFUNC 1
+
+//==============================================================================
+//BLE message
+//==============================================================================
+FUNCTION HndlrBleMsg(nMsgId, nCtx)
+    IF (nMsgId == 0) then
+        //Connected!
+        BleHandle = nCtx
+        Mode = 1
+        dim UUID1$, UUID2$
+        UUID1$ = BASEUUID
+        UUID2$ = MIUUID
+        rc = BLEGATTCFINDCHAR(nCtx, BleHandleUuid128(UUID1$), 0, BleHandleUuid128(UUID2$), 0)
+        AssertRC(rc, 2)
+        PRINT "Connected!\n"
+        InConnection = 1
+        
+        //encrypt the connection if previously bonded with this device
+        dim addr$, fAsCentral, info, rollingAge, rollingCount
+        rc = BleGetAddrFromConnHandle(nCtx, addr$)
+        if (rc==0) then
+            if (BleBondingIsTrusted(addr$,fAsCentral,info,rollingAge,rollingCount)>0) then
+                rc = BleEncryptConnection(nCtx, 7, 1)   //might not need this
+            endif
+        endif
+        
+    ELSEIF (nMsgId == 1) then
+        //Disconnected!
+        PRINT "Disconnected!\n"
+        InConnection = 0
+        rc = SendMsgApp(0,CMD_MODE)
+    
+    elseif (nMsgId == 10) then
+        //start process of writing characteristics and descriptors from the beginning
+        Mode = 6
+        exitfunc HndlrFindDesc(0, TXCCCDHandle)
+    ENDIF
 ENDFUNC 1
 
 //------------------------------------------------------------------------------
@@ -867,9 +892,23 @@ function HndlrGpioChan0()
     endif
 endfunc 1
 
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+sub Initialise()
+  //just works pairing will work without confirmation
+  rc = BleSecMngrJustWorksConf(0)
+  //use 'Just Works' pairing
+  rc = BleSecMngrIoCap(0)
+  //bond when pairing
+  rc = BleSecMngrBondReq(1)
+endsub
+
 //******************************************************************************
 // Equivalent to main() in C
 //******************************************************************************
+
+//setup pairing
+Initialise()
 
 //Setup nAutorun pin to control switching between command and bridge mode
 rc=GpioBindEvent(0,22,2)
