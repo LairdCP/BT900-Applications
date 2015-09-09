@@ -17,7 +17,7 @@
 '//**************************************************************************************
 '//**** Uncomment the first #define line for firmware older than 1.3.57.19 and older ****
 '//**************************************************************************************
-'//#define HANDLERCHARVAL HndlrCharVal(ByVal charHndl)  //for <= v1.3.57.19  
+'//#define HANDLERCHARVAL HndlrCharVal(ByVal charHndl)  //for <= v1.3.57.19
 #define HANDLERCHARVAL HndlrCharVal(ByVal charHndl, ByVal offset, ByVal len)
 '//
 '//   ###################################################################################
@@ -26,7 +26,7 @@
 '//   #                                                                                 #
 '//   #  -----------------------------------------------------------------------------  #
 '//   #  ::Changelog:: 05/12/13 -> 2.1.0                                                #
-'//   #  -----------------------------------------------------------------------------  # 
+'//   #  -----------------------------------------------------------------------------  #
 '//   #                                                                                 #
 '//   ###################################################################################
 '//
@@ -36,7 +36,7 @@
 '//   # See file $autorun$.iBeacon.sblib for usage instructions                         #
 '//   #                                                                                 #
 '//   ###################################################################################
-'//    
+'//
 '//
 '//******************************************************************************
 
@@ -51,7 +51,7 @@
 #define BEACON_MINOR                         0x5678
         '// Default TxPower, one of (8,4,0,-4,-8,-12,-16,-20)
 #define BEACON_TXPOWER_DBM                   8
-        '//RSSI at 1m from BT900 when tx power = 8 
+        '//RSSI at 1m from BT900 when tx power = 8
         '//Set this by advertising at 4 dBm and measuring the RSSI 1m from the BT900
 #define CALIBRTD_VALUE_DBM                   -60
         '// Default value for iBeacon format
@@ -63,7 +63,7 @@
 
         '// Default time to remain connectible : 1-255
 #define REMAIN_CONN_TME_SEC                  20
-        '// min time to remain connectible when updated over the air : 3-255 
+        '// min time to remain connectible when updated over the air : 3-255
 #define REMAIN_CONN_TME_SEC_MIN              3
 
         '//Default advertising interval -- higher the number, lower the current consumption

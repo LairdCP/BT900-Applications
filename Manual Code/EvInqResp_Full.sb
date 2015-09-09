@@ -1,0 +1,70 @@
+//Example :: EvInqResp.sb
+dim rc
+dim adr$
+
+adr$=""
+
+
+//==============================================================================
+// This handler is called when there is an inquiry report waiting to be read
+// Algorithm will prevent display of data from the same peer consecutively
+//==============================================================================
+function HandlerInqResp(respType) as integer
+    dim ad$,dta$,ndx,rsi,tag, sCOD$
+    dim nPScanRepMode, nPScanPeriodMode, nPScanMode, nCOD, nClockOffset
+    rc = BtcInquiryGetReportFull(ad$, nPScanRepMode, nPScanPeriodMode, nPScanMode, nCOD, nClockOffset,dta$,ndx,rsi)
+  
+    //if MAC address is different from the previous one
+    if strcmp(adr$,ad$)!= 0 then
+        print "\nAddress: "; StrHexize$(ad$)
+        print "\n\tPage Scan Repetition Mode: "; nPScanRepMode
+        print "\n\tPage Scan Period Mode: "; nPScanPeriodMode
+        print "\n\tPage Scan Mode: "; nPScanMode
+        sprint #sCOD$,integer.h'nCOD
+        print "\n\tClass of Device: "+ Right$(sCOD$, 6) //Print the COD
+        
+        if (nClockOffset & 0x80) then
+            // If clock offset is valid, recover value
+            nClockOffset = (nClockOffset << 2)
+            print "\n\tClock Offset: "; nClockOffset
+        endif
+        
+        if respType > 0 then
+            print "\n\tRSSI: ";rsi
+            
+            if respType == 2 then
+                print "\n\tEIR: "; StrHexize$(dta$)
+                dim tg$
+                while BtcGetEIRbyIndex(ndx,dta$,tag,ad$)==0
+                    //write tag value as hex to string tg$
+                    sprint #tg$,integer.h'tag
+                    StrDeescape(ad$)
+                    
+                    //print the last 2 hex digits of the tag, and the data
+                    if strlen(ad$)!=0 then
+                        print "\n\t\tTag 0x" + RIGHT$(tg$,2) +": "; ad$
+                    endif
+                                           
+                    ndx=ndx+1
+                endwhile
+                print "\n"
+            endif
+        endif
+    endif
+endfunc 1
+
+
+function HandlerBtcInqTimOut() as integer
+  print  "\nScanning stopped via timeout"
+endfunc 0
+
+
+OnEvent  EVINQRESP              call HandlerInqResp
+OnEvent  EVBTC_INQUIRY_TIMEOUT  call HandlerBtcInqTimOut
+
+
+rc = BtcInquiryConfig(1,2)      //extended inquiry mode
+rc = BtcInquiryConfig(2,10)      //extended inquiry mode
+rc = BtcInquiryStart(10)
+
+WaitEvent

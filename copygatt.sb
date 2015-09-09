@@ -108,7 +108,7 @@ sub terminateCloning(rc)
 		//BLE_GATTC_NO_MORE_DATA
 		rc=0
 	endif
-	
+
 	if command==COMMAND_CLONE then
 		print "\ngatt table cloned successfully\n"
 	elseif command==COMMAND_BROWSE then
@@ -173,7 +173,7 @@ function OnUartCmd() as integer
 
 	elseif strcmp(tkn$, "quit")==0 then
 		reset(0)
-	
+
 	elseif strcmp(tkn$, "help")==0 then
 		print "Available Commands:\n"
 		print "\n	scan\n	browse <bdaddr>\n	clone <bdaddr>\n	quit\n"

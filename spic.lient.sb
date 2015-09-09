@@ -24,27 +24,27 @@
  // help			: Shows list of commands
  // version			: Shows the version
  // quit/exit			: Exits the application
- // 
+ //
 
  //Defines for the DoFunc variable
  #define READ_ADDRESS 0
  #define READ_MEMORY 1
  #define WRITE_ADDRESS 2
  #define WRITE_MEMORY 3
- 
+
  dim rc //Function return code
  dim TargetMAC$ : TargetMAC$ = "\00\16\A4\09\3C\26" //MAC of the device to connect too
  dim ConnectionStatus : ConnectionStatus = 0 //0 = disconnected, 1 = connected
  dim nCtxG //Global BLE handler
  dim APP_VERSION$ : APP_VERSION$ = "0.1" //Version of client program
  dim TmpStr$ : TmpStr$ = "" //Temporary string for inter-function passing
- 
+
  //List of UUID's
  dim AddressUUID : AddressUUID = 0
  dim RMemoryUUID : RMemoryUUID = 0
  dim WMemoryUUID : WMemoryUUID = 0
  dim DeviceUUID : DeviceUUID = 0
- 
+
  //List of service handle IDs
  dim AddressHID : AddressHID = 0x2AAA
  dim RMemoryHID : RMemoryHID = 0x2AAB
@@ -52,10 +52,10 @@
  dim DeviceHID : DeviceHID = 0x2AAD
 
  dim DoFunc : DoFunc = 0 //Temporary variable for what function to perform when characteristic is found
- 
+
  //Global variables for UART
  dim nMatch, stRsp$, urtcmd$, tkn$
-		
+
 FUNCTION HndlrCnTOut()
 	//Runs on connection timeout
 	PRINT "Error: Connection attempt timed out."
@@ -80,7 +80,7 @@ FUNCTION HndlrBleMsg(nMsgId, nCtx)
 		DeviceUUID = 0
 	ENDIF
 ENDFUNC 1
- 
+
  FUNCTION DoConnect()
 	//Makes a connection to the host device
 	IF ConnectionStatus == 0 THEN
@@ -90,7 +90,7 @@ ENDFUNC 1
 		PRINT "Error: Already connected to target device.\n"
 	ENDIF
  ENDFUNC 1
- 
+
  FUNCTION DoDisconnect()
 	//Disconnects from the host device
 	IF ConnectionStatus == 1 THEN
@@ -99,7 +99,7 @@ ENDFUNC 1
 		PRINT "Error: Not connected to a device.\n"
 	ENDIF
  ENDFUNC 1
- 
+
  FUNCTION IsConnected()
 	//Returns a message if not connected to the device
 	IF ConnectionStatus == 0 THEN
@@ -179,7 +179,7 @@ FUNCTION OnUartCmd()
 	//Clear UART RX buffer
 	urtcmd$ = ""
 ENDFUNC 1
- 
+
 FUNCTION HndlrUartRx()
 	//check if CR has been received
 	nMatch=UartReadMatch(stRsp$,13)
@@ -189,7 +189,7 @@ FUNCTION HndlrUartRx()
 		EXITFUNC OnUartCmd()
 	ENDIF
 ENDFUNC 1
-	
+
 FUNCTION HndlrGCData(nCtx, nHndl, nStat)
 	//Runs when data has been read from remote GATT server
 	dim offset, attrData$, Tmp
@@ -232,7 +232,7 @@ ENDFUNC 1
 rc = BleGattcOpen(0,0)
 PRINT "SPI Memory Client ready!\n"
 
-//Events 
+//Events
 ONEVENT EVUARTRX			CALL HndlrUartRx //Runs when UART gets data
 ONEVENT EVBLE_CONN_TIMEOUT		CALL HndlrCnTOut //Runs on connection timeout
 ONEVENT EVBLEMSG			CALL HndlrBleMsg //Runs on BLE message

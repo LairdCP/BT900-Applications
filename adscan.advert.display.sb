@@ -83,7 +83,7 @@ FUNCTION HndlrAdvRpt()
 		//Go through all tags and print them out
 		PRINT "Advertising data [hex]:\n"
 		TmpVal = 0
-		while (TmpVal <= 0xff) 
+		while (TmpVal <= 0xff)
 			if (TmpVal == 8) then
 				//Skip name tags
 				TmpVal = 10

@@ -1,0 +1,152 @@
+//******************************************************************************
+// Laird Technologies (c) 2014
+//
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// +++++                                                                      ++
+// +++++  When UwTerminal downloads the app it will store it as a filenname   ++
+// +++++  which consists of all characters up to the first . and excluding it ++
+// +++++                                                                      ++
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//
+// This library file provides commands to control BT Classic operation and should be
+// #included into the file 'cmd.ble.manager.sb' if running on a dual mode module
+// e.g. BT900.
+//
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// Convention : (1) Case sensitive, and commands are presented in alphabetic order
+//              (2) If line ends with \ then it continues on next line. That does
+//                  not mean that it should be sent as multiple lines
+//              (3) Replace anything between ## 
+//              (4) #INTaaaa# means a number in decimal, hex, octal or binary
+//                      format -> 23 == 0x17 == h'17 == o'23 == b'10111
+//                      aaaa is just a description
+//              (5) #HEXaaaa# means a string without delimitors consisting of hex 
+//                      characters only aaaa is just a description
+//              (6) #STRaaaa# means a string without delimitors
+//                      aaaa is just a description
+//              (7) "STRaaaa" means a string which must have the " delimitor
+//                      aaaa is just a description
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// -----------------------------------------------------------------------------
+// inquiry config #INTcfgID# #INTvalue#
+//    --- bluetooth classic functionality ---
+//   - set scanning configuration parameters
+//     #INTcfgID# 
+//       0    Inquiry Type (0 for General Inquiry, 1 for Limited Inquiry)
+//       1    Inquiry Mode (0 for Standard, 1 for with RSSI, 2 for Extended)
+//       2    Max number of devices to receive inquiry responses from (0-255)
+//       3    Inquiry Tx Power (Range is from -70 to 20 dBm)
+//
+// -----------------------------------------------------------------------------
+// inquiry start #INTinqTimeoutS#
+//    --- bluetooth classic functionality ---
+//   - Start an inquiry using the timeout #INTinqTimeoutS#
+//
+// -----------------------------------------------------------------------------
+// inquiry cancel
+//    --- bluetooth classic functionality ---
+//   - Cancel an ongoing inquiry
+//
+// -----------------------------------------------------------------------------
+//******************************************************************************
+
+//******************************************************************************
+// Definitions
+//******************************************************************************
+ 
+//******************************************************************************
+// Global Variable Declarations
+//******************************************************************************
+
+//******************************************************************************
+// Function and Subroutine definitions
+//******************************************************************************
+
+//-------------------------------------------------------------------------
+//#CMD#//  inquiry config #INTcfgID# #INTvalue#
+//#CMD#//  inquiry start #INTinqTimeoutS#
+//#CMD#//  inquiry cancel
+//-------------------------------------------------------------------------
+function _inquiry()  
+    tlen = ExtractStrToken(urtcmd$,tkn$)
+    if tlen == 0 then
+        exitfunc 5
+    endif
+    
+    if strcmp(tkn$,"cancel")==0 then
+        //cancel the inquiry
+        exitfunc BtcInquiryCancel()
+    endif
+    
+    if strcmp(tkn$,"config")==0 then
+        //extract 2 : (cfgID value) and store starting at i[1]
+        rc = ExtractIntTokens(urtcmd$,1,2)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        exitfunc BtcInquiryConfig(i[1],i[2])  
+    endif
+    if strcmp(tkn$,"start")==0 then
+        //extract 1 : (inqTimeoutS) and store starting at i[1]
+        rc = ExtractIntTokens(urtcmd$,1,1)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        exitfunc BtcInquiryStart(i[1])
+    endif
+endfunc 5
+
+//******************************************************************************
+// Handler definitions
+//******************************************************************************
+//==============================================================================
+// This handler is called when there is an inquiry report waiting to be read
+//==============================================================================
+function HandlerInqResp(respType) as integer
+    dim ad$,dta$,ndx,rsi,tag
+	
+    rc = BtcInquiryGetReport(ad$,dta$,ndx,rsi)
+	print "\nMAC: "; StrHexize$(ad$)
+  
+	if respType > 0 then
+		print " ";rsi
+		
+		if respType == 2 then
+			print "\n  EIR: "; StrHexize$(dta$)
+			dim tg$
+			while BtcGetEIRbyIndex(ndx,dta$,tag,ad$)==0
+				//write tag value as hex to string tg$
+				sprint #tg$,integer.h'tag
+				
+				//hexize eir tag data if not a shortened or complete local name
+				if tag < 0x08 || tag > 0x09 then	
+					ad$ = StrHexize$(ad$)
+				else
+					StrDeescape(ad$)
+				endif
+				
+				//print the last 2 hex digits of the tag, and the data
+				if strlen(ad$)!=0 then
+					print "\n  - Tag 0x" + RIGHT$(tg$,2) +": "; ad$
+				endif
+									   
+				ndx=ndx+1
+			endwhile
+			print "\n"
+		endif
+	endif
+endfunc 1
+
+//==============================================================================
+// This handler is called when there is an inquiry timeout
+//==============================================================================
+function HandlerBtcInqTimOut() as integer
+    UartRsp(UARTRESP_OK_PR)
+endfunc 1
+
+//******************************************************************************
+// Equivalent to main() in C
+//******************************************************************************
+OnEvent  EVINQRESP                call HandlerInqResp
+OnEvent  EVBTC_INQUIRY_TIMEOUT    call HandlerBtcInqTimOut

@@ -1,0 +1,176 @@
+//******************************************************************************
+// Laird Technologies (c) 2014
+//
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// +++++                                                                      ++
+// +++++  When UwTerminal downloads the app it will store it as a filenname   ++
+// +++++  which consists of all characters up to the first . and excluding it ++
+// +++++                                                                      ++
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//
+// This library file provides commands to control BT Classic operation and should be
+// #included into the file 'cmd.ble.manager.sb' if running on a dual mode module
+// e.g. BT900.
+//
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// Convention : (1) Case sensitive, and commands are presented in alphabetic order
+//              (2) If line ends with \ then it continues on next line. That does
+//                  not mean that it should be sent as multiple lines
+//              (3) Replace anything between ## 
+//              (4) #INTaaaa# means a number in decimal, hex, octal or binary
+//                      format -> 23 == 0x17 == h'17 == o'23 == b'10111
+//                      aaaa is just a description
+//              (5) #HEXaaaa# means a string without delimitors consisting of hex 
+//                      characters only aaaa is just a description
+//              (6) #STRaaaa# means a string without delimitors
+//                      aaaa is just a description
+//              (7) "STRaaaa" means a string which must have the " delimitor
+//                      aaaa is just a description
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// -----------------------------------------------------------------------------
+//******************************************************************************
+
+//******************************************************************************
+// Definitions
+//******************************************************************************
+
+//******************************************************************************
+// Global Variable Declarations
+//******************************************************************************
+dim sMouseHandle$
+dim nDirection
+dim nSteps
+
+nDirection = 0
+nSteps = 0
+
+dim descriptor$
+descriptor$ = "\05\01\09\02\A1\01\09\01\A1\00\05\09\19\01\29\03\15\00\25\01\95\03\75\01\81\02\95\01\75\05\81\03\05\01\09\30\09\31\15\81\25\7F\75\08\95\02\81\06\C0\C0"
+
+//******************************************************************************
+// Function and Subroutine definitions
+//******************************************************************************
+
+//-------------------------------------------------------------------------
+//#CMD#//  mouse device open #STRdescriptor# #STRname#
+
+
+//-------------------------------------------------------------------------
+function _mouse()  
+    tlen = ExtractStrToken(urtcmd$,tkn$)
+    if tlen == 0 then
+        exitfunc 5
+    endif
+    
+	if strcmp(tkn$,"start")==0 then
+		urtcmd$ = "btc setclassofdevice 0x580"
+		ProcessCmd()
+		
+		urtcmd$ = "hid device open 0x00 0x10 0x10 MyMouse"
+		ProcessCmd()
+		
+		urtcmd$ = "btc setconnectable 1"
+		ProcessCmd()
+		
+		urtcmd$ = "btc setdiscoverable 1 0"
+		ProcessCmd()
+		
+		exitfunc 0
+	endif
+	
+	if strcmp(tkn$,"close")==0 then
+		urtcmd$ = "hid disconnect " + sMouseHandle$
+		ProcessCmd()
+		
+		urtcmd$ = "hid close"
+		ProcessCmd()
+		
+		urtcmd$ = "btc setconnectable 0"
+		ProcessCmd()
+		
+		urtcmd$ = "btc setdiscoverable 0 0"
+		ProcessCmd()
+		
+		exitfunc 0
+	endif
+	
+	if strcmp(tkn$,"wiggle")==0 then
+		TimerStart(0,20,1)			
+		exitfunc 0
+	endif
+	
+	if strcmp(tkn$,"stop")==0 then
+		TimerCancel(0)		
+		exitfunc 0
+	endif
+	
+endfunc 5
+
+//******************************************************************************
+// Handler definitions
+//******************************************************************************
+//==============================================================================
+// This handler is called when there is an inquiry report waiting to be read
+//==============================================================================
+
+//==============================================================================
+//==============================================================================
+sub HandlerConnHook(hAppHandle)
+    print "\n --- HID Connect: handle=";hAppHandle;pr$  
+		
+	SPRINT #sMouseHandle$,hAppHandle
+endsub
+
+//==============================================================================
+// Called when an HID disconnection occurs
+//==============================================================================
+sub HandlerDisconHook(hAppHandle)
+    print "\n --- HID Disconnect: handle=";hAppHandle;pr$
+	
+	sMouseHandle$ = ""
+endsub
+
+//==============================================================================
+// Called after an HID control event
+//==============================================================================
+sub HandlerControlHook(hAppHandle, nControl)	
+    print "\n --- HID Control: (";integer.h' nControl;") handle=";hAppHandle;pr$      
+endsub
+
+//==============================================================================
+// Called when data is received via HID
+//==============================================================================
+sub HandlerDataHook(nAppHandle, sReport$)
+	print"\nHandle: ";nAppHandle; "\nData: ";StrHexize$(sReport$);pr$
+endsub
+
+//==============================================================================
+// Called when data is received via HID
+//==============================================================================
+function HandlerTimer0()
+	if nSteps > 50 then
+		nDirection = (nDirection + 1) % 4
+		nSteps = 0
+	endif
+	
+	nSteps = nSteps + 1
+	
+	if nDirection == 0 then
+		urtcmd$ = "hid write " + sMouseHandle$ + " 000004"
+	elseif nDirection == 1 then
+		urtcmd$ = "hid write " + sMouseHandle$ + " 000400"
+	elseif nDirection == 2 then
+		urtcmd$ = "hid write " + sMouseHandle$ + " 0000FC"
+	else
+		urtcmd$ = "hid write " + sMouseHandle$ + " 00FC00"
+	endif
+	
+	ProcessCmd()
+endfunc 1                           
+
+
+//******************************************************************************
+// Equivalent to main() in C
+//******************************************************************************
+OnEvent  EVTMR0 				     call HandlerTimer0

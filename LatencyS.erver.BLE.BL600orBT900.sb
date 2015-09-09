@@ -94,7 +94,7 @@ ENDFUNC 1
 //==============================================================================
 //Function called when a characteristic has been written
 //==============================================================================
-FUNCTION HndlrCharVal(charHandle, offset, len) 
+FUNCTION HndlrCharVal(charHandle, offset, len)
     rc = BLECHARVALUEREAD(charHandle, addr$)
     AssertRC(rc, 7)
     rc = BLECHARVALUENOTIFY(charID, addr$)

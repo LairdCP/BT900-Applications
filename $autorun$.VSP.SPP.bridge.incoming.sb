@@ -1,167 +1,28 @@
-//******************************************************************************
-// Laird Technologies (c) 2014-2015
-//
-// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-// +++++                                                                      ++
-// +++++  When UwTerminal downloads the app it will store it as a filenname   ++
-// +++++  which consists of all characters up to the first . and excluding it ++
-// +++++                                                                      ++
-// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-//
-// $autorun$.SPP.UART.bridge.incoming
-//
-// This app provides for a command interface over the uart for testing SPP and
-// the protocol is as follows:-
-//
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// Convention : (1) Case sensitive, and commands are presented in alphabetic order
-//              (2) If line ends with \ then it continues on next line. That does
-//                  not mean that it should be sent as multiple lines
-//              (3) Replace anything between ##
-//              (4) #INTaaaa# means a number in decimal, hex, octal or binary
-//                      format -> 23 == 0x17 == h'17 == o'23 == b'10111
-//                      aaaa is just a description
-//              (5) #HEXaaaa# means a string without delimitors consisting of hex
-//                      characters only aaaa is just a description
-//              (6) #STRaaaa# means a string without delimitors
-//                      aaaa is just a description
-//              (7) "STRaaaa" means a string which must have the " delimitor
-//                      aaaa is just a description
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// -----------------------------------------------------------------------------
-// setdiscoverable #INTenable# #INTtimeout#
-//    - Set the module discoverable for time #INTtimeout# in seconds or not discoverable
-//
-//    #INTenable#
-//      0 = Not Discoverable
-//      1 = Discoverable
-//
-// -----------------------------------------------------------------------------
-// setpairable #INTenable#
-//    - Enable or disable pairability
-//
-//    #INTenable#
-//      0 = Not Pairable
-//      1 = Pairable
-//
-// -----------------------------------------------------------------------------
-// at+bti OR inquiry
-//   - Start an inquiry using the timeout #INTinqTimeoutS#
-//
-// -----------------------------------------------------------------------------
-// spp open
-//   - Open the serial port service and listen for SPP connections. Service handle is returned
-//
-// -----------------------------------------------------------------------------
-// spp close
-//   - Close the Serial Port with handle #INThSpp# being expedited by SPP Service.
-//
-// -----------------------------------------------------------------------------
-// at+btw OR pair #HEXbdAddr12bytes#
-//    - Initiate pairing with device with BT address #HEXbdAddr12bytes#
-//
-//    -> User will be promted to accept or decline pairing requests, and to provide
-//       PIN if requeted.
-//
-// -----------------------------------------------------------------------------
-// atd #HEXbdAddr6bytes# OR
-// connect #HEXbdAddr6bytes# OR
-//    - Connect to device with given BT address
-//
-//    -> if an invalid or null BT address is given, the default BT address
-//      (see #define PEER_BT_ADDR) will be used.
-//
-//    -> Upon successful connection the application enters bridge mode. Any data
-//       arriving at the UART is sent over the SPP connection.
-//
-//    -> Note: The SPP port must be open on the device you are connecting to
-//             ptherwise the two devices will not connect to eachother.
-//
-// ::Note::
-//    - Upon connection, the module will automatically switch to bridge mode.
-//      Any data arriving at the SPP port will be sent to the UART and vice versa.
-//
-//      -> To switch back to command mode so the module can accept commands again, assert the
-//         nAutorun pin. This can be done by unticking DTR in UwTerminal. Switch back to bridge mode
-//         by deasserting the nAutorun pin - ticking DTR in UwTerminal.
-//
-//      -> If using a BT900 Development kit, make sure DIP Switch 2 on CON12 is in the ON position.
-// -----------------------------------------------------------------------------
-// at+btd #HEXbdaddr6bytes#
-//    - Deletes corresponding link key from the database
-//
-// -----------------------------------------------------------------------------
-// ath OR disconnect
-//    - Disconnect from peer device.
-//
-// -----------------------------------------------------------------------------
-// bdaddr
-//    - Prints the module's 6 byte BT address
-//
-// -----------------------------------------------------------------------------
-// stop
-//    - Stop inquiries
-//
-// -----------------------------------------------------------------------------
-// ato OR bridge
-//    - enter bridge mode. Any data arriving at the UART is sent over the BLE
-//      connection.
-//
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// misc i  clearall
-//    - Make all elements of the entire i[] array equal to 0
-//
-// -----------------------------------------------------------------------------
-// misc i  set #INTidx# #INTval#
-//    - i[#INTidx#] = #INTval#
-//    - #INTidx# will be checked for valid index
-//
-// -----------------------------------------------------------------------------
-// misc s$ clearall
-//    - make all elements of the entire s$[] array empty
-//
-// -----------------------------------------------------------------------------
-// misc s$ set #INTidx# #STRescapedvalue#
-//    - s$[#INTidx#] = #STRescapedvalue#
-//    - #INTidx# will be checked for valid index
-//
-// -----------------------------------------------------------------------------
-// misc s$ sethex #INTidx# #HEXdigitsvalue#
-//    - s$[#INTidx#] = #HEXdigitsvalue#
-//    - #INTidx# will be checked for valid index
-//
-// -----------------------------------------------------------------------------
-// quit OR exit
-//    - Exit to command mode
-//
-//******************************************************************************
-//
-// *Instructions*
-//      1. Set FRIENDLY_NAME to the name you want other devices to identify your module as
-//
-//
-// ::Note::
-//      - Upon connection, the module will automatically switch to bridge mode. Any data arriving
-//        at the SPP port will be sent to the UART and vice versa.
-//
-//        -> To switch back to command mode so the module can accept commands again, assert the
-//           nAutorun pin. This can be done by unticking DTR in UwTerminal. Switch back to bridge mode
-//           by deasserting the nAutorun pin - ticking DTR in UwTerminal.
-//
-//        -> If using a BT900 Development kit, make sure DIP Switch 2 on CON12 is in the ON position.
-//
-//      - Whenever SPP port is opened, module will be discoverable for time DISCOV_TIMEOUT
-//      - On a disconnection event, if SPP port is open, module will be discoverable
-//      - Module will be connectable on a disconnection
-//      - On a connection event, module will not be connectable or discoverable
-//      - If SPP port is closed, the device will not be discoverable unless enabled manually
-//
-//******************************************************************************
+ //******************************************************************************
+ // Laird Technologies (c) 2015
+ //
+ // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ // +++++                                                                      ++
+ // +++++  When UwTerminal downloads the app it will store it as a filenname   ++
+ // +++++  which consists of all characters up to the first . and excluding it ++
+ // +++++                                                                      ++
+ // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ //
+ // BT900 custom VSP service: This application will host a VSP service and allow
+ //                           connections and communication similar to how VSP
+ //                           bridge mode on the BL600 works.
+ //
+ //******************************************************************************
 
 //******************************************************************************
 // Definitions
 //******************************************************************************
+#define BASEUUID "\56\9a\11\01\b8\7f\49\0c\92\cb\11\ba\5e\a5\16\7c"  //VSP base UUID
+#define MIUUID   "\56\9a\20\03\b8\7f\49\0c\92\cb\11\ba\5e\a5\16\7c"  //Modem in UUID
+#define MOUUID   "\56\9a\20\02\b8\7f\49\0c\92\cb\11\ba\5e\a5\16\7c"  //Modem out UUID
+#define RXUUID   "\56\9a\20\01\b8\7f\49\0c\92\cb\11\ba\5e\a5\16\7c"  //Receive VSP UUID
+#define TXUUID   "\56\9a\20\00\b8\7f\49\0c\92\cb\11\ba\5e\a5\16\7c"  //Transmit VSP UUID
+#define Version  "1.01"                                              //Version
 
         //Default BT Friendly Name - name of device seen by other devices
 #define FRIENDLY_NAME                    "Laird BT900"
@@ -224,69 +85,22 @@
 #define RX_CREDITS                          3
 
 //******************************************************************************
-// Register Error Handler as early as possible
-//******************************************************************************
-sub HandlerOnErr()
-  if (ENABLE_DEBUG_PRINTS!=0) then
-    print "\n OnErr - ";GetLastError();"\n"
-  endif
-endsub
-onerror next HandlerOnErr
-
-
-//******************************************************************************
-// Debugging resource as early as possible
-//******************************************************************************
-
-//------------------------------------------------------------------------------
-// For debugging
-// --- rc = result code
-// --- ln = line number
-//------------------------------------------------------------------------------
-Sub AssertRC(rc,ln)
-    if rc!=0 then
-        print "\nFail :";integer.h' rc;" at tag ";ln
-    //else
-        //print "\nOk: line ";ln
-    endif
-EndSub
-
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-sub DbgMsg(byval msg$ as string)
-  if (ENABLE_DEBUG_PRINTS!=0) then
-    print "\n";msg$
-  endif
-endsub
-
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-sub DbgMsgVal(byval msg$ as string, byval vl as integer)
-  if (ENABLE_DEBUG_PRINTS!=0) then
-    print "\n";msg$;" ";vl
-  endif
-endsub
-
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-sub DbgPrnAdvReport(byref rp$ as string)
-  if (ENABLE_DEBUG_PRINTS!=0) then
-    print "\nRpt=";strhexize$(rp$)
-  endif
-endsub
-
-//******************************************************************************
-// Library Import
-//******************************************************************************
-
-//******************************************************************************
-// Debugging resource after libs
-//******************************************************************************
-
-//******************************************************************************
 // Global Variable Declarations
 //******************************************************************************
-dim rc
+dim rc //Result code
+dim svcID //Service ID
+dim TXchar //TX characteristic
+dim RXchar //RX characteristic
+dim MOchar //Modem Out characteristic
+dim MIchar //Modem In characteristic
+dim MIval //Modem In value
+dim SendData$ //Data from the UART waiting to be sent out
+dim UARTBlocked : UARTBlocked = 0 //When set to 1 will not read data from the UART
+dim RecBuf$ : RecBuf$ = "" //VSP receive buffer
+dim BufferFull : BufferFull = 0
+dim DataQueued : DataQueued = 1
+
+
 dim stRsp$ as string        //Uart rx data is stored here
 
 dim ok$,er$,pr$, nc$, uc$, t$, e$, p$
@@ -304,13 +118,7 @@ dim BridgeHandle            //handle of UART sB bridge
 
 dim buffer
 dim u$
-dim RecBuf$ //UART buffer
-
-
-
-//******************************************************************************
-// Initialisse Global Variable
-//******************************************************************************
+dim SPPRecBuf$ //UART buffer
 
 ok$    = "\nOK"
 er$    = "\nERROR "
@@ -324,29 +132,17 @@ p$ = "\nEnter 'pair #HEX12bytes#' followed by Enter to pair\nExample 'pair 943g0
 buffer = 0
 u$ = ""
 
-RecBuf$ = ""
+SPPRecBuf$ = ""
+
 
 //******************************************************************************
-// Function and Subroutine definitions
+// Register Error Handler as early as possible
 //******************************************************************************
-
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-function ClearS()
-  dim j
-  for j = 0 to (NUM_OF_S_PARAMS-1)
-    s$[j]=""
-  next
-endfunc 0
-
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-function ClearI()
-  dim j
-  for j = 0 to (NUM_OF_I_PARAMS-1)
-    i[j]=0
-  next
-endfunc 0
+SUB assertRC(rc, line)
+    IF rc != 0 THEN
+        PRINT "\nError on line ";line;", code: ";INTEGER.H'rc
+    ENDIF
+ENDSUB
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -422,48 +218,12 @@ function InConnection()
     endif
 endfunc 1
 
-
-
-//-------------------------------------------------------------------------
-// Process a carrat character ^ do decide whether or not to switch to command mode
-// - When the carCnt value is 3, end func with 1 to switch to command mode
-// - Think of it like a boolean value
-//-------------------------------------------------------------------------
-function SwitchToCmd()
-    '//if ^ was sent after the delay time (valid) increment the counter
-    if TimerRunning(0)==0 then
-        carCnt = carCnt + 1
-        if carCnt<3 then
-            TimerStart(0,CAR_PRESS_DELAY,0)
-        else
-            exitfunc 1
-        endif
-    else
-        //invalid press
-        TimerCancel(0)
-        carCnt = 0
-    endif
-endfunc 0  //dont give response to user
-
-
 //-------------------------------------------------------------------------
 //#CMD#//  ato OR bridge
 //-------------------------------------------------------------------------
 sub _bridge()
     rc = SendMsgApp(0,BRIDGE_SPP_MODE)
 endsub
-
-
-//-------------------------------------------------------------------------
-//#CMD#//  at+bti OR inquiry
-//-------------------------------------------------------------------------
-function _inquiry()
-    rc = BtcInquiryStart(INQR_TMT)
-    if rc!=0 then
-        exitfunc rc
-    endif
-endfunc -1      //dont give response to user
-
 
 //-------------------------------------------------------------------------
 //#CMD#//  spp open
@@ -510,35 +270,6 @@ function _spp()
     endif
 endfunc -1
 
-
-//-------------------------------------------------------------------------
-//#CMD#//  at+btw #HEXbdAddr6bytes# OR pair #HEXbdAddr6bytes#
-//-------------------------------------------------------------------------
-function _pair()
-    rc = ExtractStrTokens(urtcmd$,1,1)
-    if rc != 0 then
-        exitfunc rc
-    endif
-
-    s$[1] = StrDehexize$(s$[1])
-
-    rc = BtcPair(s$[1], 2)
-
-    //if incorrect mode
-    if rc ==0x571A then
-        rc = BtcSetPairable(1)
-        AssertRC(rc,430)
-        rc = BtcSetConnectable(1)
-        AssertRC(rc,432)
-
-        //try pairing again
-        rc = BtcPair(s$[1], 2)
-        AssertRC(rc,436)
-    endif
-
-endfunc rc
-
-
 //-------------------------------------------------------------------------
 //#CMD#//  atd #HEXbdAddr6bytes# OR connect #HEXbdAddr6bytes#
 //-------------------------------------------------------------------------
@@ -566,153 +297,6 @@ function _connect()
     endif
 endfunc -1
 
-
-//-------------------------------------------------------------------------
-//#CMD#//  at+btd #HEXbdAddr6bytes#
-//-------------------------------------------------------------------------
-function _delete()
-    rc = ExtractStrTokens(urtcmd$,1,1)
-
-    if rc!=0 then
-        exitfunc -2
-    endif
-
-    s$[1] = StrDehexize$(s$[1])
-
-    rc = BtcBondingEraseKey(s$[1])
-    if rc!=0 then
-        exitfunc rc
-    endif
-endfunc 0
-
-
-//-------------------------------------------------------------------------
-//#CMD#//  ath OR disconnect
-//-------------------------------------------------------------------------
-function _disconnect()
-    rc =  BtcSppDisconnect(hC)
-    if rc!=0 then
-        exitfunc rc
-    endif
-endfunc -3  //dont give response to user
-
-
-//-------------------------------------------------------------------------
-//#CMD#//  stop (inquiries)
-//-------------------------------------------------------------------------
-function _stop()
-endfunc BtcInquiryCancel()
-
-
-//------------------------------------------------------------------------------
-// #CMD#//  at+bls
-//------------------------------------------------------------------------------
-Function _at()
-    StrShiftLeft(urtcmd$,1)              //remove the '+'
-    tlen = ExtractStrToken(urtcmd$,tkn$)
-    if tlen > 0 then
-
-        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        if strcmp(tkn$,"bti")==0 then
-            exitfunc _inquiry()
-
-        //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        elseif strcmp(tkn$,"btw")==0 then
-            exitfunc _pair()
-        endif
-    endif
-endfunc -4  //print 'UNKNOWN COMMAND' if incorrect command
-
-
-//------------------------------------------------------------------------------
-//#CMD#//  misc i  clearall
-//#CMD#//  misc i  set #INTidx# #INTval#
-//#CMD#//  misc s$ clearall
-//#CMD#//  misc s$ set #INTidx# #STRescapedvalue#
-//#CMD#//  misc s$ sethex #INTidx# #HEXdigitsvalue#
-//------------------------------------------------------------------------------
-function _Misc()
-  tlen = ExtractStrToken(urtcmd$,tkn$)
-  if tlen == 0 then
-    exitfunc 5
-  endif
-  //=================================================
-  if strcmp(tkn$,"s$")==0 then
-    tlen = ExtractStrToken(urtcmd$,tkn$)
-    if tlen == 0 then
-      exitfunc 5
-    endif
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    if strcmp(tkn$,"clearall")==0 then
-      exitfunc ClearS()
-    endif
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    if strcmp(tkn$,"set")==0 then
-      //extract 1 (#INTidx#) and store starting at i[1]
-      rc = ExtractIntTokens(urtcmd$,1,1)
-      if rc != 0 then
-        exitfunc rc
-      endif
-      if (i[1] < 0) || (i[1] >= NUM_OF_S_PARAMS) then
-        exitfunc 6
-      endif
-      //extract 1 (#STRescapedvalue#) and store starting at s$[1]
-      rc = ExtractStrTokens(urtcmd$,i[1],1)
-      if rc != 0 then
-        exitfunc rc
-      endif
-      StrDeEscape(s$[i[1]])
-      exitfunc 0
-    endif
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    if strcmp(tkn$,"sethex")==0 then
-      //extract 1 (#INTidx#) and store starting at i[1]
-      rc = ExtractIntTokens(urtcmd$,1,1)
-      if rc != 0 then
-        exitfunc rc
-      endif
-      if (i[1] < 0) || (i[1] >= NUM_OF_S_PARAMS) then
-        exitfunc 6
-      endif
-      //extract 1 (#STRescapedvalue#) and store starting at s$[1]
-      rc = ExtractStrTokens(urtcmd$,i[1],1)
-      if rc != 0 then
-        exitfunc rc
-      endif
-      StrDeEscape(s$[i[1]])
-      exitfunc 0
-    endif
-  endif
-  //=================================================
-  if strcmp(tkn$,"i")==0 then
-    tlen = ExtractStrToken(urtcmd$,tkn$)
-    if tlen == 0 then
-      exitfunc 5
-    endif
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    if strcmp(tkn$,"clearall")==0 then
-      exitfunc ClearI()
-    endif
-    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    if strcmp(tkn$,"set")==0 then
-      dim idx
-      tlen = ExtractIntToken(urtcmd$,idx)
-      if tlen == 0 then
-        exitfunc 5
-      endif
-      if (idx < 0) || (idx >= NUM_OF_I_PARAMS) then
-        exitfunc 6
-      endif
-      tlen = ExtractIntToken(urtcmd$,i[idx])
-      if tlen == 0 then
-        exitfunc 5
-      endif
-      exitfunc 0
-    endif
-  endif
-endfunc 5
-
-
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 function OnUartCmd() as integer
@@ -720,10 +304,7 @@ function OnUartCmd() as integer
     tlen = ExtractStrToken(urtcmd$,tkn$) //get first token
     if tlen > 0 then
 
-        if strcmp(tkn$,"at")==0 then
-            rc = _at()
-
-        elseif strcmp(tkn$,"spp")==0 then
+        if strcmp(tkn$,"spp")==0 then
             rc = _spp()
 
         elseif strcmp(tkn$,"atd")==0 || strcmp(tkn$,"connect")==0 then
@@ -971,7 +552,7 @@ endfunc 1
 // Called when data is received via SPP - BRIDGE mode
 //------------------------------------------------------------------------------
 function HandlerSppData()
-    if (strlen(RecBuf$) == 0) then
+    if (strlen(SPPRecBuf$) == 0) then
     dim hPort, data$, rLen, UartSent
         while BtcSppRead(hPort, data$, rLen) == 0
             while rLen>0
@@ -979,7 +560,7 @@ function HandlerSppData()
                 STRSHIFTLEFT(data$, UartSent)
                 if UartSent != rLen then
                     //Uart full - add to buffer instead
-                    RecBuf$ = data$
+                    SPPRecBuf$ = data$
                     exitfunc 1
                 endif
 
@@ -1226,10 +807,10 @@ endfunc 1
 //------------------------------------------------------------------------------
 function HandlerUartTxEmpty()
     dim hPort, data$, rLen, UartSent
-    while strlen(RecBuf$) > 0
-        UartSent = UARTWRITE(RecBuf$)
-        STRSHIFTLEFT(RecBuf$, UartSent)
-        if (UartSent != strlen(RecBuf$)) then
+    while strlen(SPPRecBuf$) > 0
+        UartSent = UARTWRITE(SPPRecBuf$)
+        STRSHIFTLEFT(SPPRecBuf$, UartSent)
+        if (UartSent != strlen(SPPRecBuf$)) then
             //Can't send any more
             exitfunc 1
         endif
@@ -1241,7 +822,7 @@ function HandlerUartTxEmpty()
             STRSHIFTLEFT(data$, UartSent)
             if UartSent != rLen then
                 //Uart full - add to buffer instead
-                RecBuf$ = data$
+                SPPRecBuf$ = data$
                 exitfunc 1
             endif
 
@@ -1250,15 +831,254 @@ function HandlerUartTxEmpty()
     endwhile
 endfunc 1
 
+//==============================================================================
+//Function to create the VSP service
+//==============================================================================
+FUNCTION CreateVSPService()
+    dim UUIDStr$, mdCccd, mdVal, s$
+    s$ = "\00" //Default value for characteristics
 
-//******************************************************************************
+    //Create the VSP service
+    UUIDStr$ = BASEUUID
+    rc = BleServiceNew(1, BleHandleUuid128(UUIDStr$), svcID)
+    assertRC(rc, 1)
+
+    //Create the ModemIn characteristic
+    mdVal = BleAttrMetadata(0,1,2,0,rc)
+    UUIDStr$ = MIUUID
+    rc = BleCharNew(8, BleHandleUuid128(UUIDStr$), mdVal, 0, 0)
+    assertRC(rc, 2)
+    s$ = "\01" //Enabled by default
+    rc = BleCharCommit(svcID, s$, MIchar)
+    assertRC(rc, 3)
+
+    //Create the ModemOut characteristic
+    mdVal = BleAttrMetadata(0,0,2,0,rc)
+    mdCccd = BleAttrMetadata(1,1,2,0,rc) //Metadata for CCCD attribute of Characteristic
+    UUIDStr$ = MOUUID
+    rc = BleCharNew(16, BleHandleUuid128(UUIDStr$), mdVal, mdCccd, 0)
+    assertRC(rc, 4)
+    rc = BleCharCommit(svcID, s$, MOchar)
+    assertRC(rc, 5)
+
+    //Create the RX characteristic
+    mdVal = BleAttrMetadata(0,1,20,1,rc)
+    UUIDStr$ = RXUUID
+    rc = BleCharNew(8, BleHandleUuid128(UUIDStr$), mdVal, 0, 0)
+    assertRC(rc, 6)
+    rc = BleCharCommit(svcID, s$, RXchar)
+    assertRC(rc, 7)
+
+    //Create the TX characteristic
+    mdVal = BleAttrMetadata(0,0,20,1,rc)
+    mdCccd = BleAttrMetadata(1,1,2,0,rc) //Metadata for CCCD attribute of Characteristic
+    UUIDStr$ = TXUUID
+    rc = BleCharNew(16, BleHandleUuid128(UUIDStr$), mdVal, mdCccd, 0)
+    assertRC(rc, 8)
+    rc = BleCharCommit(svcID, s$, TXchar)
+    assertRC(rc, 9)
+
+    //Commit the service
+    rc = BleServiceCommit(svcID)
+    assertRC(rc, 10)
+ENDFUNC 1
+
+//==============================================================================
+//Function to start VSP advertising over BLE
+//==============================================================================
+FUNCTION StartVSPAdvert()
+    dim addr$, scRpt$, adRpt$, UUIDStr$
+    //Start sending adverts containing the VSP service
+    scRpt$ = ""
+    rc = BleScanRptInit(scRpt$)
+    assertRC(rc, 11)
+
+    //Advertise the 128 bit uuid in a scan report
+    UUIDStr$ = BASEUUID
+    rc = BleAdvRptAddUuid128(scRpt$, BleHandleUuid128(UUIDStr$))
+    assertRC(rc, 12)
+    adRpt$ = ""
+
+    //Commit the advert report
+    rc = BleAdvRptsCommit(adRpt$,scRpt$)
+    assertRC(rc, 13)
+
+    //Start advertising
+    addr$ = ""  //because we are not doing a DIRECT advert
+    rc = BleAdvertStart(0,addr$,100,0,0)
+    assertRC(rc, 14)
+ENDFUNC 1
+
+//==============================================================================
+//Function handler for UART data receive
+//==============================================================================
+FUNCTION HndlrUartRx()
+    //UART data received
+    dim RdLen, Rd$
+
+    IF UARTBlocked == 0 && DataQueued == 1 THEN
+        //UART is not blocked
+        rc = BleCharValueRead(MIchar, Rd$)
+        assertRC(rc, 16)
+        IF strcmp(Rd$, "\01") == 0 THEN
+            //Other device is able to accept
+            RdLen = UARTREADN(SendData$, 20)
+
+            IF RdLen > 0 THEN
+                //Write this data to the characteristic
+                rc = BLECHARVALUENOTIFY(TXchar, SendData$)
+                IF rc != 0 THEN
+                    //Failed to send data
+                    UARTBlocked = 1
+                    RdLen = 0
+                ELSE
+                    //Data queued, clear variable
+                    SendData$ = ""
+                    DataQueued = 0
+                ENDIF
+            ENDIF
+        ENDIF
+    ENDIF
+ENDFUNC 1
+
+//==============================================================================
+//Handler for characteristic value written
+//==============================================================================
+FUNCTION HndlrCharVal(charHandle, offset, len)
+    //Characteristic written
+    dim Rd$, arc
+    arc = BleCharValueRead(charHandle, Rd$)
+    assertRC(arc, 15)
+
+        IF charHandle == RXchar THEN
+            //RX
+            dim SLen, SWritten
+            SLen = strlen(Rd$)
+            SWritten = uartwrite(Rd$)
+            IF (SLen != SWritten) then
+                //Not enough buffer space - tell client to stop sending data
+                dim Rd2$
+                Rd2$ = "\00"
+                rc = BLECHARVALUENOTIFY(MOchar, Rd2$)
+                BufferFull = 1
+
+                //Shift left
+                STRSHIFTLEFT(Rd$, SWritten)
+                RecBuf$ = Rd$
+            ENDIF
+        ELSEIF charHandle == MIchar THEN
+            rc = BleCharValueRead(MIchar, Rd$)
+            assertRC(rc, 16)
+            IF strcmp(Rd$, "\01") == 0 THEN
+                rc = HndlrUartRx()
+            ENDIF
+        ENDIF
+ENDFUNC 1
+
+//==============================================================================
+//Handler for characteristic notification
+//==============================================================================
+FUNCTION HndlrNtfyBuf()
+    //BLE notIFy buffer has free space
+    DataQueued = 1
+    IF UARTBlocked == 1 THEN
+        //UART is blocked but we now have free space
+        IF strlen(SendData$) > 0 THEN
+            //Data in variable to send
+            rc = BLECHARVALUENOTIFY(TXchar, SendData$)
+            IF rc != 0 THEN
+                //Use a timer to send the next data chunk
+                TIMERSTART(0, 400, 0)
+            ELSE
+                //Data sent - clear data
+                SendData$ = ""
+                UARTBlocked = 0
+            ENDIF
+        ELSE
+            //No data in variable to send, check UART
+            UARTBlocked = 0
+            rc = HndlrUartRx()
+        ENDIF
+    ELSE
+        //Check for UART data
+        rc = HndlrUartRx()
+    ENDIF
+ENDFUNC 1
+
+//==============================================================================
+//Handler for UART transmit buffer becoming empty
+//==============================================================================
+FUNCTION HndlrUartTxEmpty()
+    //TX buffer empty - send rest of string
+    IF BufferFull == 1 THEN
+        dim SLen, SWritten, Rd$
+        SLen = strlen(RecBuf$)
+        SWritten = uartwrite(RecBuf$)
+        IF (SLen == SWritten) then
+            //All written
+            BufferFull = 0
+            Rd$ = "\01"
+            rc = BLECHARVALUENOTIFY(MOchar, Rd$)
+        ELSE
+            //Shift left
+            STRSHIFTLEFT(RecBuf$, SWritten)
+        ENDIF
+    ENDIF
+ENDFUNC 1
+
+//==============================================================================
+//Handler for BLE events
+//==============================================================================
+FUNCTION HndlrBleMsg(nMsgId, nCtn)
+    IF nMsgId == 1 THEN
+        //Disconnect - restart advertising
+        rc = StartVSPAdvert()
+        ONEVENT  EVUARTRX       DISABLE            //Recieved UART data
+        BufferFull = 0
+        UARTBlocked = 0
+    ENDIF
+ENDFUNC 1
+
+//==============================================================================
+//Handler for CCCD written
+//==============================================================================
+FUNCTION HndlrCharCccd(charHandle, nVal)
+    IF (charHandle == TXchar && nVal == 1) THEN
+        //TX CCCD written, enable handler to read from the UART
+        ONEVENT  EVUARTRX       CALL HndlrUartRx   //Recieved UART data
+    ENDIF
+ENDFUNC 1
+
 //******************************************************************************
 // Equivalent to main() in C
 //******************************************************************************
 
+//Create the VSP service and start advertising it
+rc = CreateVSPService()
+rc = StartVSPAdvert()
+
+//Open UART if closed
+rc = UARTINFO(0)
+IF (rc == 0) THEN
+    //UART is closed, open at default
+    rc = UartOpen(115200, 0, 0, "CN81H")
+ENDIF
+
+Initialise()
+
+
 //------------------------------------------------------------------------------
 // Enable synchronous event handlers
 //------------------------------------------------------------------------------
+ONEVENT  EVCHARVAL      CALL HndlrCharVal      //BLE characteristic written
+ONEVENT  EVNOTIFYBUF    CALL HndlrNtfyBuf      //BLE NotIFy buffer free
+ONEVENT  EVTMR0         CALL HndlrNtfyBuf      //Timer 0 expired
+ONEVENT  EVUARTTXEMPTY  CALL HndlrUartTxEmpty  //UART transmit buffer empty
+ONEVENT  EVBLEMSG       CALL HndlrBleMsg       //BLE event message
+ONEVENT  EVCHARCCCD     CALL HndlrCharCccd     //CCCD written
+
+
+
 OnEvent  EVUARTRX               call HandlerUartRx
 OnEvent  EVINQRESP              call HandlerInqResp
 OnEvent  EVBTC_INQUIRY_TIMEOUT  call HandlerInqTO
@@ -1277,12 +1097,7 @@ OnEvent  EVUARTTXEMPTY        call HandlerUartTxEmpty
 OnEvent  EVSPPTXEMPTY        call HandlerSppTxEmpty
 
 //------------------------------------------------------------------------------
-// Initialise and then wait for events
-//------------------------------------------------------------------------------
-Initialise()
-
-//------------------------------------------------------------------------------
 // Wait for a synchronous event.
 // An application can have multiple <WaitEvent> statements
 //------------------------------------------------------------------------------
-WaitEvent
+WAITEVENT

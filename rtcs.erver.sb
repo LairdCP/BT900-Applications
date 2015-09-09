@@ -48,7 +48,7 @@ dim DayOfWeek : DayOfWeek = 0 //The current day of the week (0 = unknown)
 '//******************************************************************************
 '// Command success handler
 '//******************************************************************************
-SUB AssertRC(rc,ln)   
+SUB AssertRC(rc,ln)
     IF rc!=0 THEN
         PRINT "\nFail :";integer.h' rc;" at tag ";ln
     ENDIF
@@ -179,7 +179,7 @@ FUNCTION BleEvent(BYVAL msgID, BYVAL msgCtx)
     ENDIF
 ENDFUNC 1
 
-FUNCTION HndlrCharVal(BYVAL charHandle, BYVAL offset, BYVAL len) 
+FUNCTION HndlrCharVal(BYVAL charHandle, BYVAL offset, BYVAL len)
     //When characteristic is written
     dim attr$
     dim TmpVal, TmpVal2
@@ -516,7 +516,7 @@ AssertRC(rc,489)
 dim TmpStr$ : TmpStr$ = ""
 rc = BleEncode8(TmpStr$, DST, 1) //DST
 rc = BleEncode8(TmpStr$, Timezone, 0) //Timezone
-     
+
 //Update GATT information
 rc = BleCharValueWrite(Char2, TmpStr$)
 

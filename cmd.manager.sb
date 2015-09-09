@@ -16,11 +16,11 @@
 // Convention : (1) Case sensitive, and commands are presented in alphabetic order
 //              (2) If line ends with \ then it continues on next line. That does
 //                  not mean that it should be sent as multiple lines
-//              (3) Replace anything between ## 
+//              (3) Replace anything between ##
 //              (4) #INTaaaa# means a number in decimal, hex, octal or binary
 //                      format -> 23 == 0x17 == h'17 == o'23 == b'10111
 //                      aaaa is just a description
-//              (5) #HEXaaaa# means a string without delimitors consisting of hex 
+//              (5) #HEXaaaa# means a string without delimitors consisting of hex
 //                      characters only aaaa is just a description
 //              (6) #STRaaaa# means a string without delimitors
 //                      aaaa is just a description
@@ -32,16 +32,16 @@
 // bridge vsp
 //   - Bridge to the most recent VSP connection. All data arriving via UART will
 //     be sent over BLE via the VSP service.
-//        
+//
 // -----------------------------------------------------------------------------
 // bridge spp
 //   - Bridge to the most recent SPP connection. All data arriving via UART will
 //     be sent over this connection.
-//        
+//
 // -----------------------------------------------------------------------------
 // ^^^
 //   - Switch to command parser mode
-//        
+//
 // -----------------------------------------------------------------------------
 // advert report initadv #INTstridx# #INTadflags# #INTadappearance# #INTmaxdevname#
 //   - Initialise an advert report and store in string s$[#INTstridx#]
@@ -55,20 +55,20 @@
 //
 // -----------------------------------------------------------------------------
 // advert report ADuuid16 #INTstridx# #INTuuid0# #INTuuid1# #INTuuid2# #INTuuid3# #INTuuid4# #INTuuid5#
-//   - Append the advert report idendified by string s$[#INTstridx#] with 
+//   - Append the advert report idendified by string s$[#INTstridx#] with
 //   - the service uuid 16 AD element with up to 6 16 bit uuids. If less than 6 uuids
 //   - are specified then set 0's and they will not be added
 //
 // -----------------------------------------------------------------------------
 // advert report ADuuid128 #INTstridx# #INTuuidhandle#
-//   - Append the advert report idendified by string s$[#INTstridx#] with 
+//   - Append the advert report idendified by string s$[#INTstridx#] with
 //   - the service uuid 128 AD element and the 128 bit uuid is supplied by a
 //   - uuid handle that will have been returned from BleHandleUuid128() or
 //   - BleHandleUuidSibling() -- see the 'uuid' commands below
 //
 // -----------------------------------------------------------------------------
 // advert report ADany #INTstridx# #INTtag# #HEXdata$#
-//   - Append the advert report idendified by string s$[#INTstridx#] with 
+//   - Append the advert report idendified by string s$[#INTstridx#] with
 //   - generic AD element whos tag will be #INTtag# and the data is as
 //   - per the data in #HEXdata$# which will be converted from a hx string
 //   - into a binary string before submitting to the stack
@@ -123,7 +123,7 @@
 // -----------------------------------------------------------------------------
 // connect config #INTcfgID# #INTvalue#
 //   - set connection configuration parameters
-//     #INTcfgID# 
+//     #INTcfgID#
 //       0    Scan Interval in milliseconds (range 0..10240)
 //       1    Scan Window in milliseconds (range 0..10240)
 //       2    Slave Latency (0..1000)
@@ -137,7 +137,7 @@
 // gattc char first #INTconnHandle# #INTuuidHandle# #INTsvcStartAttrHandle# \
 //                  #INTsvcEndAttrHandle#
 //    --- gatt client functionality ---
-//    - Find the first characteristic starting from handle #INTsvcStartAttrHandle# 
+//    - Find the first characteristic starting from handle #INTsvcStartAttrHandle#
 //    - in the connection specified by #INTconnHandle# and specify a value of 0 for
 //    - #INTuuidHandle# to look for any characteristic, otherwise a uuid handle
 //    - that will have been obtained by using the uuid command
@@ -146,8 +146,8 @@
 // gattc char next #INTconnHandle#
 //    --- gatt client functionality ---
 //    - After calling 'gattc char first' command and getting a characteristic use
-//    - this command to get the next characteristic in the remote server for the 
-//    - service that was identified by #INTsvcStartAttrHandle# in the 
+//    - this command to get the next characteristic in the remote server for the
+//    - service that was identified by #INTsvcStartAttrHandle# in the
 //    - 'gatt char first' command
 //
 // -----------------------------------------------------------------------------
@@ -159,24 +159,24 @@
 // gattc desc first #INTconnHandle# #INTuuidHandle# #characteristic#
 //    --- gatt client functionality ---
 //    - Find the first descriptor for the characteristic whose value handle is
-//    - has the handle #INTcharStartAttrHandle# in the connection specified by 
-//    - #INTconnHandle# and specify a value of 0 for #INTuuidHandle# to look for 
-//    - any descriptor, otherwise a uuid handle that will have been obtained by 
+//    - has the handle #INTcharStartAttrHandle# in the connection specified by
+//    - #INTconnHandle# and specify a value of 0 for #INTuuidHandle# to look for
+//    - any descriptor, otherwise a uuid handle that will have been obtained by
 //    - using the uuid command
 //
 // -----------------------------------------------------------------------------
 // gattc desc next #INTconnHandle#
 //    --- gatt client functionality ---
 //    - After calling 'gattc desc first' command and getting a descriptor use
-//    - this command to get the next descriptor in the remote server for the 
-//    - characteristic that was identified by #characteristic# in the 
+//    - this command to get the next descriptor in the remote server for the
+//    - characteristic that was identified by #characteristic# in the
 //    - 'gatt desc first' command
 //
 // -----------------------------------------------------------------------------
 // gattc findchar #INTconnHandle# #INTsvcUuidHandle# #INTsvcIndex# \
 //                #INTcharUuidHandle# #INTcharIndex#
 //    --- gatt client functionality ---
-//    - Use this command to locate a characteristic in a service. It is possible 
+//    - Use this command to locate a characteristic in a service. It is possible
 //    - to specify index values for both service and characteristic just in case
 //    - the remote server has multiple instances of service or characteristic
 //
@@ -187,7 +187,7 @@
 //    --- gatt client functionality ---
 //    - Use this command to locate a descriptor in a characteristic of a specified
 //    - service. It is possible to specify index values for service, characteristic
-//    - and descriptor just in case the remote server has multiple instances of 
+//    - and descriptor just in case the remote server has multiple instances of
 //    - service or characteristic or descriptor
 //
 // -----------------------------------------------------------------------------
@@ -212,7 +212,7 @@
 // -----------------------------------------------------------------------------
 // gattc svc next #INTconnHandle#
 //    --- gatt client functionality ---
-//    - After calling 'gattc svc first' command and getting a service use this 
+//    - After calling 'gattc svc first' command and getting a service use this
 //    - command to get the next service in the remote server
 //
 // -----------------------------------------------------------------------------
@@ -257,13 +257,13 @@
 //    - generate attribute metadata and store in amd[#INTmdindex#]
 //
 // -----------------------------------------------------------------------------
-// gatts char commit #STRattr# #INThsvcidx# #INTcharhandleidx# 
+// gatts char commit #STRattr# #INThsvcidx# #INTcharhandleidx#
 //    --- gatt server functionality ---
 //    - calls BleCharCommit()
 //    - Commit the characteristic and store the handle for the char in hChar[#INTcharhandleidx#]
 //
 // -----------------------------------------------------------------------------
-// gatts char descadd #STRattr# #INThuuid# #INTmddescidx# 
+// gatts char descadd #STRattr# #INThuuid# #INTmddescidx#
 //    --- gatt server functionality ---
 //    - calls BleCharDescAdd()
 //    - add a generic descriptor to the character definition which has uuid #INThuuid#
@@ -330,11 +330,11 @@
 //    - commit the service. In BL600 it is not required, BT900 it is
 //
 // -----------------------------------------------------------------------------
-// gatts service devinfo     
+// gatts service devinfo
 //    --- gatt server functionality ---
 //    - calls BleSvcRegDevInfo() and used to add  a device info service to the gatt table
 //    - It takes 8 string parameters. s$[0] to s$[7]. which must be initialised
-//    - using the command 'misc s$ set #INTidx# #STRescapedvalue#'  
+//    - using the command 'misc s$ set #INTidx# #STRescapedvalue#'
 //
 // -----------------------------------------------------------------------------
 // gatts service gap #STRescaped_devname# #INTwritable# #INTappearance# #INTminconnintus# #INTmaxconnintus# #INTsprtmoutus# #INTslavelatency#
@@ -355,7 +355,7 @@
 // -----------------------------------------------------------------------------
 // misc i set #INTidx# #INTval#
 //    - i[#INTidx#] = #INTval#
-//    - #INTidx# will be checked for valid index 
+//    - #INTidx# will be checked for valid index
 //
 // -----------------------------------------------------------------------------
 // misc s$ clearall
@@ -364,7 +364,7 @@
 // -----------------------------------------------------------------------------
 // misc s$ set #INTidx# #STRescapedvalue#
 //    - s$[#INTidx#] = #STRescapedvalue#
-//    - #INTidx# will be checked for valid index 
+//    - #INTidx# will be checked for valid index
 //
 // -----------------------------------------------------------------------------
 // misc address
@@ -419,7 +419,7 @@
 // ble pair passkey #INTconnHandle# #INTpasscode#
 //    - Security Manager related
 //    - This will result in BleSecMngrPasskey() being called
-//    - Valid value is 0 to 999999 for #INTpasscode# and 
+//    - Valid value is 0 to 999999 for #INTpasscode# and
 //    - #INTconnHandle# sepecifies the connection handle
 //
 // -----------------------------------------------------------------------------
@@ -427,7 +427,7 @@
 //    - Security Manager related
 //    - This will result in BleSecMngrOOBkey() being called
 //TODO: comment
-//    - Valid value is 0 to 999999 for #INTpasscode# and 
+//    - Valid value is 0 to 999999 for #INTpasscode# and
 //    - #INTconnHandle# sepecifies the connection handle
 //
 // -----------------------------------------------------------------------------
@@ -448,8 +448,8 @@
 //    - Get the classic BT bonding manager database statistics.
 //
 // -----------------------------------------------------------------------------
-// ble bond getinfo #INTindex# 
-//    - Retrieves the MAC address and other information from the trusted device database via an index. 
+// ble bond getinfo #INTindex#
+//    - Retrieves the MAC address and other information from the trusted device database via an index.
 //
 // -----------------------------------------------------------------------------
 // ble bond persistkey #HEXaddr7Bytes#
@@ -461,14 +461,14 @@
 //
 // -----------------------------------------------------------------------------
 // ble bond eraseall
-//    - This function is used to erase all bondings in the database 
+//    - This function is used to erase all bondings in the database
 //
 // -----------------------------------------------------------------------------
 // ble encrypt #INTconnHandle# #INTminLtkSize# #INTmitmRequired#
 //    - This function is used to encrypt a connection for which a bond exists
 //    - Security Manager related
 //    - This will result in BleSecMngrPasskey() being called
-//    - Valid value is 0 to 999999 for #INTpasscode# and 
+//    - Valid value is 0 to 999999 for #INTpasscode# and
 //    - #INTconnHandle# sepecifies the connection handle
 //    - #minLtkSize# sepecifies the minimum long term key size (7-16)
 //    - #mitmRequired# set to 1 to enable Man In The Middle Protection
@@ -480,7 +480,7 @@
 // -----------------------------------------------------------------------------
 // scan config #INTcfgID# #INTvalue#
 //   - set scanning configuration parameters
-//     #INTcfgID# 
+//     #INTcfgID#
 //       0    Scan Interval in milliseconds (range 0..10240)
 //       1    Scan Window in milliseconds (range 0..10240)
 //       2    Scan Type (0=Passive, 1=Active)
@@ -496,16 +496,16 @@
 //   - abort a scan operation (memory is freed)
 //
 // -----------------------------------------------------------------------------
-// txpower = #INTdbm#           
+// txpower = #INTdbm#
 //   - set tx power to #INTdbm#
 //
 // -----------------------------------------------------------------------------
-// txpower ?                
+// txpower ?
 //   - get current tx power
 //
 // -----------------------------------------------------------------------------
 // uuid custom #HEX32hexChrs#
-//    - get a uuid handle for a 128 bit custom uuid specified as a 32 hex digits 
+//    - get a uuid handle for a 128 bit custom uuid specified as a 32 hex digits
 //    - i[0] will contain the uuid handle as well
 //
 // -----------------------------------------------------------------------------
@@ -548,7 +548,7 @@
 #define NUM_OF_CHARS                         8
         // size of i[]
 #define NUM_OF_I_PARAMS                     (8)
-        // size of s$[] and must be at least 8 elements for BleSvcRegDevInfo()     
+        // size of s$[] and must be at least 8 elements for BleSvcRegDevInfo()
 #define NUM_OF_S_PARAMS                     (8)
 
 #define VSP_MAX_CHARDATA_LEN                (20)
@@ -578,7 +578,7 @@
 #define BLE_EVBLEMSGID_ENCRYPTED                       18 // msgCtx = connection handle
 #define BLE_EVBLEMSGID_POWER_FAILURE_WARNING           19 // msgCtx = current supply voltage
 #define BLE_EVBLEMSGID_UNENCRYPTED                     20 // msgCtx = connection handle
-#define BLE_EVBLEMSGID_DEVICENAME_WRITE                21 // msgCtx = connection handle 
+#define BLE_EVBLEMSGID_DEVICENAME_WRITE                21 // msgCtx = connection handle
 
 
 //APP RUN MODES
@@ -695,7 +695,7 @@ BridgeHandle = 0
 
 //==============================================================================
 //==============================================================================
-function ClearS() 
+function ClearS()
   dim j
   for j = 0 to (NUM_OF_S_PARAMS-1)
     s$[j]=""
@@ -738,7 +738,7 @@ endfunc 0
 function RelConnHandle(hConn)
   dim z
   for z=1 to (NUM_OF_CONNS)
-    if hc[z] == hConn then 
+    if hc[z] == hConn then
       hc[z]=-1
       exitfunc z
     endif
@@ -750,7 +750,7 @@ endfunc 0
 function GetConnHandle(hConn)
   dim z
   for z=1 to (NUM_OF_CONNS)
-    if hc[z] == hConn then 
+    if hc[z] == hConn then
       exitfunc z
     endif
   next
@@ -765,7 +765,7 @@ sub UartRsp(rsp as integer)
         print pr$
     elseif rsp == -4 then
         print uc$;pr$
-    elseif rsp > 0 then 
+    elseif rsp > 0 then
         print er$;integer.h' rsp;pr$
     endif
 endsub
@@ -854,7 +854,7 @@ endfunc 0
 // Library Import
 //******************************************************************************
 //------------------------------------------------------------------------------
-//** #include the correct library file for the smartBASIC module being used 
+//** #include the correct library file for the smartBASIC module being used
 //------------------------------------------------------------------------------
 // #include "lib\cmd.ble.def.sblib"            //comment out line below and uncomment this line if running on a single mode (BLE) module
 #include "lib\cmd.btc.manager.sblib"     //comment out line above and uncomment this line if running on a dual mode (BLE & BT Classic) module
@@ -888,9 +888,10 @@ endfunc rc
 //#CMD#// advert nonconn          #INTintervalms# #INTtimeoutms# #INTfilterpolicy#
 //#CMD#// advert directed         #INTintervalms# #INTtimeoutms# #INTfilterpolicy# #HEXaddr7Bytes#
 //#CMD#// advert stop
+//#CMD#// advert config    		  #INTcfgidx# #INTcfgval#
 //-------------------------------------------------------------------------
 function _Advert()
-  dim prAdr$ 
+  dim prAdr$
   tlen = ExtractStrToken(urtcmd$,tkn$)
   if tlen == 0 then
     exitfunc 5
@@ -962,7 +963,7 @@ function _Advert()
       exitfunc BleAdvRptsCommit(s$[i[1]],s$[i[2]])
     endif
     prAdr$=""
-  endif  
+  endif
   //=================================================
   if strcmp(tkn$,"undirected")==0 then
     //extract 3 (#INTintervalms# #INTtimeoutms# #INTfilterpolicy#) and store starting at i[1]
@@ -1008,6 +1009,15 @@ function _Advert()
     endif
     exitfunc BleAdvertStart(1,prAdr$,i[1],i[2],i[3])
   endif
+  //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"config")==0 then
+      //extract 2 (#INTcfgidx# #INTcfgval#) and store starting at i[1]
+      rc = ExtractIntTokens(urtcmd$,1,2)
+      if rc != 0 then
+        exitfunc rc
+      endif
+      exitfunc BleAdvertConfig(i[1],i[2])
+    endif
   //=================================================
   if strcmp(tkn$,"stop")==0 then
     exitfunc BleAdvertStop()
@@ -1020,7 +1030,7 @@ endfunc 5
 //#CMD#//  scan config #INTcfgID# #INTvalue#
 //#CMD#//  scan start #INTscantimeoutms# #INThandlefilter#
 //-------------------------------------------------------------------------
-function _Scan()  
+function _Scan()
   tlen = ExtractStrToken(urtcmd$,tkn$)
   if tlen == 0 then
     exitfunc 5
@@ -1039,7 +1049,7 @@ function _Scan()
     if rc != 0 then
       exitfunc rc
     endif
-    exitfunc BleScanConfig(i[1],i[2])  
+    exitfunc BleScanConfig(i[1],i[2])
   endif
   if strcmp(tkn$,"start")==0 then
     //extract 2 : (scantimeoutms handleFilter) and store starting at i[1]
@@ -1057,7 +1067,7 @@ function _Scan()
 //#CMD#//  connect connparms #INTconnHandle# #INTminConnIntMs# #INTmaxConnIntMs# #INTsprvsnToutMs# #INTslavelatency#
 //#CMD#//  connect #HEXaddr7Bytes# #INTconntimeoutms# #INTminConnIntMs# #INTmaxConnIntMs# #INTsprvsnToutMs#
 //-------------------------------------------------------------------------
-function _Connect()  
+function _Connect()
   tlen = ExtractStrToken(urtcmd$,tkn$)
   if tlen == 0 then
     exitfunc 5
@@ -1074,7 +1084,7 @@ function _Connect()
     if rc != 0 then
       exitfunc rc
     endif
-    exitfunc BleConnectConfig(i[1],i[2])  
+    exitfunc BleConnectConfig(i[1],i[2])
   endif
   //=================================================
   if strcmp(tkn$,"connparms")==0 then
@@ -1083,9 +1093,9 @@ function _Connect()
     if rc != 0 then
       exitfunc rc
     endif
-    exitfunc BleSetCurConnParms(hc[i[1]],i[2],i[3],i[4],i[5])  
+    exitfunc BleSetCurConnParms(hc[i[1]],i[2],i[3],i[4],i[5])
   endif
-  
+
   //=================================================
   //the current token has to be a mac address
   s$[1]=StrDehexize$(tkn$)
@@ -1102,7 +1112,7 @@ endfunc BleConnect(s$[1],i[1],i[2],i[3],i[4])
 //-------------------------------------------------------------------------
 //#CMD#//  disconnect #INTconnHandle#
 //-------------------------------------------------------------------------
-function _Disconnect()  
+function _Disconnect()
   // extract the optional handle
   tlen = ExtractIntToken(urtcmd$,i[1])
   // handle was supplied
@@ -1113,7 +1123,7 @@ endfunc BleDisconnect(hc[i[1]])
 //#CMD#//  uuid custom #HEX32hexChrs#
 //#CMD#//  uuid sibling #INTuuidHandle# #INT16bitUuid#
 //-------------------------------------------------------------------------
-function _uuid()  
+function _uuid()
   tlen = ExtractStrToken(urtcmd$,tkn$)
   if tlen == 0 then
     exitfunc 5
@@ -1172,7 +1182,7 @@ endfunc 5
 //#CMD#//  gattc writecmd #INTconnHandle# #INTattrHandle# #HEXdata#
 //#CMD#//  gattc writecmd$ #INTconnHandle# #INTattrHandle# #STRdata#
 //-------------------------------------------------------------------------
-function _Gattc()  
+function _Gattc()
   dim cmdid
   tlen = ExtractStrToken(urtcmd$,tkn$)
   if tlen == 0 then
@@ -1201,7 +1211,7 @@ function _Gattc()
     tlen = ExtractStrToken(urtcmd$,tkn$)
     if tlen == 0 then
       exitfunc 5
-    endif  
+    endif
     if strcmp(tkn$,"first")==0 then
       //extract 3 (#INTconnHandle# #INTstartAttrHandle# #INTsvcUuidHandle#) and store starting at i[1]
       rc = ExtractIntTokens(urtcmd$,1,3)
@@ -1227,7 +1237,7 @@ function _Gattc()
     tlen = ExtractStrToken(urtcmd$,tkn$)
     if tlen == 0 then
       exitfunc 5
-    endif  
+    endif
     if strcmp(tkn$,"first")==0 then
       //extract 4 (#INTconnHandle# #INTuuidHandle# #INTsvcStartAttrHandle# #INTsvcEndAttrHandle#) and store starting at i[1]
       rc = ExtractIntTokens(urtcmd$,1,4)
@@ -1253,7 +1263,7 @@ function _Gattc()
     tlen = ExtractStrToken(urtcmd$,tkn$)
     if tlen == 0 then
       exitfunc 5
-    endif  
+    endif
     if strcmp(tkn$,"first")==0 then
       //extract 3 (#INTconnHandle# #INTuuidHandle# #INTcharStartAttrHandle#) and store starting at i[1]
       rc = ExtractIntTokens(urtcmd$,1,3)
@@ -1338,7 +1348,7 @@ function _Gattc()
     endif
     if tlen<1  then
       exitfunc 5
-    endif    
+    endif
     exitfunc BleGattcWrite(hc[i[1]],i[2],s$[1])
   endif
   cmdid=0
@@ -1374,7 +1384,7 @@ function _Gattc()
     endif
     if tlen<1  then
       exitfunc 5
-    endif    
+    endif
     if (cmdid & 0xF0)==0 then
       exitfunc BleGattcWrite(hc[i[1]],i[2],s$[1])
     else
@@ -1388,20 +1398,20 @@ endfunc 5
 //#CMD#//  gatts service new        #INTtype# #INThUuid# #INTstoreIndex#
 //#CMD#//  gatts service commit     #INTstoreIndex#
 //#CMD#//  gatts service gap        #STRescaped_devname# #INTwritable# #INTappearance# #INTminconnintus# #INTmaxconnintus# #INTsprtmoutus# #INTslavelatency#
-//#CMD#//  gatts service devinfo     
+//#CMD#//  gatts service devinfo
 //#CMD#//  gatts attrmetadata       #INTmdindex# #INTreadrights# #INTwriterights# #INTmaxdatalen# #INTvlen#
 //#CMD#//  gatts char new           #INTcharprops# #INThuuid# #INTmdvalidx# #INTmdcccdidx# #INTmdsccdidx#
 //#CMD#//  gatts char descuserdesc  #STRuserdesc$# #INTmduseridx#
 //#CMD#//  gatts char descprstnfrmt #INTformat# #INTexponent# #INTunit# #INTnamespace# #INTnsdesc#
-//#CMD#//  gatts char descadd       #STRattr# #INThuuid# #INTmddescidx# 
-//#CMD#//  gatts char commit        #STRattr# #INThsvcidx# #INTcharhandleidx# 
+//#CMD#//  gatts char descadd       #STRattr# #INThuuid# #INTmddescidx#
+//#CMD#//  gatts char commit        #STRattr# #INThsvcidx# #INTcharhandleidx#
 //#CMD#//  gatts char read          #INTcharhandleidx# #STRattr#
 //#CMD#//  gatts char write         #INTcharhandleidx# #STRattr#
 //#CMD#//  gatts char notify        #INTcharhandleidx# #STRattr#
 //#CMD#//  gatts char indicate      #INTcharhandleidx# #STRattr#
 //#CMD#//  gatts char descread      #INTcharhandleidx# #INTdeschandle# #INToffset# #INTlength# #INTdescuuidhandle# #STRattr#
 //-------------------------------------------------------------------------
-function _Gatts()  
+function _Gatts()
   tlen = ExtractStrToken(urtcmd$,tkn$)
   if tlen == 0 then
     exitfunc 5
@@ -1621,7 +1631,7 @@ function _BlePair()
     if tlen == 0 then
         exitfunc 5
     endif
-        
+
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if strcmp(tkn$,"keysize")==0 then
         //extract 2 (#INTminsize# #INTmaxsize#) and store starting at i[1]
@@ -1630,8 +1640,8 @@ function _BlePair()
             exitfunc rc
         endif
         exitfunc BleSecMngrKeySizes(i[1],i[2])
-    endif  
-    
+    endif
+
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if strcmp(tkn$,"iocap")==0 then
         //extract 1 (#INTiocap#) and store starting at i[1]
@@ -1641,7 +1651,7 @@ function _BlePair()
         endif
         exitfunc BleSecMngrIoCap(i[1])
     endif
-    
+
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if strcmp(tkn$,"justworks")==0 then
         //extract 1 (#INTJWConf#) and store starting at i[1]
@@ -1651,7 +1661,7 @@ function _BlePair()
         endif
         exitfunc BleSecMngrJustWorksConf(i[1])
     endif
-    
+
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if strcmp(tkn$,"passkey")==0 then
         //extract 2 (#INTconnHandle# #INTpasscode#) and store starting at i[1]
@@ -1660,7 +1670,7 @@ function _BlePair()
             exitfunc rc
         endif
         exitfunc BleSecMngrPassKey(hc[i[1]],i[2])
-    endif 
+    endif
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if strcmp(tkn$,"oobkey")==0 then
@@ -1678,7 +1688,7 @@ print "\ncode is [";s$[1];"]\n"
         s$[1] = StrDehexize$(s$[1])
 print "\ncode hex [";s$[1];"]\n"
         exitfunc BleSecMngrOOBKey(hc[i[1]],s$[1])
-    endif 
+    endif
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if strcmp(tkn$,"bondreq")==0 then
@@ -1688,8 +1698,8 @@ print "\ncode hex [";s$[1];"]\n"
             exitfunc rc
         endif
         exitfunc BleSecMngrBondReq(i[1])
-    endif 
-    
+    endif
+
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if strcmp(tkn$,"accept")==0 then
         //extract 2 (#INTconnHandle# #INTaccept#) and store starting at i[1]
@@ -1710,19 +1720,19 @@ print "\ncode hex [";s$[1];"]\n"
         exitfunc BLESECMNGROOBPREF(i[1])
 
     endif
-    
+
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     //store the connection handle
     i[1] = StrValDec(tkn$)
-        
+
     // extract 1 (#INTenablebonding#) and store starting at i[2]
     rc = ExtractIntTokens(urtcmd$,2,1)
     if rc != 0 then
         exitfunc rc
     endif
-    
+
     '//Temporary workaround until BlePair is implemented for BL620
-    // exitfunc BlePair(hc[i[1]], i[2])   
+    // exitfunc BlePair(hc[i[1]], i[2])
     exitfunc BLE_PAIR       //see #define in sblib file
 endfunc 5
 
@@ -1750,19 +1760,19 @@ endfunc 5
 // #CMD#//  ble bond erasekey #HEXaddr7Bytes#
 // #CMD#//  ble bond eraseall
 // -------------------------------------------------------------------------
-function _BleBond() 
+function _BleBond()
     tlen = ExtractStrToken(urtcmd$,tkn$)
     if tlen == 0 then
         exitfunc 5
     endif
-    
+
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if strcmp(tkn$,"stats")==0 then
         i[0]=BleBondingStats(i[1],i[2])
         print "\n Capacity=";i[0];" Rolling=";i[1];" Persistent=";i[2];"\r"
         exitfunc 0
-        
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     elseif strcmp(tkn$,"persistkey")==0 then
         //extract 1 : (#HEXaddr7Bytes#) and store at i[1])
         rc = ExtractStrTokens(urtcmd$,1,1)
@@ -1771,7 +1781,7 @@ function _BleBond()
         endif
         s$[1] = StrDehexize$(s$[1])
         exitfunc BleBondingPersistKey(s$[1])
-    
+
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     elseif strcmp(tkn$,"getinfo")==0 then
         //extract 1 : (#INTindex#) and store at i[1])
@@ -1784,8 +1794,8 @@ function _BleBond()
             exitfunc rc
         endif
         print "\n(";i[2];"): ";StrHexize$(s$[1]);" : ";integer.h'i[2]
-        exitfunc 0            
-    
+        exitfunc 0
+
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     elseif strcmp(tkn$,"erasekey")==0 then
         //extract 1 : (#HEXaddr7Bytes#) and store at i[1])
@@ -1798,7 +1808,7 @@ function _BleBond()
             exitfunc 5
         endif
         exitfunc BleBondingEraseKey(s$[1])
-        
+
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     elseif strcmp(tkn$,"eraseall")==0 then
         exitfunc BleBondingEraseAll()
@@ -1811,17 +1821,17 @@ endfunc 5
 //#CMD#//  ble pair
 //#CMD#//  ble encrypt
 //-------------------------------------------------------------------------
-function _Ble()  
+function _Ble()
     tlen = ExtractStrToken(urtcmd$,tkn$)
     if tlen == 0 then
         exitfunc 5
     endif
-    
+
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if strcmp(tkn$,"bond")==0 then
         exitfunc _BleBond()
     endif
-    
+
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if strcmp(tkn$,"pair")==0 then
         exitfunc _BlePair()
@@ -1840,7 +1850,7 @@ endfunc 5
 //#CMD#//  misc i  set #INTidx# #INTval#
 //#CMD#//  misc address
 //-------------------------------------------------------------------------
-function _Misc()  
+function _Misc()
   tlen = ExtractStrToken(urtcmd$,tkn$)
   if tlen == 0 then
     exitfunc 5
@@ -1854,7 +1864,7 @@ function _Misc()
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if strcmp(tkn$,"clearall")==0 then
       exitfunc ClearS()
-    endif  
+    endif
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if strcmp(tkn$,"set")==0 then
       //extract 1 (#INTidx#) and store starting at i[1]
@@ -1862,7 +1872,7 @@ function _Misc()
       if rc != 0 then
         exitfunc rc
       endif
-      if (i[1] < 0) || (i[1] >= NUM_OF_S_PARAMS) then 
+      if (i[1] < 0) || (i[1] >= NUM_OF_S_PARAMS) then
         exitfunc 6
       endif
       //extract 1 (#STRescapedvalue#) and store starting at s$[1]
@@ -1872,7 +1882,7 @@ function _Misc()
       endif
       StrDeEscape(s$[i[1]])
       exitfunc 0
-    endif  
+    endif
   endif
   //=================================================
   if strcmp(tkn$,"i")==0 then
@@ -1883,7 +1893,7 @@ function _Misc()
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if strcmp(tkn$,"clearall")==0 then
       exitfunc ClearI()
-    endif  
+    endif
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if strcmp(tkn$,"set")==0 then
       dim idx
@@ -1891,7 +1901,7 @@ function _Misc()
       if tlen == 0 then
         exitfunc 5
       endif
-      if (idx < 0) || (idx >= NUM_OF_I_PARAMS) then 
+      if (idx < 0) || (idx >= NUM_OF_I_PARAMS) then
         exitfunc 6
       endif
       tlen = ExtractIntToken(urtcmd$,i[idx])
@@ -1899,7 +1909,7 @@ function _Misc()
         exitfunc 5
       endif
       exitfunc 0
-    endif  
+    endif
   endif
   //=================================================
   if strcmp(tkn$,"address")==0 then
@@ -1932,7 +1942,7 @@ function _Uart()
     UartClose()
     rc = UartOpen(i[1], 0, 0, "CN81H")
     exitfunc 0
-  endif  
+  endif
 endfunc 5
 
 
@@ -1964,58 +1974,61 @@ function OnUartCmd() as integer
   rc=-2 //default response is ">"
   tlen = ExtractStrToken(urtcmd$,tkn$) //get first token
   if tlen > 0 then
-    
+
     if strcmp(tkn$,"advert")==0 then
       rc = _Advert()
-      
+
     elseif strcmp(tkn$,"scan")==0 then
       rc = _Scan()
-      
+
     elseif strcmp(tkn$,"connect")==0 then
       rc = _Connect()
-      
+
     elseif strcmp(tkn$,"disconnect")==0 then
       rc = _Disconnect()
-      
+
     elseif strcmp(tkn$,"ble")==0 then
       rc = _Ble()
-    
+
     elseif strcmp(tkn$,"txpower")==0 then
       rc = _TxPower()
-      
+
     elseif strcmp(tkn$,"gattc")==0 then
       rc = _Gattc()
-    
+
     elseif strcmp(tkn$,"gatts")==0 then
       rc = _Gatts()
-    
+
     elseif strcmp(tkn$,"uuid")==0 then
       rc = _uuid()
-    
+
     elseif strcmp(tkn$,"misc")==0 then
       rc = _misc()
 
     elseif strcmp(tkn$,"uart")==0 then
       rc = _Uart()
-      
+
     elseif strcmp(tkn$,"inquiry")==0 then
       rc = _inquiry()
-      
+
     elseif strcmp(tkn$,"spp")==0 then
       rc = _spp()
-      
+
+	elseif strcmp(tkn$,"hid")==0 then
+      rc = _hid()
+
     elseif strcmp(tkn$,"btc")==0 then
       rc = _btc()
-      
+
     elseif strcmp(tkn$,"bridge")==0 then
       rc = _bridge()
-      
+
     elseif strcmp(tkn$,"exit")==0 || strcmp(tkn$,"quit")==0  then
       exitfunc 0
-    
+
     else
         rc=-4 //send an "UNKNOWN COMMAND" response to user
-    
+
     endif
   endif
   // send a response back to the user
@@ -2031,7 +2044,7 @@ endfunc 1
 //==============================================================================
 function HandlerUartRxCmd() as integer
   dim nMatch
-  
+
   if urts < 0 then
     //uart parser is suspended
     exitfunc 1
@@ -2057,7 +2070,7 @@ endfunc 1
     // if vsplen > 0 then
       // can send to the VSP service in the peripheral
       // rc=BleGattcWriteCmd(hcVsp,vspRxH,vdta$)
-      // print vdta$      
+      // print vdta$
       // vdta$=""
     // endif
   // endif
@@ -2089,7 +2102,7 @@ function HandlerUartRxVsp() as integer
                     TimerCancel(0)
                     carCnt = 0
                 endif
-                
+
             else
                 //can send to the VSP service in the peripheral
                 rc=BleGattcWriteCmd(hcVsp,vspRxH,vdta$)
@@ -2106,7 +2119,7 @@ endfunc 1
 //==============================================================================
 function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as integer
   dim hz
-  
+
   select nMsgId
   case BLE_EVBLEMSGID_CONNECT
     hz = AcqConnHandle(nCtx)
@@ -2216,7 +2229,7 @@ function HandlerPrimSvc(hConn,hUuid,hStart,hEnd) as integer
     print "\nEVDISCPRIMSVC("
     print "hConn=";integer.h' hConn;",hUuid=";integer.h' hUuid
     print ",hStart=";hStart;",hEnd=";hEnd;")"
-    
+
   case 1  //tablemapping
     if hStart!=0 then
       // S: hStart,(hEnd),hUuid
@@ -2230,7 +2243,7 @@ function HandlerPrimSvc(hConn,hUuid,hStart,hEnd) as integer
       //reached end of remote gatt table
       TerminateTableMap(0)
     endif
-    
+
   case else
   endselect
 endfunc 1
@@ -2243,7 +2256,7 @@ function HandlerCharDisc(hConn,hUuid,cProp,hVal,hiUuid) as integer
     print "\nEVDISCCHAR("
     print "hConn=";integer.h' hConn;",hCharUuid=";integer.h' hUuid;",hIncUuid=";hiUuid
     print ",hVal=";hVal;",Props=";integer.h' cProp;")"
-    
+
   case 1  //tablemapping
     if hVal!=0 then
       // C: hVal,cProp,hUuid,hiUuid
@@ -2272,7 +2285,7 @@ function HandlerDescDisc(hConn,hUuid,hDesc) as integer
   case 0
     print "\nEVDISCDESC("
     print "hConn=";integer.h' hConn;",hDescUuid=";integer.h' hUuid;",hDesc=";hDesc;")"
-    
+
   case 1  //tablemapping
     if hDesc!=0 then
       // D: hDesc,hUuid
@@ -2290,7 +2303,7 @@ function HandlerDescDisc(hConn,hUuid,hDesc) as integer
         endif
       endif
     endif
-    
+
   case else
   endselect
 endfunc 1
@@ -2319,7 +2332,7 @@ endfunc 1
 //==============================================================================
 //==============================================================================
 function HandlerAttrRead(hConn,hAttr,nSts) as integer
-  dim a$,ofst  
+  dim a$,ofst
   print "\nEVATTRREAD(hConn=";hConn;",handle=";hAttr;",status=";nSts;")"
   if nSts == 0 then
     rc = BleGattcReadData(hConn,hAttr,ofst,a$)
@@ -2327,7 +2340,7 @@ function HandlerAttrRead(hConn,hAttr,nSts) as integer
       print "\n >BleGattcReadData(data=";StrHexize$(a$);",offset=";ofst;")"
       print "\n                  (data=";StrEscape$(a$);")"
     endif
-  endif        
+  endif
 endfunc 1
 
 '//==============================================================================
@@ -2363,7 +2376,7 @@ endfunc 1
 '//==============================================================================
 function HandlerCharDesc(BYVAL hChar AS INTEGER, BYVAL hDesc AS INTEGER) as integer
   dim duid,a$,rc
-  print "\nEVCHARDESC(hChar=";integer.h' hChar;",hDesc=";integer.h' hDesc;")"    
+  print "\nEVCHARDESC(hChar=";integer.h' hChar;",hDesc=";integer.h' hDesc;")"
 
   //read the descriptor data
   rc = BleCharDescRead(hChar,hDesc,0,512,duid,a$)
@@ -2452,7 +2465,7 @@ function SetMode(msgID, cmd) as integer
             OnEvent  EVATTRNOTIFY   call HandlerAttrNtfyVsp
             print ok$
         endif
-        
+
     elseif cmd==CMD_MODE then
         OnSetModeCmd()      //let sblib handle it first
         IF USE_BRIDGE == 1 THEN

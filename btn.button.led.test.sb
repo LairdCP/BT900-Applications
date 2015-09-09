@@ -20,7 +20,7 @@
 '//******************************************************************************
 '// Definitions
 '//******************************************************************************
-#define BT900_DEV_ID            0x42370900 
+#define BT900_DEV_ID            0x42370900
 #define BL600_DEV_ID            0x424C0600
 #define BL620_DEV_ID            0x424C0620
 
@@ -35,7 +35,7 @@ dim rc                          '// declare rc as integer variable
 '// Library Import
 '//******************************************************************************
 //------------------------------------------------------------------------------
-//** #include the correct GPIO library file for the smartBASIC module being used 
+//** #include the correct GPIO library file for the smartBASIC module being used
 //------------------------------------------------------------------------------
 // #include "lib\gpio.bl6xx.sblib"
 #include "lib\gpio.bt9xx.sblib"
@@ -60,7 +60,7 @@ endsub
 '//******************************************************************************
 function handlerbutton0()
     dim i : i = GpioRead(GPIO_BTN0)
-    
+
     '//if button 0 was pressed
     if i==0 then
         GpioWrite(GPIO_LED0,1)                         '// turns LED 0 on
@@ -79,7 +79,7 @@ endfunc 1
 
 function handlerbutton1()
     dim i : i = GpioRead(GPIO_BTN1)
-    
+
     '//if button 1 was pressed
     if i==0 then
         GpioWrite(GPIO_LED1,1)                         '// turns LED 0 on
@@ -118,7 +118,7 @@ onevent evgpiochan0 call handlerbutton0         '//detects when button 0 is pres
 onevent evgpiochan1 call handlerbutton1         '//detects when button 0 is pressed or released and calls the function
 
 
-'//Print devkit config info    
+'//Print devkit config info
 select DEV_ID
     print "\nEnsure the DIP switches on CON"
     case BT900_DEV_ID
@@ -130,7 +130,7 @@ select DEV_ID
         print "\nTrimPot [4   x    ]"
         print "\nx = doesn't matter"
         print "\nPlace a jumper across each of the 2 pin headers below buttons 0 and 1"
-    '//BL600 or BL620    
+    '//BL600 or BL620
     case else
         print "15 are set as follows:"
         print "\n       OFF      ON"

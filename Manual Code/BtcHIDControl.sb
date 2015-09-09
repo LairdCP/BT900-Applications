@@ -1,0 +1,39 @@
+//Example :: BtcHIDDisconnect.sb
+dim rc
+
+#define HID_CONTROL_NO_OPERATION			0
+#define HID_CONTROL_HARD_RESET				1
+#define HID_CONTROL_SOFT_RESET				2
+#define HID_CONTROL_SUSPEND					3
+#define HID_CONTROL_EXIT_SUSPEND			4
+#define HID_CONTROL_VIRTUAL_CABLE_UNPLUG	5
+
+//==============================================================================
+// Called after a connection attempt
+//==============================================================================
+function HandlerHIDConn(portHndl, result) as integer
+    print "\n --- Connect : ";integer.h' result
+
+	// Immediately send a control event to the device upon connecting
+	rc = BtcHIDControl(portHndl, HID_CONTROL_SOFT_RESET)
+	if rc==0 then
+        print "\nHID control: soft reset ..."
+    else
+        print "\nError:", integer.h'rc
+    endif
+
+endfunc 1
+
+//******************************************************************************
+// Equivalent to main() in C
+//******************************************************************************
+ONEVENT EvHidConn 			CALL HandlerHidConn
+
+'// We must open HID device or HID host before initiating connection
+rc = BtcHidHostOpen()
+'// Set device to be connectable
+rc = BtcSetConnectable(1)
+
+print "\nWaiting for a HID device to connect and write to us"
+
+waitevent

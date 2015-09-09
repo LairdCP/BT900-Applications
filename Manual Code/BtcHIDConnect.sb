@@ -1,0 +1,29 @@
+//Example :: BtcHIDConnect.sb
+dim rc
+
+'//BT address of device to connect to. You will have to change this
+dim mac$
+mac$ = "\00\16\A4\09\3A\64"
+
+
+//==============================================================================
+// Called after a pairing attempt
+//==============================================================================
+function HandlerHIDConn(portHndl, result) as integer
+    print "\n --- Connect : ";integer.h' result
+endfunc 1
+
+//******************************************************************************
+// Equivalent to main() in C
+//******************************************************************************
+ONEVENT EvHidConn 			CALL HandlerHidConn
+
+'// We must open HID device or HID host before initiating connection
+rc = BtcHidHostOpen()
+
+'//make hid connection 
+rc=BtcHIDConnect(mac$)
+
+print "\nConnecting to device ";StrHexize$(mac$)
+
+waitevent

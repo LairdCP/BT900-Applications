@@ -1,0 +1,614 @@
+//******************************************************************************
+// Laird Technologies (c) 2015
+//
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// +++++                                                                      ++
+// +++++  When UwTerminal downloads the app it will store it as a filenname   ++
+// +++++  which consists of all characters up to the first . and excluding it ++
+// +++++                                                                      ++
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//
+// hid.uart.to.hid.keyboard
+//
+// Convert any character entered to it's hid keyboard report format
+//
+//******************************************************************************
+
+//******************************************************************************
+// Definitions
+//******************************************************************************
+
+// Device settings
+#define DEVICE_BAUDRATE		38400
+#define DEVICE_UARTSETTINGS	"CN81N"
+
+#define DEVICE_NAME			"BT900 Keyboard"
+
+#define DEVICE_DESCRIPTOR	"\05\01\09\06\A1\01\05\07\19\E0\29\E7\15\00\25\01\75\01\95\08\81\02\95\01\75\08\81\03\95\05\75\01\05\08\19\01\29\05\91\02\95\01\75\03\91\03\95\06\75\08\15\00\25\65\05\07\19\00\29\65\81\00\C0"
+
+#define DEVICE_VID_SRC		0x2
+#define DEVICE_VID			0x0077
+#define DEVICE_PID			0x1234
+#define DEVICE_VERSION		0x1
+
+#define DEVICE_CLASS_OF_DEVICE		0x2540
+#define DEVICE_SUBCLASS				0x40
+
+// Device UART buffer & Timers
+#define DEVICE_UART_BUFFER		384
+#define DEVICE_REPORT_DELAY		20
+
+// Bit field for device flags
+#define HID_VIRTUAL_CABLE_BIT                                 (0x00000001)
+#define HID_RECONNECT_INITIATE_BIT                            (0x00000002)
+#define HID_SDP_DISABLE_BIT                                   (0x00000004)
+#define HID_BATTERY_POWER_BIT                                 (0x00000008)
+#define HID_REMOTE_WAKE_BIT                                   (0x00000010)
+#define HID_NORMALLY_CONNECTABLE_BIT                          (0x00000020)
+#define HID_BOOT_DEVICE_BIT                                   (0x00000040)
+
+// Decode table bits
+#define KEYBOARD_CTRL_PRESSED		"\01"
+#define KEYBOARD_SHIFT_PRESSED		"\02"
+#define KEYBOARD_CTRLSHIFT_PRESSED	"\03"
+
+// State machine states
+#define DEVICE_STATE_NOT_CONNECTED	0
+#define DEVICE_STATE_CONNECTED		1
+#define DEVICE_STATE_BUFFER_SEND	2
+#define DEVICE_STATE_KEYUP_SEND		4
+
+//Debug
+#define CMPIF_DEBUG_FLAG		(0x01)
+//#set $cmpif, 0x01
+
+//Status codes
+#define UWRESULTCODE_SUCCESS	(0x00)
+
+//******************************************************************************
+// Library Import
+//******************************************************************************
+
+
+//******************************************************************************
+// Global Variable Declarations
+//******************************************************************************
+
+//Return code
+dim rc
+
+//State machine
+dim sCurrentState
+
+
+dim sUartBuffer$
+
+//Handle storage
+dim hReportHndl			'// hid report handle
+dim hConHndl			'// connection handle of the hid report
+
+dim Descriptor$
+Descriptor$ = DEVICE_DESCRIPTOR
+
+//
+//	ASCII to HID_CHAR array
+//
+//	This can be included as a library
+//
+dim ASCIITable$
+ASCIITable$ = ""
+
+dim ShCtrlTable$
+ShCtrlTable$ = ""
+
+//
+//	ASCII to HID_CHAR array
+//
+//	This can be included as a library
+//
+ASCIITable$ = ASCIITable$ + "\1F"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_CTRLSHIFT_PRESSED  // ^@	NULL
+ASCIITable$ = ASCIITable$ + "\04"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_CTRL_PRESSED 		// ^A	Start of Header
+ASCIITable$ = ASCIITable$ + "\05"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_CTRL_PRESSED 		// ^B	Start of Text
+ASCIITable$ = ASCIITable$ + "\06"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_CTRL_PRESSED 		// ^C	End of Text
+ASCIITable$ = ASCIITable$ + "\07"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_CTRL_PRESSED 		// ^D	End of Trans
+ASCIITable$ = ASCIITable$ + "\08"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_CTRL_PRESSED 		// ^E	Enquiry
+ASCIITable$ = ASCIITable$ + "\09"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_CTRL_PRESSED 		// ^F	Acknowledgement
+ASCIITable$ = ASCIITable$ + "\0A"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_CTRL_PRESSED 		// ^G	Bell
+ASCIITable$ = ASCIITable$ + "\2A"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// ^H	Backspace -> Mapped to backspace
+ASCIITable$ = ASCIITable$ + "\0C"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_CTRL_PRESSED 		// ^I	Horizontal Tab
+ASCIITable$ = ASCIITable$ + "\0D"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_CTRL_PRESSED 		// ^J	Line Feed
+ASCIITable$ = ASCIITable$ + "\0E"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_CTRL_PRESSED 		// ^K	Vertical Tab
+ASCIITable$ = ASCIITable$ + "\0F"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_CTRL_PRESSED 		// ^L	Form Feed
+ASCIITable$ = ASCIITable$ + "\28"	: ShCtrlTable$ = ShCtrlTable$ + "\00"					 	// ^M	Carriage Return -> Mapped to enter
+ASCIITable$ = ASCIITable$ + "\11"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_CTRL_PRESSED 		// ^N	Shift Out
+ASCIITable$ = ASCIITable$ + "\12"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_CTRL_PRESSED 		// ^O	Shift In
+
+ASCIITable$ = ASCIITable$ + "\13"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_CTRL_PRESSED 		// ^P
+ASCIITable$ = ASCIITable$ + "\14"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_CTRL_PRESSED 		// ^Q
+ASCIITable$ = ASCIITable$ + "\15"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_CTRL_PRESSED 		// ^R
+ASCIITable$ = ASCIITable$ + "\16"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_CTRL_PRESSED 		// ^S
+ASCIITable$ = ASCIITable$ + "\17"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_CTRL_PRESSED 		// ^T
+ASCIITable$ = ASCIITable$ + "\18"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_CTRL_PRESSED 		// ^U
+ASCIITable$ = ASCIITable$ + "\19"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_CTRL_PRESSED 		// ^V
+ASCIITable$ = ASCIITable$ + "\1A"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_CTRL_PRESSED  		// ^W
+ASCIITable$ = ASCIITable$ + "\1B"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_CTRL_PRESSED  		// ^X
+ASCIITable$ = ASCIITable$ + "\1C"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_CTRL_PRESSED  		// ^Y
+ASCIITable$ = ASCIITable$ + "\1D"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_CTRL_PRESSED  		// ^Z
+ASCIITable$ = ASCIITable$ + "\2F"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_CTRL_PRESSED  		// ^[
+ASCIITable$ = ASCIITable$ + "\31"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_CTRL_PRESSED  		// ^\
+ASCIITable$ = ASCIITable$ + "\30"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_CTRL_PRESSED  		// ^]
+ASCIITable$ = ASCIITable$ + "\23"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_CTRLSHIFT_PRESSED  // ^^
+ASCIITable$ = ASCIITable$ + "\2D"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_CTRLSHIFT_PRESSED  // ^_
+
+ASCIITable$ = ASCIITable$ + "\2C"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// Space
+ASCIITable$ = ASCIITable$ + "\1E"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// !
+ASCIITable$ = ASCIITable$ + "\34"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// "
+ASCIITable$ = ASCIITable$ + "\20"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// #
+ASCIITable$ = ASCIITable$ + "\21"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// $
+ASCIITable$ = ASCIITable$ + "\22"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// %
+ASCIITable$ = ASCIITable$ + "\24"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// &
+ASCIITable$ = ASCIITable$ + "\34"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// '
+ASCIITable$ = ASCIITable$ + "\26"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// (
+ASCIITable$ = ASCIITable$ + "\27"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// )
+ASCIITable$ = ASCIITable$ + "\25"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// *
+ASCIITable$ = ASCIITable$ + "\2E"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// +
+ASCIITable$ = ASCIITable$ + "\36"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// ,
+ASCIITable$ = ASCIITable$ + "\2D"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// -
+ASCIITable$ = ASCIITable$ + "\37"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// .
+ASCIITable$ = ASCIITable$ + "\38"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// /
+
+ASCIITable$ = ASCIITable$ + "\27"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// 0
+ASCIITable$ = ASCIITable$ + "\1E"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// 1
+ASCIITable$ = ASCIITable$ + "\1F"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// 2
+ASCIITable$ = ASCIITable$ + "\20"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// 3
+ASCIITable$ = ASCIITable$ + "\21"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// 4
+ASCIITable$ = ASCIITable$ + "\22"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// 5
+ASCIITable$ = ASCIITable$ + "\23"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// 6
+ASCIITable$ = ASCIITable$ + "\24"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// 7
+ASCIITable$ = ASCIITable$ + "\25"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// 8
+ASCIITable$ = ASCIITable$ + "\26"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// 9
+ASCIITable$ = ASCIITable$ + "\33"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// :
+ASCIITable$ = ASCIITable$ + "\33"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// ;
+ASCIITable$ = ASCIITable$ + "\36"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// <
+ASCIITable$ = ASCIITable$ + "\2E"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// =
+ASCIITable$ = ASCIITable$ + "\37"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// >
+ASCIITable$ = ASCIITable$ + "\38"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// ?
+
+ASCIITable$ = ASCIITable$ + "\1F"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// @
+ASCIITable$ = ASCIITable$ + "\04"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// A
+ASCIITable$ = ASCIITable$ + "\05"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// B
+ASCIITable$ = ASCIITable$ + "\06"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// C
+ASCIITable$ = ASCIITable$ + "\07"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// D
+ASCIITable$ = ASCIITable$ + "\08"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// E
+ASCIITable$ = ASCIITable$ + "\09"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// F
+ASCIITable$ = ASCIITable$ + "\0A"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// G
+ASCIITable$ = ASCIITable$ + "\0B"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// H
+ASCIITable$ = ASCIITable$ + "\0C"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// I
+ASCIITable$ = ASCIITable$ + "\0D"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// J
+ASCIITable$ = ASCIITable$ + "\0E"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// K
+ASCIITable$ = ASCIITable$ + "\0F"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// L
+ASCIITable$ = ASCIITable$ + "\10"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// M
+ASCIITable$ = ASCIITable$ + "\11"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// N
+ASCIITable$ = ASCIITable$ + "\12"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// O
+
+ASCIITable$ = ASCIITable$ + "\13"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// P
+ASCIITable$ = ASCIITable$ + "\14"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// Q
+ASCIITable$ = ASCIITable$ + "\15"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// R
+ASCIITable$ = ASCIITable$ + "\16"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// S
+ASCIITable$ = ASCIITable$ + "\17"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// T
+ASCIITable$ = ASCIITable$ + "\18"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// U
+ASCIITable$ = ASCIITable$ + "\19"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// V
+ASCIITable$ = ASCIITable$ + "\1A"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// W
+ASCIITable$ = ASCIITable$ + "\1B"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// X
+ASCIITable$ = ASCIITable$ + "\1C"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// Y
+ASCIITable$ = ASCIITable$ + "\1D"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// Z
+ASCIITable$ = ASCIITable$ + "\2F"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// [
+ASCIITable$ = ASCIITable$ + "\31"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// \
+ASCIITable$ = ASCIITable$ + "\30"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// ]
+ASCIITable$ = ASCIITable$ + "\23"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// ^
+ASCIITable$ = ASCIITable$ + "\2D"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// _
+
+ASCIITable$ = ASCIITable$ + "\34"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// '
+ASCIITable$ = ASCIITable$ + "\04"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// a
+ASCIITable$ = ASCIITable$ + "\05"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// b
+ASCIITable$ = ASCIITable$ + "\06"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// c
+ASCIITable$ = ASCIITable$ + "\07"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// d
+ASCIITable$ = ASCIITable$ + "\08"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// e
+ASCIITable$ = ASCIITable$ + "\09"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// f
+ASCIITable$ = ASCIITable$ + "\0A"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// g
+ASCIITable$ = ASCIITable$ + "\0B"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// h
+ASCIITable$ = ASCIITable$ + "\0C"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// i
+ASCIITable$ = ASCIITable$ + "\0D"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// j
+ASCIITable$ = ASCIITable$ + "\0E"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// k
+ASCIITable$ = ASCIITable$ + "\0F"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// l
+ASCIITable$ = ASCIITable$ + "\10"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// m
+ASCIITable$ = ASCIITable$ + "\11"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// n
+ASCIITable$ = ASCIITable$ + "\12"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// o
+
+ASCIITable$ = ASCIITable$ + "\13"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// p
+ASCIITable$ = ASCIITable$ + "\14"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// q
+ASCIITable$ = ASCIITable$ + "\15"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// r
+ASCIITable$ = ASCIITable$ + "\16"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// s
+ASCIITable$ = ASCIITable$ + "\17"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// t
+ASCIITable$ = ASCIITable$ + "\18"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// u
+ASCIITable$ = ASCIITable$ + "\19"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// v
+ASCIITable$ = ASCIITable$ + "\1A"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// w
+ASCIITable$ = ASCIITable$ + "\1B"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// x
+ASCIITable$ = ASCIITable$ + "\1C"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// y
+ASCIITable$ = ASCIITable$ + "\1D"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// z
+ASCIITable$ = ASCIITable$ + "\2F"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// {
+ASCIITable$ = ASCIITable$ + "\31"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// |
+ASCIITable$ = ASCIITable$ + "\30"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// }
+ASCIITable$ = ASCIITable$ + "\32"	: ShCtrlTable$ = ShCtrlTable$ + KEYBOARD_SHIFT_PRESSED 		// ~
+ASCIITable$ = ASCIITable$ + "\2A"	: ShCtrlTable$ = ShCtrlTable$ + "\00" 						// DEL
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+//******************************************************************************
+// Function and Subroutine definitions
+//******************************************************************************
+
+//==============================================================================
+// Display the error message
+//==============================================================================
+sub AssertResCode(byval rc as integer, byval tag as integer)
+	if rc !=0 then
+		print "error: ";integer.h' rc;" at tag ";tag
+	endif
+endsub
+
+//==============================================================================
+// Map the integer to a hid representation
+//==============================================================================
+function GetAsciiLookup(x)
+endfunc StrGetChr(ASCIITable$,x)
+
+//==============================================================================
+// Map the integer to a hid representation
+//==============================================================================
+function GetShCtrlLookup(x)
+endfunc StrGetChr(ShCtrlTable$,x)
+
+//==============================================================================
+// Initialise the Bluetooth device
+// Set the device to be discoverable, connectible, pairable,
+//==============================================================================
+sub InitBtKeyboardDevice()
+
+	dim descName$, devName$
+	descName$ = "Keyboard"
+
+	// Set device state to be not connected
+	sCurrentState = DEVICE_STATE_NOT_CONNECTED
+
+	// Set friendly name
+	rc = BtcSetFriendlyName(DEVICE_NAME)
+	#cmpif CMPIF_DEBUG_FLAG : AssertResCode(rc, 1010)
+
+	// Set the Class of device
+	rc = BtcSetClassOfDevice(DEVICE_CLASS_OF_DEVICE)
+	#cmpif CMPIF_DEBUG_FLAG : AssertResCode(rc, 1011)
+
+	// Open HID device
+	rc = BtcHidDeviceOpen(Descriptor$, HID_NORMALLY_CONNECTABLE_BIT | HID_BATTERY_POWER_BIT, DEVICE_SUBCLASS, DEVICE_VERSION, descName$)
+	#cmpif CMPIF_DEBUG_FLAG : AssertResCode(rc, 1012)
+
+	// Register the PnP information
+	rc = BtcSetPNPInformation(DEVICE_VID_SRC, DEVICE_VID, DEVICE_PID, DEVICE_VERSION, descName$)
+	#cmpif CMPIF_DEBUG_FLAG : AssertResCode(rc, 1013)
+
+	// Set the device to save pairings
+	rc = BtcSavePairings(1)
+	#cmpif CMPIF_DEBUG_FLAG : AssertResCode(rc, 1014)
+
+	// Set the device to justworks
+	rc = BtcSecMngrIOCap(0)
+	#cmpif CMPIF_DEBUG_FLAG : AssertResCode(rc, 1015)
+
+	// Set the device to auto accept justworks
+	rc = BtcSecMngrJustWorksConf(0)
+	#cmpif CMPIF_DEBUG_FLAG : AssertResCode(rc, 1016)
+
+	// Set the device to be pairable
+	rc = BtcSetPairable(1)
+	#cmpif CMPIF_DEBUG_FLAG : AssertResCode(rc, 1017)
+
+	// Set device to be connectable
+	rc = BtcSetConnectable(1)
+	#cmpif CMPIF_DEBUG_FLAG : AssertResCode(rc, 1018)
+
+	// Finally set device is discoverable with infinite timeout
+	rc = BtcSetDiscoverable(1, 0)
+	#cmpif CMPIF_DEBUG_FLAG : AssertResCode(rc, 1019)
+
+endsub
+
+//==============================================================================
+//==============================================================================
+function SendKey(nKey, nModifier)
+	dim nBitLen
+
+	// Should always have a valid handle
+	if hReportHndl == 0 then
+		exitfunc 1
+	endif
+
+	// If the conection handle is nothing then dont try and send anything
+	if (sCurrentState & DEVICE_STATE_CONNECTED) == 0 then
+		exitfunc 1
+	endif
+
+	// Insert the control byte
+	rc = HidReportAppendInt(hReportHndl, 0, 8, nModifier)
+	if(rc != UWRESULTCODE_SUCCESS) then
+		exitfunc rc
+	endif
+
+	// Insert the character byte
+	rc = HidReportAppendInt(hReportHndl, 16, 24, nKey)
+	if(rc != UWRESULTCODE_SUCCESS) then
+		exitfunc rc
+	endif
+
+	// Send the Keydown hid report
+	rc = BtcHidWrite(hConHndl, hReportHndl)
+	if(rc != UWRESULTCODE_SUCCESS) then
+		exitfunc rc
+	endif
+
+	//Flag as waiting for the TX empty
+	sCurrentState = sCurrentState | DEVICE_STATE_BUFFER_SEND
+
+endfunc UWRESULTCODE_SUCCESS
+
+//==============================================================================
+//==============================================================================
+function SendKeyDown()
+	dim nChar
+
+	// Get the next char to send
+	nChar = StrGetChr(sUartBuffer$, 0)
+	if ((nChar < 0) || (nChar > 0x7F)) then
+		//Skip the 'invalid' character
+		StrShiftLeft(sUartBuffer$,1)
+		exitfunc 1
+	endif
+
+	#cmpif CMPIF_DEBUG_FLAG : print "\n --- HID Sending Key: ";integer.h' nChar
+
+	rc = SendKey(GetAsciiLookup(nChar), GetShCtrlLookup(nChar))
+	if(rc != UWRESULTCODE_SUCCESS) then
+		#cmpif CMPIF_DEBUG_FLAG : print "\n --- HID Send KeyDown FAIL: ";integer.h' rc
+		exitfunc rc
+	else
+		// We have sent a char we need to send a keyup next
+		sCurrentState = sCurrentState | DEVICE_STATE_KEYUP_SEND
+
+		// Shift off the key we just sent
+		StrShiftLeft(sUartBuffer$,1)
+	endif
+endfunc UWRESULTCODE_SUCCESS
+
+//==============================================================================
+//==============================================================================
+function SendKeyUp()
+
+	rc = SendKey(0x00, 0x00)
+	if(rc != UWRESULTCODE_SUCCESS) then
+		#cmpif CMPIF_DEBUG_FLAG : print "\n --- HID Send KeyUp FAIL: ";integer.h' rc
+		exitfunc rc
+	else
+		// Reset the flag
+		sCurrentState = sCurrentState & ~DEVICE_STATE_KEYUP_SEND
+	endif
+
+endfunc UWRESULTCODE_SUCCESS
+
+
+//******************************************************************************
+// Handler definitions
+//******************************************************************************
+
+//==============================================================================
+// Called after a pairing attempt
+//==============================================================================
+function HandlerPairRes(res)
+	dim bdaddr$
+
+	// Get the address of the device that paired/failed to pair
+	rc = BtcGetPairRequestBDAddr(bdaddr$)
+
+	#cmpif CMPIF_DEBUG_FLAG : print "\n --- HID Pairing from "; StrHexize$(bdaddr$); " result=";res
+	if res != 0 then
+		// Failed the pairing, ensure we dont have a stale key in the bonding database
+		rc = BtcBondingEraseKey(bdaddr$)
+	endif
+
+endfunc 1
+
+//==============================================================================
+// Called after a HID connection attempt
+//==============================================================================
+function HandlerHIDCon(hConn, res)
+
+	// If anything other then success just return carry on advertising
+	if res != 0 then
+		exitfunc 1
+	endif
+
+	// If we fail anywhere disconnect the device
+	// Set the device to be NOT pairable
+	rc = BtcSetPairable(0)
+	if(rc != UWRESULTCODE_SUCCESS) then
+		#cmpif CMPIF_DEBUG_FLAG : print "\n --- HID Connect Handler FAIL: ";integer.h' rc
+		rc = BtcHIDDisconnect(hConn)
+		exitfunc 1
+	endif
+
+	// Set device to be NOT connectable
+	rc = BtcSetConnectable(0)
+	if(rc != UWRESULTCODE_SUCCESS) then
+		#cmpif CMPIF_DEBUG_FLAG : print "\n --- HID Connect Handler FAIL: ";integer.h' rc
+		rc = BtcHIDDisconnect(hConn)
+		exitfunc 1
+	endif
+
+	// Finally set device NOT discoverable with infinite timeout
+	rc = BtcSetDiscoverable(0, 0)
+	if(rc != UWRESULTCODE_SUCCESS) then
+		#cmpif CMPIF_DEBUG_FLAG : print "\n --- HID Connect Handler FAIL: ";integer.h' rc
+		rc = BtcHIDDisconnect(hConn)
+		exitfunc 1
+	endif
+
+	// We made it and are in a valid state
+	// Clear anything buffered internally and in the UART
+	sUartBuffer$ = ""
+	UartFlush(1)
+
+	// Set device state to be connected
+	sCurrentState = DEVICE_STATE_CONNECTED
+	hConHndl = hConn
+
+    #cmpif CMPIF_DEBUG_FLAG : print "\n --- HID Connect"
+
+endfunc 1
+
+//==============================================================================
+// Called when an HID disconnection occurs
+//==============================================================================
+function HandlerHIDDiscon(hConn)
+
+	// Clear anything buffered internally and in the UART
+	sUartBuffer$ = ""
+	UartFlush(1)
+
+	TimerCancel(0)
+
+	// set device state to be disconnected
+	sCurrentState = DEVICE_STATE_NOT_CONNECTED
+	hConHndl = 0
+
+	#cmpif CMPIF_DEBUG_FLAG : print "\n --- HID Disconnect"
+
+	// Set the device to be pairable
+	rc = BtcSetPairable(1)
+	#cmpif CMPIF_DEBUG_FLAG : AssertResCode(rc, 6016)
+
+	// Set device to be connectable
+	rc = BtcSetConnectable(1)
+	#cmpif CMPIF_DEBUG_FLAG : AssertResCode(rc, 6017)
+
+	// Finally set device discoverable with infinite timeout
+	rc = BtcSetDiscoverable(1, 0)
+	#cmpif CMPIF_DEBUG_FLAG : AssertResCode(rc, 6018)
+
+endfunc 1
+
+//==============================================================================
+// This handler is called when data has arrived through the UART
+//==============================================================================
+function HandlerUartRx()
+	dim nUartBufLen
+
+	#cmpif CMPIF_DEBUG_FLAG : print "\n --- UART RX"
+
+	// We dont care about stuff prior to a connection
+	if (sCurrentState & DEVICE_STATE_CONNECTED) == 0 then
+		exitfunc 1
+	endif
+
+	// read all the characters that can fit into the buffer currently
+	nUartBufLen = UartReadn(sUartBuffer$, DEVICE_UART_BUFFER)
+
+	if (nUartBufLen > 0) then
+		// Start the reaccuring timer to send reports
+		TimerStart(0, DEVICE_REPORT_DELAY, 1)
+	endif
+
+endfunc 1
+
+//==============================================================================
+// This handler is called when we have sucessfully sent data through HID and we can accept more
+//==============================================================================
+function HandlerHIDTXEmpty(nHandle)
+	dim nUartBufLen
+
+	#cmpif CMPIF_DEBUG_FLAG : print "\n --- HID TX Empty"
+
+	// Deflag, we are clear to send more data
+	sCurrentState = sCurrentState & ~DEVICE_STATE_BUFFER_SEND
+
+	// Because we send keydown send the keyup
+	if sCurrentState & DEVICE_STATE_KEYUP_SEND then
+		rc = SendKeyUp()
+		exitfunc 1
+	endif
+
+endfunc 1
+
+//==============================================================================
+//
+//==============================================================================
+function HandlerTimer0()
+	dim nUartBufLen
+
+	#cmpif CMPIF_DEBUG_FLAG : print "\n --- Timer"
+
+	// We should be connected to something!
+	if (sCurrentState & DEVICE_STATE_CONNECTED) == 0 then
+		//If not kill the timer
+		TimerCancel(0)
+		exitfunc 1
+	endif
+
+	// We are waiting for a tx empty event
+	if (sCurrentState & DEVICE_STATE_BUFFER_SEND) == 1 then
+		// Skip this slot, dont want to overflow our internal buffers
+		exitfunc 1
+	endif
+
+	// If we have data waiting to be sent
+	if StrLen(sUartBuffer$) > 0 then
+		rc = SendKeyDown()
+	else
+		// No data left, lets kick the recieve buffer incase we where CTS'd
+		nUartBufLen = UartReadn(sUartBuffer$, DEVICE_UART_BUFFER)
+		if (nUartBufLen == 0) then
+			// If we have read nothing just kill the timer, it will be turned on from UARTRX
+			TimerCancel(0)
+		endif
+	endif
+
+endfunc 1
+
+
+//******************************************************************************
+// Equivalent to main() in C
+//******************************************************************************
+
+rc = UartOpen(DEVICE_BAUDRATE,0,0,DEVICE_UARTSETTINGS)
+#cmpif CMPIF_DEBUG_FLAG : AssertResCode(rc, 2000)
+
+// Initialize report handle
+rc = HidReportInit(64, hReportHndl )
+#cmpif CMPIF_DEBUG_FLAG : AssertResCode(rc, 2010)
+
+// Initialise Bluetooth functionality
+InitBtKeyboardDevice()
+
+OnEvent  EVTMR0 					call HandlerTimer0
+OnEvent  EVHIDTXEMPTY				call HandlerHIDTXEmpty
+OnEvent  EVUARTRX					call HandlerUartRx
+OnEvent  EVHIDCONN					call HandlerHIDCon
+OnEvent  EVHIDDISCON				call HandlerHIDDiscon
+OnEvent  EVBTC_PAIR_RESULT  		call HandlerPairRes
+
+
+//------------------------------------------------------------------------------
+// Wait for a synchronous event.
+// An application can have multiple <WaitEvent> statements
+//------------------------------------------------------------------------------
+WaitEvent

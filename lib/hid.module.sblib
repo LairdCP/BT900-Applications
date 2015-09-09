@@ -1,0 +1,260 @@
+//******************************************************************************
+// Laird Technologies (c) 2014
+//
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// +++++                                                                      ++
+// +++++  When UwTerminal downloads the app it will store it as a filenname   ++
+// +++++  which consists of all characters up to the first . and excluding it ++
+// +++++                                                                      ++
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//
+// This library file provides commands to control BT Classic operation and should be
+// #included into the file 'cmd.ble.manager.sb' if running on a dual mode module
+// e.g. BT900.
+//
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// Convention : (1) Case sensitive, and commands are presented in alphabetic order
+//              (2) If line ends with \ then it continues on next line. That does
+//                  not mean that it should be sent as multiple lines
+//              (3) Replace anything between ## 
+//              (4) #INTaaaa# means a number in decimal, hex, octal or binary
+//                      format -> 23 == 0x17 == h'17 == o'23 == b'10111
+//                      aaaa is just a description
+//              (5) #HEXaaaa# means a string without delimitors consisting of hex 
+//                      characters only aaaa is just a description
+//              (6) #STRaaaa# means a string without delimitors
+//                      aaaa is just a description
+//              (7) "STRaaaa" means a string which must have the " delimitor
+//                      aaaa is just a description
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// -----------------------------------------------------------------------------
+//******************************************************************************
+
+//******************************************************************************
+// Definitions
+//******************************************************************************
+
+//******************************************************************************
+// Global Variable Declarations
+//******************************************************************************
+
+//******************************************************************************
+// Function and Subroutine definitions
+//******************************************************************************
+
+//-------------------------------------------------------------------------
+//#CMD#//  hid device open #INTFeatures# #INTSubclass# #STRname#
+//#CMD#//  hid host open
+//#CMD#//  hid close
+//#CMD#//  hid connect #STRaddr#
+//#CMD#//  hid disconnect #INTConHandle#
+//#CMD#//  hid control #INTConHandle# #INTControl#
+//#CMD#//  hid write #INTConHandle# #STRreport#
+//#CMD#//  hid config #INTconfignum# #INTconfigval#
+
+//-------------------------------------------------------------------------
+function _hid()  
+    tlen = ExtractStrToken(urtcmd$,tkn$)
+    if tlen == 0 then
+        exitfunc 5
+    endif
+    
+	if strcmp(tkn$,"device")==0 then
+		tlen = ExtractStrToken(urtcmd$,tkn$)
+		if tlen == 0 then
+		  exitfunc 5
+		endif 
+		
+		if strcmp(tkn$,"open")==0 then       		
+			rc = ExtractIntTokens(urtcmd$,1,3)
+			if rc != 0 then
+				exitfunc rc
+			endif
+			
+			rc = ExtractStrTokens(urtcmd$,2,1)
+			if rc != 0 then
+				exitfunc rc
+			endif
+			
+			rc = BtcHIDDeviceOpen(descriptor$, i[1], i[2], i[3], s$[2])
+			if rc==0 then
+				print "\nHID Device opened."
+				exitfunc 0
+			else
+				exitfunc rc
+			endif
+		endif
+	endif
+	if strcmp(tkn$,"host")==0 then
+		tlen = ExtractStrToken(urtcmd$,tkn$)
+		if tlen == 0 then
+		  exitfunc 5
+		endif 
+		
+		if strcmp(tkn$,"open")==0 then       		
+			rc = BtcHIDHostOpen()
+			if rc==0 then
+				print "\nHID Host opened."
+				exitfunc 0
+			else
+				exitfunc rc
+			endif
+		endif
+	endif
+	if strcmp(tkn$,"close")==0 then              
+		rc=BtcHIDClose()
+		if rc==0 then
+			print "\nHID Closed."
+			exitfunc 0
+		else
+			exitfunc rc
+		endif
+	endif
+	if strcmp(tkn$,"connect")==0 then
+		tlen = ExtractStrToken(urtcmd$,tkn$)
+		if tlen == 0 then
+			exitfunc 5
+		endif
+		//the current token has to be a mac address
+		s$[1]=StrDehexize$(tkn$)
+		if strlen(s$[1]) != 6 then
+			exitfunc 5
+		endif
+		
+		exitfunc BtcHIDConnect(s$[1])
+	endif
+	if strcmp(tkn$,"disconnect")==0 then
+		//extract 1 : (hConnSpp) and store starting at i[1]
+        rc = ExtractIntTokens(urtcmd$,1,1)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        exitfunc BtcHIDDisconnect(hc[i[1]])
+	endif
+	if strcmp(tkn$,"control")==0 then
+		//extract 1 : (hConnSpp) and store starting at i[1], get the control number too
+        rc = ExtractIntTokens(urtcmd$,1,2)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        exitfunc BtcHIDControl(hc[i[1]],i[2])
+	endif
+	if strcmp(tkn$,"write")==0 then
+		dim nStringBitLen
+		dim hReportHandle
+		//extract 1 : (hConnSpp) and store starting at i[1], get the control number too
+        rc = ExtractIntTokens(urtcmd$,1,1)
+        if rc != 0 then
+            exitfunc rc
+        endif
+		tlen = ExtractStrToken(urtcmd$,tkn$)
+		if tlen == 0 then
+			exitfunc 5
+		endif
+		//the current token has to be a report
+		s$[1]=StrDehexize$(tkn$)
+		
+		nStringBitLen = (StrLen(s$[1]) * 8)
+		rc = HIDReportInit(nStringBitLen, hReportHandle)
+		rc = HIDReportAppendStr(hReportHandle, 0, nStringBitLen, s$[1])
+		
+		rc = BtcHIDWrite(hc[i[1]], hReportHandle)
+		rc = HIDReportDestroy(hReportHandle)
+	endif
+	if strcmp(tkn$,"config")==0 then
+		//extract 1 : (hConnSpp) and store starting at i[1], get the control number too
+        rc = ExtractIntTokens(urtcmd$,1,2)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        exitfunc BtcHIDConfig(i[1],i[2])
+	endif
+endfunc 5
+
+//******************************************************************************
+// Handler definitions
+//******************************************************************************
+//==============================================================================
+// This handler is called when there is an inquiry report waiting to be read
+//==============================================================================
+
+//==============================================================================
+// Called after an HID connection attempt
+//==============================================================================
+function HandlerHIDCon(hConn, res) as integer
+    dim hz
+
+    //print "\n --- HID Connect: (";integer.h' res;")"
+    //if connected successfully
+    if res == 0 then
+        //try and acquire a connection handle
+        hz = AcqConnHandle(hConn) 
+        //disconnect if failed
+        if hz==0 then
+            rc=BtcHIDDisconnect(hConn)
+            //print " DROPPED"
+        else
+			HandlerConnHook(hz)
+            //print " handle=";hz;pr$
+        endif
+    endif        
+endfunc 1
+
+//==============================================================================
+// Called when an HID disconnection occurs
+//==============================================================================
+function HandlerHIDDiscon(hConn)
+    dim hz
+    
+	//Release connection
+    hz = RelConnHandle(hConn)
+	
+	HandlerDisconHook(hz)
+	
+    //print "\n --- HID Disconnect: handle=";hz
+endfunc 1
+
+//==============================================================================
+// Called after an HID control event
+//==============================================================================
+function HandlerHIDControl(hConn, nControl) as integer
+    dim hz
+	
+	//Control event received
+	hz = GetConnHandle(hConn)	
+	
+	HandlerControlHook(hz, nControl)
+	
+    //print "\n --- HID Control: (";integer.h' nControl;") handle=";hz;pr$      
+endfunc 1
+
+//==============================================================================
+// Called when data is received via HID
+//==============================================================================
+function HandlerHIDData()
+    dim hPort, hz
+	dim hReportHandle, nReportLen
+	dim nDroppedReports
+	dim report$
+	
+    '//read and print out a report
+	rc = BtcHIDRead(hPort, hReportHandle, nDroppedReports)
+	if rc==0 then
+		hz = GetConnHandle(hPort)
+		
+		rc = HIDReportExport(hReportHandle, nReportLen, report$)
+		rc = HIDReportDestroy(hReportHandle)
+		HandlerDataHook(hz, report$)
+		
+		//print"\nHandle: ";hz; "\nData: ";StrHexize$(report$);pr$
+	endif
+endfunc 1
+
+//******************************************************************************
+// Equivalent to main() in C
+//******************************************************************************
+OnEvent  EVHIDCONN				  call HandlerHIDCon
+OnEvent  EVHIDDISCON		      call HandlerHIDDiscon
+OnEvent  EVHIDCONTROL			  call HandlerHIDControl
+OnEvent  EVBTC_HID_DATA_RECEIVED  call HandlerHIDData

@@ -1,0 +1,12 @@
+//Example :: BtcHIDHostOpen.sb
+dim rc
+
+rc = BtcHIDHostOpen()
+
+if rc == 0 then
+    print "\nBtc HID Host opened"
+else
+    print "\nError: ";rc
+endif
+
+rc=BtcHidClose()

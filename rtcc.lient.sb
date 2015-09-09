@@ -20,11 +20,11 @@
 // Convention : (1) Case sensitive, and commands are presented in alphabetic order
 //              (2) If line ends with \ then it continues on next line. That does
 //                  not mean that it should be sent as multiple lines
-//              (3) Replace anything between ## 
+//              (3) Replace anything between ##
 //              (4) #INTaaaa# means a number in decimal, hex, octal or binary
 //                      format -> 23 == 0x17 == h'17 == o'23 == b'10111
 //                      aaaa is just a description
-//              (5) #HEXaaaa# means a string without delimitors consisting of hex 
+//              (5) #HEXaaaa# means a string without delimitors consisting of hex
 //                      characters only aaaa is just a description
 //              (6) #STRaaaa# means a string without delimitors
 //                      aaaa is just a description
@@ -101,7 +101,7 @@
 // -----------------------------------------------------------------------------
 //
 // connect
-//    - Connects to an RTC host if a Bluetooth 
+//    - Connects to an RTC host if a Bluetooth
 //
 // -----------------------------------------------------------------------------
 //
@@ -139,7 +139,7 @@
 #define WRITE_TIME 6
 #define ENABLE_NOTIFICATIONS 7
 #define DISABLE_NOTIFICATIONS 8
- 
+
 dim rc //Function return code
 dim TargetBT$ : TargetBT$ = "\00\00\16\a4\09\3a\99" //Bluetooth address` of the device to connect too
 dim Status : Status = 0 //0 = waiting for user input, 1 = scanning
@@ -147,25 +147,25 @@ dim ConnectionStatus : ConnectionStatus = 0 //0 = disconnected, 1 = connected
 dim nCtxG //Global BLE handler
 dim APP_VERSION$ : APP_VERSION$ = "0.97b" //Version of client program
 dim TmpStr$ : TmpStr$ = "" //Temporary string for inter-function passing
- 
+
 //List of UUID's
 dim TimeUUID : TimeUUID = 0
 dim VersionUUID : VersionUUID = 0
 dim AlarmTimeUUID : AlarmTimeUUID = 0
 dim AlarmModeUUID : AlarmModeUUID = 0
 dim NotificationUUID : NotificationUUID = 0
- 
+
 //List of service handle IDs
 dim TimeHID : TimeHID = 0x2A2B
 dim VersionHID : VersionHID = 0x2B04
 dim AlarmTimeHID : AlarmTimeHID = 0x2B03
 dim AlarmModeHID : AlarmModeHID = 0x2B02
- 
+
 dim DoFunc : DoFunc = 0 //Temporary variable for what function to perform when characteristic is found
 
 //Global variables for timestamps
 dim TS_HH, TS_MM1, TS_SS, TS_DD, TS_MM2, TS_YYYY
- 
+
 //Global variables for UART
 dim nMatch, stRsp$, urtcmd$, tkn$
 
@@ -494,7 +494,7 @@ FUNCTION OnUartCmd()
                     ENDIF
                 ELSEIF strcmp(tkn$, "notifications")==0 THEN
                     //Enable or disable notifications
-                    tlen = ExtractStrToken(urtcmd$,tkn$) //get next token	
+                    tlen = ExtractStrToken(urtcmd$,tkn$) //get next token
                     IF strcmp(tkn$, "on")==0 THEN
                         //Enable notifications
                         DoFunc = ENABLE_NOTIFICATIONS
@@ -543,7 +543,7 @@ FUNCTION OnUartCmd()
     //Clear UART RX buffer
     urtcmd$ = ""
 ENDFUNC 1
- 
+
 FUNCTION HndlrUartRx()
     IF Status == 1 THEN
         //End scanning
@@ -560,7 +560,7 @@ FUNCTION HndlrUartRx()
         ENDIF
     ENDIF
 ENDFUNC 1
-        
+
 FUNCTION HndlrGCData(nCtx, nHndl, nStat)
     //Runs when data has been read from remote GATT server
     dim offset, attrData$, Tmp
@@ -746,7 +746,7 @@ ENDFUNC 1
 rc = BleGattcOpen(0,0)
 PRINT "RTC Client ready!\n"
 
-//Events 
+//Events
 ONEVENT EVUARTRX             CALL HndlrUartRx //Runs when UART gets data
 ONEVENT EVBLE_SCAN_TIMEOUT   CALL HndlrScanTO //Runs when BLE scan times out
 ONEVENT EVBLE_ADV_REPORT     CALL HndlrAdvRpt //Runs when a BLE scan report is ready

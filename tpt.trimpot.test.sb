@@ -30,7 +30,7 @@
 '//define how often to read the adc value in milliseconds
 #define pollrate 1000
 
-#define BT900_DEV_ID            0x42370900 
+#define BT900_DEV_ID            0x42370900
 #define BL600_DEV_ID            0x424C0600
 #define BL620_DEV_ID            0x424C0620
 
@@ -47,7 +47,7 @@ dim mv
 '// Library Import
 '//******************************************************************************
 //------------------------------------------------------------------------------
-//** #include the correct GPIO library file for the smartBASIC module being used 
+//** #include the correct GPIO library file for the smartBASIC module being used
 //------------------------------------------------------------------------------
 // #include "lib\gpio.bl6xx.sblib"
 #include "lib\gpio.bt9xx.sblib"
@@ -92,7 +92,7 @@ endfunc 1
 '//******************************************************************************
 '// Equivalent to main() in C
 '//******************************************************************************
-'//Print devkit config info    
+'//Print devkit config info
 select DEV_ID
     print "\nEnsure the DIP switches on CON14 are set as follows:"
     case BT900_DEV_ID
@@ -102,7 +102,7 @@ select DEV_ID
         print "\nTempS   [3   x    ]"
         print "\nTrimPot [4     -->]"
         print "\nx = doesn't matter"
-    '//BL600 or BL620    
+    '//BL600 or BL620
     case else
         print "\n        OFF      ON"
         print "\n        [1   x    ]"

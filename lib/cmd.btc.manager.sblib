@@ -94,6 +94,16 @@
 //    - calls BtcSetFriendlyName$() with the name #STRname#
 //
 // -----------------------------------------------------------------------------
+// btc getclassofdevice
+//    --- bluetooth classic functionality ---
+//    - calls BtcGetClassOfDevice() and prints the returned class
+//
+// -----------------------------------------------------------------------------
+// btc setclassofdevice #INTCoD#
+//    --- bluetooth classic functionality ---
+//    - calls BtcSetClassOfDevice() with the value #INTCoD#
+//
+// -----------------------------------------------------------------------------
 // btc discoveryconfig #INTcfgID# #INTval# 
 //    --- bluetooth classic functionality ---
 //    - configre discoverability parameters 
@@ -202,6 +212,64 @@
 //                           1 : Accept pair request
 //
 // -----------------------------------------------------------------------------
+// btc passkey #INTpasskey#
+//    --- bluetooth classic functionality ---
+//    - Respond to a passkey request
+//      with #INTpasskey# - As the passkey
+//
+// -----------------------------------------------------------------------------
+// btc setoob #STRhash# #STRrand#
+//    --- bluetooth classic functionality ---
+//    - Respond to a OOB data request
+//      with #STRhash# - As the OOB hash (16byte string)
+//      with #STRrand# - As the OOB randomiser (16byte string)
+//
+// -----------------------------------------------------------------------------
+// btc retrieveoob
+//    --- bluetooth classic functionality ---
+//    - Get the OOB data from baseband
+//
+// -----------------------------------------------------------------------------
+// btc iocap #INTiocap#
+//    --- bluetooth classic functionality ---
+//    - Set the local IO capabilities
+//      with #INTiocap# - 0 : NONE
+//                        1 : DISPLAY_YESNO
+//						  2 : KEYBOARD_ONLY
+//						  3 : DISPLAY_ONLY
+//
+// -----------------------------------------------------------------------------
+// btc oobpref #INToobpref#
+//    --- bluetooth classic functionality ---
+//    - Set the local IO capabilities to prefer OOB if available
+//      with #INTiocap# - 0: FALSE
+//						  1: TRUE
+//						  2: ASK ME
+//
+// -----------------------------------------------------------------------------
+// btc oobavailable #INToobavail#
+//    --- bluetooth classic functionality ---
+//    - Respond with OOB data availability
+//      with #INToobavail# - 0: FALSE
+//						  	 1: TRUE
+//
+// -----------------------------------------------------------------------------
+// btc justworks #INTJWConf#
+//    - Security Manager related
+//    - This will result in BtcSecMngrJustWorksConf() being called
+//    - valid values for #INTJWConf# are
+//         0     Pairings works as-is without confirmation
+//         1     Pairings requires confirmation
+//
+// -----------------------------------------------------------------------------
+// btc setinformation #INTvidsrc# #INTvid# #INTpid# #INTversion# #STRdesc#
+//    - Device Information service related
+//    - This will result in BtcDISInformationSet() being called
+//    - valid values for #INTvidsrc# are
+//         0x0001     Bluetooth VID base
+//         0x0002     USB VID base
+//
+// -----------------------------------------------------------------------------
 // btc sendpin #INTpin# 
 //    --- bluetooth classic functionality ---
 //    - Respond to a PIN request with #INTpin# during a pairing procedure
@@ -232,6 +300,16 @@
 //******************************************************************************
         // Number of spp ports
 #define NUM_OF_SPP_PORTS                     8
+#define EBTCAUTHKEYTYPE_NONE                 0
+#define EBTCAUTHKEYTYPE_PASSKEY				 1
+#define EBTCAUTHKEYTYPE_OOB					 2
+#define EBTCAUTHKEYTYPE_PIN  				 3
+
+#define EBTCIOCAPABILITY_NONE                   0
+#define EBTCIOCAPABILITY_DISPLAY_YESNO          1
+#define EBTCIOCAPABILITY_KEYBOARD_ONLY          2
+#define EBTCIOCAPABILITY_DISPLAY_ONLY           3
+
 
 //******************************************************************************
 // Definitions
@@ -253,6 +331,19 @@ dim prAddr$              //BT address of last device pairing requested from or i
 //******************************************************************************
 // Function and Subroutine definitions
 //******************************************************************************
+
+function ZeroPadInt$(nLength, nInt)
+	dim PadString$, nExtend
+
+	sprint #PadString$, nInt
+	nExtend = nLength-strlen(PadString$)
+
+	while (nExtend > 0)
+		PadString$ = "0" + PadString$
+		nExtend = nExtend - 1
+	endwhile
+
+endfunc PadString$
 
 //==============================================================================
 //==============================================================================
@@ -523,10 +614,112 @@ function _btcbond()
   endif
 endfunc 5
 
+//-------------------------------------------------------------------------
+//#CMD#//  hid device open #STRdescriptor# #INTFeatures# #INTSubclass# #STRname#
+//#CMD#//  hid host open
+//#CMD#//  hid close
+//#CMD#//  hid connect #STRaddr#
+//#CMD#//  hid disconnect #INTConHandle#
+//#CMD#//  hid control #INTConHandle# #INTControl#
+//-------------------------------------------------------------------------
+function _hid()  
+    tlen = ExtractStrToken(urtcmd$,tkn$)
+    if tlen == 0 then
+        exitfunc 5
+    endif
+    
+	if strcmp(tkn$,"device")==0 then
+		tlen = ExtractStrToken(urtcmd$,tkn$)
+		if tlen == 0 then
+		  exitfunc 5
+		endif 
+		
+		if strcmp(tkn$,"open")==0 then       
+			rc = ExtractStrTokens(urtcmd$,1,1)
+			if rc != 0 then
+				exitfunc rc
+			endif
+			
+			rc = ExtractIntTokens(urtcmd$,1,3)
+			if rc != 0 then
+				exitfunc rc
+			endif
+			
+			rc = ExtractStrTokens(urtcmd$,2,1)
+			if rc != 0 then
+				exitfunc rc
+			endif
+			
+			rc = BtcHIDDeviceOpen(s$[1], i[1], i[2], i[3], s$[2])
+			if rc==0 then
+				print "\nHID Device opened."
+				exitfunc 0
+			else
+				exitfunc rc
+			endif
+		endif
+	endif
+	if strcmp(tkn$,"host")==0 then
+		tlen = ExtractStrToken(urtcmd$,tkn$)
+		if tlen == 0 then
+		  exitfunc 5
+		endif 
+		
+		if strcmp(tkn$,"open")==0 then       		
+			rc = BtcHIDHostOpen()
+			if rc==0 then
+				print "\nHID Host opened."
+				exitfunc 0
+			else
+				exitfunc rc
+			endif
+		endif
+	endif
+	if strcmp(tkn$,"close")==0 then              
+		rc=BtcHIDClose()
+		if rc==0 then
+			print "\nHID Closed."
+			exitfunc 0
+		else
+			exitfunc rc
+		endif
+	endif
+	if strcmp(tkn$,"connect")==0 then
+		tlen = ExtractStrToken(urtcmd$,tkn$)
+		if tlen == 0 then
+			exitfunc 5
+		endif
+		//the current token has to be a mac address
+		s$[1]=StrDehexize$(tkn$)
+		if strlen(s$[1]) != 6 then
+			exitfunc 5
+		endif
+		
+		exitfunc BtcHIDConnect(s$[1])
+	endif
+	if strcmp(tkn$,"disconnect")==0 then
+		//extract 1 : (hConnSpp) and store starting at i[1]
+        rc = ExtractIntTokens(urtcmd$,1,1)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        exitfunc BtcHIDDisconnect(hc[i[1]])
+	endif
+	if strcmp(tkn$,"control")==0 then
+		//extract 1 : (hConnSpp) and store starting at i[1], get the control number too
+        rc = ExtractIntTokens(urtcmd$,1,2)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        exitfunc BtcHIDControl(hc[i[1]],i[2])
+	endif
+endfunc 5
 
 //-------------------------------------------------------------------------
 //#CMD#//  btc getfriendlyname
 //#CMD#//  btc setfriendlyname #STRname#
+//#CMD#//  btc getclassofdevice
+//#CMD#//  btc setclassofdevice #INTCoD#
 //#CMD#//  btc sendpin #INTpin#
 //#CMD#//  btc savepairings #INTflag#
 //#CMD#//  btc pair #HEXaddr6Bytes# #INTflag#
@@ -535,6 +728,16 @@ endfunc 5
 //#CMD#//  btc setdiscoverable #INTenable# #INTtimeout#
 //#CMD#//  btc setpairable #INTenable#
 //#CMD#//  btc setconnectable #INTenable#
+//#CMD#//  btc passkey #INTval#
+//#CMD#//  btc setoob #STRhash# #STRrand#
+//#CMD#//  btc retrieveoob
+//#CMD#//  btc iocap #INTval#
+//#CMD#//  btc oobpref #INTval#
+//#CMD#//  btc oobavailable #INTval#
+//#CMD#//  btc justworks  #INTJWConf#
+//#CMD#//  btc setinformation #INTvidsrc# #INTvid# #INTpid# #INTversion# #STRdesc#
+
+
 //-------------------------------------------------------------------------
 function _btc() 
     tlen = ExtractStrToken(urtcmd$,tkn$)
@@ -562,6 +765,28 @@ function _btc()
         endif
         
         exitfunc BtcSetFriendlyName(s$[1])
+    endif
+	
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+    if strcmp(tkn$,"getclassofdevice")==0 then       
+        dim nCoD
+        rc=BtcGetClassOfDevice(nCoD)
+        if rc== 0 then
+            print "\n";integer.h'nCoD
+            exitfunc 0
+        else
+            exitfunc rc
+        endif
+    endif
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
+    if strcmp(tkn$,"setclassofdevice")==0 then       
+        rc = ExtractIntTokens(urtcmd$,1,1)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        
+        exitfunc BtcSetClassOfDevice(i[1])
     endif
     
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -608,6 +833,92 @@ function _btc()
         endif
         
         exitfunc BtcSendPAIRResp(i[1])
+    endif
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"justworks")==0 then
+        //extract 1 (#INTJWConf#) and store starting at i[1]
+        rc = ExtractIntTokens(urtcmd$,1,1)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        exitfunc BtcSecMngrJustWorksConf(i[1])
+    endif
+	
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"setinformation")==0 then
+        //extract 1 (#INTJWConf#) and store starting at i[1]
+        rc = ExtractIntTokens(urtcmd$,1,4)
+        if rc != 0 then
+            exitfunc rc
+        endif
+		rc = ExtractStrTokens(urtcmd$,1,1)
+        if rc != 0 then
+            exitfunc rc
+        endif		
+        exitfunc BtcDISInformationSet(i[1], i[2], i[3], i[4], s$[1])
+    endif
+	
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"passkey")==0 then
+        rc = ExtractIntTokens(urtcmd$,1,1)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        
+        exitfunc BtcSecMngrPassKey(i[1])
+    endif
+	
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"setoob")==0 then
+        rc = ExtractStrTokens(urtcmd$,1,2)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        s$[1] = StrDehexize$(s$[1])
+		s$[2] = StrDehexize$(s$[2])
+        exitfunc BtcSecMngrOobKey(s$[1], s$[2])
+    endif
+	
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"retrieveoob")==0 then
+        rc = BtcSecMngrRetrieveLocalOobKey(s$[1], s$[2])
+		if rc != 0 then
+            exitfunc rc
+        endif
+		print "\nHash: "; StrHexize$(s$[1])
+		print "\nRandomiser: "; StrHexize$(s$[2])	
+		exitfunc rc
+    endif
+	
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"oobpref")==0 then
+        rc = ExtractIntTokens(urtcmd$,1,1)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        
+        exitfunc BtcSecMngrOobPref(i[1])
+    endif
+	
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"oobavailable")==0 then
+        rc = ExtractIntTokens(urtcmd$,1,1)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        
+        exitfunc BtcSecMngrOobAvailable(i[1])
+    endif
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
+    if strcmp(tkn$,"iocap")==0 then
+        rc = ExtractIntTokens(urtcmd$,1,1)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        
+        exitfunc BtcSecMngrIoCap(i[1])
     endif
     
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -839,31 +1150,46 @@ function HandlerSppData()
 	dowhile rLen>0 && rc ==0
 endfunc 1
 
+//==============================================================================
+// Called when there is a pairing request from another device
+//==============================================================================
+function HandlerAuthReq(reqType) 
+	dim mac$
+    rc=BtcGetPairRequestBDAddr(mac$)
+	prAddr$ = mac$
+	if rc==0 then
+		if reqType == EBTCAUTHKEYTYPE_NONE then
+			print "\nPair Req: "; StrHexize$(mac$);pr$
+		elseif reqType == EBTCAUTHKEYTYPE_PASSKEY then
+			print "\nPasskey Req: "; StrHexize$(mac$);pr$
+		elseif reqType == EBTCAUTHKEYTYPE_OOB then
+			print "\nOOB Req: "; StrHexize$(mac$);pr$
+		elseif reqtype == EBTCAUTHKEYTYPE_PIN then
+			print "\nPIN Req: "; StrHexize$(mac$);pr$
+		endif	
+	else
+        AssertResCode(rc,2277)
+    endif
+	
+endfunc 1
+
+//==============================================================================
+// Called when there is a OOB data availability request
+//==============================================================================
+function HandlerOOBAvail() 
+	dim mac$
+    rc=BtcGetPairRequestBDAddr(mac$)
+	prAddr$ = mac$
+	
+	print "\nOOB data available for: "; StrHexize$(mac$);" ?";pr$
+endfunc 1
 
 //==============================================================================
 // Called when there is a pairing request from another device
 //==============================================================================
-function HandlerPairReq()
-    dim s$
-    rc=BtcGetPAIRRequestBDAddr(s$)
-    prAddr$ = s$
-    print "\nPair Req: "; StrHexize$(s$);pr$
+function HandlerPasskey(passkey) 
+	print "\nPasskey: "; ZeroPadInt$(6, passkey); pr$	
 endfunc 1
-
-
-//==============================================================================
-// Called on a pin request from another device
-//==============================================================================
-function HandlerPINReq() 
-    dim mac$
-    rc=BtcGetPinRequestBDAddr(mac$)
-    if rc==0 then
-        print "\nPIN Req: "; StrHexize$(mac$);pr$
-    else
-        AssertResCode(rc,2273)
-    endif
-endfunc 1
-
 
 //==============================================================================
 // Called after a pairing attempt
@@ -872,6 +1198,52 @@ function HandlerPairRes(res)
     print "\nPair Result: ";res; " "; StrHexize$(prAddr$);pr$
 endfunc 1
 
+
+//==============================================================================
+// Called after an SPP connection attempt
+//==============================================================================
+function HandlerHIDCon(hConn, res) as integer
+    dim hz
+
+    print "\n --- HID Connect: (";integer.h' res;")"
+    //if connected successfully
+    if res == 0 then
+        //try and acquire a connection handle
+        hz = AcqConnHandle(hConn)
+        
+        //disconnect if failed
+        if hz==0 then
+            rc=BtcHIDDisconnect(hConn)
+            print " DROPPED"
+        else
+            hcSpp = hc[hz]     //always assume most recent connection for HID
+            conns = conns + 1
+            print " handle=";hz;pr$
+        endif
+    endif        
+endfunc 1
+
+//==============================================================================
+// Called when an HID disconnection occurs
+//==============================================================================
+function HandlerHIDDiscon(hConn)
+    dim hz
+    
+    hz = RelConnHandle(hConn)
+    conns = conns - 1
+    print "\n --- HID Disconnect: handle=";hz
+endfunc 1
+
+//==============================================================================
+// Called after an HID control event
+//==============================================================================
+function HandlerHIDControl(hConn, nControl) as integer
+    dim hz
+	hz = GetConnHandle(hConn)
+	
+    print "\n --- HID Control: (";integer.h' nControl;") handle=";hz;pr$
+         
+endfunc 1
 
 //==============================================================================
 // Called when switching to command mode to register SPP event handler
@@ -895,9 +1267,14 @@ OnEvent  EVINQRESP                call HandlerInqResp
 OnEvent  EVBTC_INQUIRY_TIMEOUT    call HandlerBtcInqTimOut
 OnEvent  EVBTC_DISCOV_TIMEOUT     call HandlerBtcDiscTimOut  
 
-OnEvent  EVBTC_PAIR_REQUEST       call HandlerPairReq
-OnEvent  EVBTC_PIN_REQUEST        call HandlerPinReq
+OnEvent  EVBTC_OOB_AVAILABLE_REQUEST call HandlerOOBAvail
+OnEvent  EVBTC_AUTHREQ			  call HandlerAuthReq
+OnEvent  EVBTC_PASSKEY			  call HandlerPasskey
 OnEvent  EVBTC_PAIR_RESULT        call HandlerPairRes
+
+OnEvent  EVHIDCONN				  call HandlerHIDCon
+OnEvent  EVHIDDISCON		      call HandlerHIDDiscon
+OnEvent  EVHIDCONTROL			  call HandlerHIDControl
 
 OnEvent  EVSPPCONN                call HandlerSppCon
 OnEvent  EVBTC_SPP_CONN_TIMEOUT   call HandlerSppConnTimOut

@@ -1,0 +1,18 @@
+//Example :: HidReportImport.sb
+//This example inserts a string into a HID report
+
+dim rc, nHandle 
+// String to write into the report
+dim str$ : str$ = "abc"
+
+// Initialise a report with a length of 40 bits (5 bytes)
+rc = HIDReportInit(40, nHandle)
+if rc==0 then
+    print "\nHID Report Created. Handle: "; nHandle
+endif
+
+// Write a 24 bit string at an offset of 8 bits in the report
+rc = HIDReportAppendStr(nHandle, 8, 24, str$)
+if rc==0 then
+    print "\nSuccessfully appended string"
+endif

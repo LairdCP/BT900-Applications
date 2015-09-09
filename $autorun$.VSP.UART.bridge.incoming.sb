@@ -106,7 +106,7 @@ ENDFUNC 1
 //==============================================================================
 FUNCTION StartVSPAdvert()
     dim addr$, scRpt$, adRpt$, UUIDStr$
-    //Start sending adverts containing the VSP service 
+    //Start sending adverts containing the VSP service
     scRpt$ = ""
     rc = BleScanRptInit(scRpt$)
     assertRC(rc, 11)

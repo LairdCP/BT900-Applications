@@ -62,8 +62,8 @@ Sub OnStartup()
     hUuidChar=BleHandleUuidSibling(hBseUuid, DISCON_CHAR_UUID)
     rc=BleCharNew(0x08,hUuidChar,BleAttrMetaData(0,1,2,0,rc),0,0)
     attr$="\00\00"
-    rc=BleCharCommit(hSvc,attr$,hChar)   
-    
+    rc=BleCharCommit(hSvc,attr$,hChar)
+
     '//Commit service to GATT table
     rc=BleServiceCommit(hSvc)
 EndSub
@@ -92,7 +92,7 @@ Function HndlrCharVal(char, offset, len)
         if StrCmp(val$,"\D1\5C")==0 then
             rc=BleDisconnect(hConn)
         endif
-    endif  
+    endif
 EndFunc 1
 
 '//******************************************************************************
@@ -112,4 +112,4 @@ print "\nMake a connection to the BT900"
 '// Wait for a synchronous event.
 '// An application can have multiple <WaitEvent> statements
 '//------------------------------------------------------------------------------
-waitevent  
+waitevent

@@ -1,0 +1,84 @@
+//Example :: BtcQuerySniffSubrating.sb
+dim rc, i
+
+'//BT address of device to connect to. You will have to change this
+dim mac$
+mac$ = "\00\16\A4\09\3A\BF"
+
+//Array with handles for spp connections 
+dim hSpp
+
+#define LINKMODE_ACTIVE (0)
+#define LINKMODE_SNIFF  (2)
+
+//Handler function called when the link mode is changed
+function HandlerSniff(nStatus, nMode) as integer
+    dim bdaddr$, link_mode, interval
+    
+    if(nStatus==0) then
+        // Successful mode change - Query the link
+        rc = BtcQuerySniffChange(bdaddr$, link_mode, interval)
+        
+        if(nMode == LINKMODE_SNIFF) then
+            print "\nSniff mode enabled: "
+            print strhexize$(bdaddr$); " Interval "; interval
+        elseif(nMode == LINKMODE_ACTIVE) then
+            print "\nSniff mode disabled: "
+            print strhexize$(bdaddr$); 
+        endif
+    endif
+endfunc 0
+
+//Handler function called when sniff subrating parameters are changed
+function HandlerSubrate(status)
+    dim bdaddr$, bdaddrhex$
+    dim maxTxLatency, maxRxLatency, minRemoteTimeout, minLocalTimeout
+    dim rc
+    
+    // Successful Sniff subrate mode change - Query the link
+    rc = BtcQuerySniffSubrating(bdaddr$, maxTxLatency, maxRxLatency, minRemoteTimeout, minLocalTimeout)
+    
+    //If the address is zero then subrating has been disabled due to a closed connection
+    bdaddrhex$ = StrHexize$(bdaddr$)
+    if(strcmp(bdaddrhex$, "000000000000") == 0) then
+        exitfunc 1
+    else
+        print "\nSubrating changed: "; StrHexize$(bdaddr$); " - "
+        print maxTxLatency; " "; maxRxLatency; " "; minRemoteTimeout; " "; minLocalTimeout
+    endif
+endfunc 0
+
+//Handler function called when SPP is connected
+function HandlerSppConn(portHndl, result) as integer
+    hSpp = portHndl
+    print "\n --- Connect : ",hSpp, StrHexize$(mac$)
+	print "\nResult: ",integer.h' result
+endfunc 0
+
+
+rc=BtcSetConnectable(1)
+rc=BtcSetDiscoverable(1,60)
+
+//Make spp connection 
+rc=BtcSppConnect(mac$)
+print "\nConnecting to device ";StrHexize$(mac$)
+
+onevent EvSppConn call HandlerSppConn
+waitevent
+
+//Enable sniff parameters with the active bluetooth link
+//Values are defined in timeslots
+print "\nEnabling sniff mode with ";StrHexize$(mac$)
+rc = BtcSniffEnable(mac$, 80, 128, 544, 1600)
+
+
+//Wait for a confirmation from the remote device that parameters were successfully negotiated
+onevent EVBTC_SNIFF_CHANGE call HandlerSniff
+waitevent
+
+//Enable sniff subrating parameters
+rc = BtcSniffSubratingEnable(mac$, 5000, 2000, 2000)
+
+//Wait for a confirmation from the remote device that parameters were successfully negotiated
+onevent EVBTC_SNIFF_SUBRATING call HandlerSubrate
+waitevent

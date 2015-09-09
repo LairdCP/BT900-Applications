@@ -12,11 +12,11 @@
 //	smartZ
 //
 //
-//	This app provides for a command line interface to the BT900 devkit over the UART. 
+//	This app provides for a command line interface to the BT900 devkit over the UART.
 //	The commands are designed to mimic the behaviour of BlueZ commands used in Linux.
 //
 //	When you run the app you will get a -------> command prompt to allow you to submit
-//	commands as follows:- 
+//	commands as follows:-
 //
 //
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -145,7 +145,7 @@ dim carCnt						// count variable for number of times '^' entered
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 dim nDiscv : nDiscv = 1			// The device is discoverable by default
 dim nConn : nConn = 1			// The device is connectable by default
-dim nPair : nPair = 1			// The device is pairable by default					
+dim nPair : nPair = 1			// The device is pairable by default
 dim inqtype	: inqtype = 0		// Inquiry Type: 0 General, 1 Limited
 dim inqmode	: inqmode = 2		// Inquiry Mode: 0 for Standard, 1 for with RSSI, 2 for Extended)
 dim inqtpl : inqtpl=4			// Inquiry transmit power level
@@ -242,7 +242,7 @@ endfunc 0
 //==============================================================================
 
 //------------------------------------------------------------------------------
-//** #include the correct library file for the smartBASIC module being used 
+//** #include the correct library file for the smartBASIC module being used
 //------------------------------------------------------------------------------
 #include "lib\smartZ.hcitool.sblib"
 #include "lib\smartZ.gatttool.sblib"
@@ -279,7 +279,7 @@ sub InitBtDevice()
 	AssertResCode(rc)
 	// Set the device to be pairable
 	rc = BtcSetPairable(1)
-	AssertResCode(rc)															
+	AssertResCode(rc)
 	// Set inquiry type to be general
 	rc = BtcInquiryConfig(0, inqtype)
 	AssertResCode(rc)
@@ -300,7 +300,7 @@ sub Initialise()
 	InitBtDevice()
 	// Initialise connection handles
 	InitConnHandles()
-	
+
 	// Display the following lines as soon as the program starts
 	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	print "\n-----------------------\n"

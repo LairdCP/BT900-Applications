@@ -1,0 +1,45 @@
+//Example :: BtcHIDRead.sb
+dim rc
+
+//==============================================================================
+// Called after a pairing attempt
+//==============================================================================
+function HandlerHIDConn(hConnHndl, result) as integer
+    dim s$
+	dim hRprtHndl, nBitLen
+	print "\n --- Connect : ";integer.h' result
+
+	// Write data as soon as we connect
+	s$ = "1"
+	// Get the bit length of the report 
+	nBitLen = (StrLen(s$) * 8)
+	// Create a new HID report
+	rc = HIDReportInit(nBitLen, hRprtHndl)
+	// Add the string to it
+	rc = HIDReportAppendStr(hRprtHndl, 0, nBitLen, s$)
+	// Now write
+	rc = BtcHidWrite(hConnHndl, hRprtHndl)
+	if rc==0 then
+        print "\nHid Write Successful"
+    else
+        print "\nError: "; integer.h'rc
+    endif
+	
+	// Finally destroy the report
+	rc = HIDReportDestroy(hRprtHndl)
+
+endfunc 1
+
+//******************************************************************************
+// Equivalent to main() in C
+//******************************************************************************
+ONEVENT EvHidConn 					CALL HandlerHidConn
+
+'// We must open HID device or HID host before initiating connection
+rc = BtcHidHostOpen()
+'// Set device to be connectable
+rc = BtcSetConnectable(1)
+
+print "\nWaiting for a HID device to connect to us"
+
+waitevent

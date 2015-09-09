@@ -1,0 +1,501 @@
+//******************************************************************************
+// Laird Technologies (c) 2014
+//
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// +++++                                                                      ++
+// +++++  When UwTerminal downloads the app it will store it as a filenname   ++
+// +++++  which consists of all characters up to the first . and excluding it ++
+// +++++                                                                      ++
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//
+// This library file provides commands to control BT Classic operation and should be
+// #included into the file 'cmd.ble.manager.sb' if running on a dual mode module
+// e.g. BT900.
+//
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// Convention : (1) Case sensitive, and commands are presented in alphabetic order
+//              (2) If line ends with \ then it continues on next line. That does
+//                  not mean that it should be sent as multiple lines
+//              (3) Replace anything between ## 
+//              (4) #INTaaaa# means a number in decimal, hex, octal or binary
+//                      format -> 23 == 0x17 == h'17 == o'23 == b'10111
+//                      aaaa is just a description
+//              (5) #HEXaaaa# means a string without delimitors consisting of hex 
+//                      characters only aaaa is just a description
+//              (6) #STRaaaa# means a string without delimitors
+//                      aaaa is just a description
+//              (7) "STRaaaa" means a string which must have the " delimitor
+//                      aaaa is just a description
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// -----------------------------------------------------------------------------
+// btc getfriendlyname
+//    --- bluetooth classic functionality ---
+//    - calls BtcGetFriendlyName$() and prints the returned name
+//
+// -----------------------------------------------------------------------------
+// btc setfriendlyname #STRname#
+//    --- bluetooth classic functionality ---
+//    - calls BtcSetFriendlyName$() with the name #STRname#
+//
+// -----------------------------------------------------------------------------
+// btc discoveryconfig #INTcfgID# #INTval# 
+//    --- bluetooth classic functionality ---
+//    - configre discoverability parameters 
+//
+//     #INTcfgID# 
+//       0    Discoverability Type (0 for General, 1 for Limited)
+//       1    Inquiry Scan Interval 
+//              Units: baseband slots (0.625 msec)
+//              Range: 11.25 msec (0x0012) to 2560 msec (0x1000)
+//              Default: 640ms (0x0400)
+//       2    Inquiry Scan Window 
+//              Units: baseband slots (0.625 msec)
+//              Range: 11.25 msec (0x0012) to 2560 msec (0x1000)
+//              Default: 320ms (0x0200)
+//
+// -----------------------------------------------------------------------------
+// btc setdiscoverable #INTenable# #INTtimeout#
+//    --- bluetooth classic functionality ---
+//    - Set the module discoverable for time #INTtimeout# in seconds or not discoverable
+//
+//    #INTenable# 
+//      0 = Not Discoverable
+//      1 = Discoverable
+//
+// -----------------------------------------------------------------------------
+// btc setconnectable #INTenable#
+//    --- bluetooth classic functionality ---
+//    - Enable or disable connectivity
+//
+//    #INTenable# 
+//      0 = Not Connectable
+//      1 = Connectable
+//
+// -----------------------------------------------------------------------------
+// btc setpairable #INTenable#
+//    --- bluetooth classic functionality ---
+//    - Enable or disable pairability
+//
+//    #INTenable# 
+//      0 = Not Pairable
+//      1 = Pairable
+//
+// -----------------------------------------------------------------------------
+// btc savepairings #INTflag#
+//    --- bluetooth classic functionality ---
+//    - Set whether to save pairing information (Bond) for subsequent incoming
+//      pair requests
+//
+//    - #INTflag# - 0 : Do not store pairing information (Don’t bond)
+//                  1 : Store pairing information (Bond)
+//
+// -----------------------------------------------------------------------------
+// btc pair #HEXaddr6Bytes# #INTflag#
+//    --- bluetooth classic functionality ---
+//    - Pair with device with address #HEXaddr6Bytes# and specify whether to bond
+//      with #INTflag# - 0 : Do not store pairing information (Don’t bond)
+//                       1 : Store pairing information (Bond)
+//                       2 : Use default as specified by 'btc savepairings'
+//
+// -----------------------------------------------------------------------------
+// btc pairresp #INTpairResp#
+//    --- bluetooth classic functionality ---
+//    - Answer the pairing request
+//      with #INTpairResp# - 0 : Decline pair request
+//                           1 : Accept pair request
+//
+// -----------------------------------------------------------------------------
+// btc passkey #INTpasskey#
+//    --- bluetooth classic functionality ---
+//    - Respond to a passkey request
+//      with #INTpasskey# - As the passkey
+//
+// -----------------------------------------------------------------------------
+// btc setoob #STRhash# #STRrand#
+//    --- bluetooth classic functionality ---
+//    - Respond to a OOB data request
+//      with #STRhash# - As the OOB hash (16byte string)
+//      with #STRrand# - As the OOB randomiser (16byte string)
+//
+// -----------------------------------------------------------------------------
+// btc retrieveoob
+//    --- bluetooth classic functionality ---
+//    - Get the OOB data from baseband
+//
+// -----------------------------------------------------------------------------
+// btc iocap #INTiocap#
+//    --- bluetooth classic functionality ---
+//    - Set the local IO capabilities
+//      with #INTiocap# - 0 : NONE
+//                        1 : DISPLAY_YESNO
+//						  2 : KEYBOARD_ONLY
+//						  3 : DISPLAY_ONLY
+//
+// -----------------------------------------------------------------------------
+// btc oobpref #INToobpref#
+//    --- bluetooth classic functionality ---
+//    - Set the local IO capabilities to prefer OOB if available
+//      with #INTiocap# - 0: FALSE
+//						  1: TRUE
+//						  2: ASK ME
+//
+// -----------------------------------------------------------------------------
+// btc oobavailable #INToobavail#
+//    --- bluetooth classic functionality ---
+//    - Respond with OOB data availability
+//      with #INToobavail# - 0: FALSE
+//						  	 1: TRUE
+//
+// -----------------------------------------------------------------------------
+// btc justworks #INTJWConf#
+//    - Security Manager related
+//    - This will result in BtcSecMngrJustWorksConf() being called
+//    - valid values for #INTJWConf# are
+//         0     Pairings works as-is without confirmation
+//         1     Pairings requires confirmation
+//
+// -----------------------------------------------------------------------------
+// btc sendpin #INTpin# 
+//    --- bluetooth classic functionality ---
+//    - Respond to a PIN request with #INTpin# during a pairing procedure
+//
+// -----------------------------------------------------------------------------
+//******************************************************************************
+
+//******************************************************************************
+// Definitions
+//******************************************************************************
+#define EBTCAUTHKEYTYPE_NONE                 0
+#define EBTCAUTHKEYTYPE_PASSKEY				 1
+#define EBTCAUTHKEYTYPE_OOB					 2
+#define EBTCAUTHKEYTYPE_PIN  				 3
+
+#define EBTCIOCAPABILITY_NONE                   0
+#define EBTCIOCAPABILITY_DISPLAY_YESNO          1
+#define EBTCIOCAPABILITY_KEYBOARD_ONLY          2
+#define EBTCIOCAPABILITY_DISPLAY_ONLY           3
+
+
+//******************************************************************************
+// Definitions
+//******************************************************************************
+
+
+//******************************************************************************
+// Global Variable Declarations
+//******************************************************************************
+dim prAddr$ 	//BT address of last device pairing requested from or initiated with
+
+
+
+//******************************************************************************
+// Function and Subroutine definitions
+//******************************************************************************
+
+function ZeroPadInt$(nLength, nInt)
+	dim PadString$, nExtend
+
+	sprint #PadString$, nInt
+	nExtend = nLength-strlen(PadString$)
+
+	while (nExtend > 0)
+		PadString$ = "0" + PadString$
+		nExtend = nExtend - 1
+	endwhile
+
+endfunc PadString$
+
+//-------------------------------------------------------------------------
+//#CMD#//  btc getfriendlyname
+//#CMD#//  btc setfriendlyname #STRname#
+//#CMD#//  btc getclassofdevice
+//#CMD#//  btc setclassofdevice #INTCoD#
+//#CMD#//  btc sendpin #INTpin#
+//#CMD#//  btc savepairings #INTflag#
+//#CMD#//  btc pair #HEXaddr6Bytes# #INTflag#
+//#CMD#//  btc pairresp #INTpairResp#
+//#CMD#//  btc discoveryconfig #INTcfgID# #INTval#
+//#CMD#//  btc setdiscoverable #INTenable# #INTtimeout#
+//#CMD#//  btc setpairable #INTenable#
+//#CMD#//  btc setconnectable #INTenable#
+//#CMD#//  btc passkey #INTval#
+//#CMD#//  btc setoob #STRhash# #STRrand#
+//#CMD#//  btc retrieveoob
+//#CMD#//  btc iocap #INTval#
+//#CMD#//  btc oobpref #INTval#
+//#CMD#//  btc oobavailable #INTval#
+//#CMD#//  btc justworks  #INTJWConf#
+
+//-------------------------------------------------------------------------
+function _btc() 
+    tlen = ExtractStrToken(urtcmd$,tkn$)
+    if tlen == 0 then
+        exitfunc 5
+    endif
+      
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+    if strcmp(tkn$,"getfriendlyname")==0 then       
+        dim nme$
+        rc=BtcGetFriendlyName(nme$)
+        if rc== 0 then
+            print "\n";nme$
+            exitfunc 0
+        else
+            exitfunc rc
+        endif
+    endif
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
+    if strcmp(tkn$,"setfriendlyname")==0 then       
+        rc = ExtractStrTokens(urtcmd$,1,1)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        
+        exitfunc BtcSetFriendlyName(s$[1])
+    endif
+    
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+    if strcmp(tkn$,"getclassofdevice")==0 then       
+        dim nCoD
+        rc=BtcGetClassOfDevice(nCoD)
+        if rc== 0 then
+            print "\n";integer.h'nCoD
+            exitfunc 0
+        else
+            exitfunc rc
+        endif
+    endif
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
+    if strcmp(tkn$,"setclassofdevice")==0 then       
+        rc = ExtractIntTokens(urtcmd$,1,1)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        
+        exitfunc BtcSetClassOfDevice(i[1])
+    endif
+	
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"sendpin")==0 then
+        rc = ExtractStrTokens(urtcmd$,1,1)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        
+        exitfunc BtcSendPINResp(s$[1])
+    endif
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
+    if strcmp(tkn$,"savepairings")==0 then
+        rc = ExtractIntTokens(urtcmd$,1,1)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        
+        exitfunc BtcSavePairings(i[1])
+    endif
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"pair")==0 then
+        rc = ExtractStrTokens(urtcmd$,1,2)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        
+        s$[1] = StrDehexize$(s$[1])
+        exitfunc BtcPair(s$[1], StrValDec(s$[2]))
+    endif
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"pairresp")==0 then
+        rc = ExtractIntTokens(urtcmd$,1,1)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        
+        exitfunc BtcSendPAIRResp(i[1])
+    endif
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"justworks")==0 then
+        //extract 1 (#INTJWConf#) and store starting at i[1]
+        rc = ExtractIntTokens(urtcmd$,1,1)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        exitfunc BtcSecMngrJustWorksConf(i[1])
+    endif
+	
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"passkey")==0 then
+        rc = ExtractIntTokens(urtcmd$,1,1)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        
+        exitfunc BtcSecMngrPassKey(i[1])
+    endif
+	
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"setoob")==0 then
+        rc = ExtractStrTokens(urtcmd$,1,2)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        s$[1] = StrDehexize$(s$[1])
+		s$[2] = StrDehexize$(s$[2])
+        exitfunc BtcSecMngrOobKey(s$[1], s$[2])
+    endif
+	
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"retrieveoob")==0 then
+        rc = BtcSecMngrRetrieveLocalOobKey(s$[1], s$[2])
+		if rc != 0 then
+            exitfunc rc
+        endif
+		print "\nHash: "; StrHexize$(s$[1])
+		print "\nRandomiser: "; StrHexize$(s$[2])	
+		exitfunc rc
+    endif
+	
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"oobpref")==0 then
+        rc = ExtractIntTokens(urtcmd$,1,1)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        
+        exitfunc BtcSecMngrOobPref(i[1])
+    endif
+	
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"oobavailable")==0 then
+        rc = ExtractIntTokens(urtcmd$,1,1)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        
+        exitfunc BtcSecMngrOobAvailable(i[1])
+    endif
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
+    if strcmp(tkn$,"iocap")==0 then
+        rc = ExtractIntTokens(urtcmd$,1,1)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        
+        exitfunc BtcSecMngrIoCap(i[1])
+    endif
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"discoveryconfig")==0 then
+        //extract 2 : (#INTcfgID# #INTval#) and store starting at i[1]
+        rc = ExtractIntTokens(urtcmd$,1,2)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        
+        exitfunc BtcDiscoveryConfig(i[1], i[2])
+    endif
+        
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"setdiscoverable")==0 then
+        //extract 2 : (#INTenable# #INTtimeout#) and store starting at i[1]
+        rc = ExtractIntTokens(urtcmd$,1,2)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        
+        exitfunc BtcSetDiscoverable(i[1], i[2])
+    endif
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"setpairable")==0 then
+        //extract 1 : (#INTenable#) and store starting at i[1]
+        rc = ExtractIntTokens(urtcmd$,1,1)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        
+        exitfunc BtcSetPairable(i[1])
+    endif
+    
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if strcmp(tkn$,"setconnectable")==0 then
+        //extract 1 : (#INTenable#) and store starting at i[1]
+        rc = ExtractIntTokens(urtcmd$,1,1)
+        if rc != 0 then
+            exitfunc rc
+        endif
+        
+        exitfunc BtcSetConnectable(i[1])
+    endif
+    
+endfunc 5
+
+//******************************************************************************
+// Handler definitions
+//******************************************************************************
+//==============================================================================
+// This handler is called when there is an discoverability timeout
+//==============================================================================
+function HandlerBtcDiscTimOut() as integer
+    print "\n --- No longer discoverable"
+    UartRsp(UARTRESP_OK_PR)
+endfunc 1
+
+//==============================================================================
+// Called when there is a pairing request from another device
+//==============================================================================
+function HandlerAuthReq(reqType) 
+    rc=BtcGetPairRequestBDAddr(prAddr$)
+	if rc==0 then
+		if reqType == EBTCAUTHKEYTYPE_NONE then
+			print "\nPair Req: "; StrHexize$(prAddr$);pr$
+		elseif reqType == EBTCAUTHKEYTYPE_PASSKEY then
+			print "\nPasskey Req: "; StrHexize$(prAddr$);pr$
+		elseif reqType == EBTCAUTHKEYTYPE_OOB then
+			print "\nOOB Req: "; StrHexize$(prAddr$);pr$
+		elseif reqtype == EBTCAUTHKEYTYPE_PIN then
+			print "\nPIN Req: "; StrHexize$(prAddr$);pr$
+		endif	
+	else
+        AssertResCode(rc,2277)
+    endif
+	
+endfunc 1
+
+//==============================================================================
+// Called when there is a OOB data availability request
+//==============================================================================
+function HandlerOOBAvail() 
+    rc=BtcGetPairRequestBDAddr(prAddr$)	
+	print "\nOOB data available for: "; StrHexize$(prAddr$);" ?";pr$
+endfunc 1
+
+//==============================================================================
+// Called when there is a pairing request from another device
+//==============================================================================
+function HandlerPasskey(passkey) 
+	print "\nPasskey: "; ZeroPadInt$(6, passkey); pr$	
+endfunc 1
+
+//==============================================================================
+// Called after a pairing attempt
+//==============================================================================
+function HandlerPairRes(res)
+    print "\nPair Result: ";res; " "; StrHexize$(prAddr$);pr$
+endfunc 1
+
+//******************************************************************************
+// Equivalent to main() in C
+//******************************************************************************
+OnEvent  EVBTC_DISCOV_TIMEOUT     call HandlerBtcDiscTimOut  
+
+OnEvent  EVBTC_OOB_AVAILABLE_REQUEST call HandlerOOBAvail
+OnEvent  EVBTC_AUTHREQ			  call HandlerAuthReq
+OnEvent  EVBTC_PASSKEY			  call HandlerPasskey
+OnEvent  EVBTC_PAIR_RESULT        call HandlerPairRes

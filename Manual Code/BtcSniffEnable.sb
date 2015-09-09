@@ -1,0 +1,53 @@
+//Example :: BtcSniffEnable.sb
+dim rc, i
+
+'//BT address of device to connect to. You will have to change this
+dim mac$
+mac$ = "\00\16\A4\09\3A\BF"
+
+//Array with handles for spp connections 
+dim hSpp
+
+#define LINKMODE_ACTIVE (0)
+#define LINKMODE_SNIFF  (2)
+
+//Handler function called when sniff mode has been enabled
+function HandlerSniff(nStatus, nMode) as integer
+    dim bdaddr$, link_mode, interval
+    
+    if((nStatus==0) && (nMode == LINKMODE_SNIFF))then
+        // Successful mode change - Query the link
+        rc = BtcQuerySniffChange(bdaddr$, link_mode, interval)
+        print "\nSniff mode enabled: "
+        print strhexize$(bdaddr$); " Interval "; interval
+    endif
+endfunc 0
+
+//Handler function called when SPP is connected
+function HandlerSppConn(portHndl, result) as integer
+    hSpp = portHndl
+    print "\n --- Connect : ",hSpp, StrHexize$(mac$)
+	print "\nResult: ",integer.h' result
+endfunc 0
+
+
+rc=BtcSetConnectable(1)
+rc=BtcSetDiscoverable(1,60)
+
+
+//Make spp connection 
+rc=BtcSppConnect(mac$)
+print "\nConnecting to device ";StrHexize$(mac$)
+
+onevent EvSppConn call HandlerSppConn
+waitevent
+
+//Enable sniff parameters with the active bluetooth link
+//Values are defined in timeslots
+print "\nEnabling sniff mode with ";StrHexize$(mac$)
+rc = BtcSniffEnable(mac$, 80, 128, 544, 1600)
+
+
+//Wait for a confirmation from the remote device that parameters were successfully negotiated
+onevent EVBTC_SNIFF_CHANGE call HandlerSniff
+waitevent

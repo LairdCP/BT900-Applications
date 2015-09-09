@@ -1,0 +1,37 @@
+//Example :: EvHIDConn.sb
+dim rc
+
+'//BT address of device to connect to. You will have to change this
+dim mac$
+mac$ = "\00\11\22\33\44\55"
+
+
+//==============================================================================
+// Called after a pairing attempt
+//==============================================================================
+function HandlerHIDConn(portHndl, result) as integer
+	if result == 0 then
+		print "\n-- Connection Successful"
+	elseif result == 1 then
+		print "\n-- Connection Timeout"
+	elseif result == 2 then
+		print "\n-- Connection Refused"
+	else
+		print "\n-- Unknown Error"
+	endif
+endfunc 1
+
+//******************************************************************************
+// Equivalent to main() in C
+//******************************************************************************
+ONEVENT EvHIDConn 			CALL HandlerHidConn
+
+'// We must open HID device or HID host before initiating connection
+rc = BtcHIDHostOpen()
+
+'//make hid connection 
+rc=BtcHIDConnect(mac$)
+
+print "\nConnecting to device ";StrHexize$(mac$)
+
+waitevent

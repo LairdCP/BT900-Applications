@@ -12,18 +12,18 @@
  //                           allow communication to that server from the UART.
  //
  //******************************************************************************
-// This app provides for a command interface over the uart for testing VSP and 
+// This app provides for a command interface over the uart for testing VSP and
 // the protocol is as follows:-
 //
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Convention : (1) Case sensitive, and commands are presented in alphabetic order
 //              (2) If line ends with \ then it continues on next line. That does
 //                  not mean that it should be sent as multiple lines
-//              (3) Replace anything between ## 
+//              (3) Replace anything between ##
 //              (4) #INTaaaa# means a number in decimal, hex, octal or binary
 //                      format -> 23 == 0x17 == h'17 == o'23 == b'10111
 //                      aaaa is just a description
-//              (5) #HEXaaaa# means a string without delimitors consisting of hex 
+//              (5) #HEXaaaa# means a string without delimitors consisting of hex
 //                      characters only aaaa is just a description
 //              (6) #STRaaaa# means a string without delimitors
 //                      aaaa is just a description
@@ -40,19 +40,19 @@
 // connect #HEXbdAddr7bytes# OR
 //    - Connect to device with given BT address
 //
-//    -> if an invalid or null BT address is given, the default mac address 
+//    -> if an invalid or null BT address is given, the default mac address
 //      (see #define BTAddr) will be used.
 //
-//    -> Upon successful connection the application enters bridge mode. Any data 
+//    -> Upon successful connection the application enters bridge mode. Any data
 //       arriving at the UART is sent over the VSP connection.
 //
 //    -> Note: The device you are connecting to must be running a VSP server.
 //
 // ::Note::
-//    - Upon connection, the module will automatically switch to bridge mode. 
-//      Any data arriving at the VSP port will be sent to the UART and vice versa. 
+//    - Upon connection, the module will automatically switch to bridge mode.
+//      Any data arriving at the VSP port will be sent to the UART and vice versa.
 //
-//      -> To switch back to command mode so the module can accept commands again, assert the 
+//      -> To switch back to command mode so the module can accept commands again, assert the
 //         nAutorun pin. This can be done by unticking DTR in UwTerminal. Switch back to bridge mode
 //         by deasserting the nAutorun pin - ticking DTR in UwTerminal.
 //
@@ -72,10 +72,10 @@
 // -----------------------------------------------------------------------------
 // stop
 //    - Stop scanning
-// 
+//
 // -----------------------------------------------------------------------------
 // ato OR bridge
-//    - enter bridge mode. Any data arriving at the UART is sent over the BLE 
+//    - enter bridge mode. Any data arriving at the UART is sent over the BLE
 //      connection.
 //
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -85,7 +85,7 @@
 // -----------------------------------------------------------------------------
 // misc i  set #INTidx# #INTval#
 //    - i[#INTidx#] = #INTval#
-//    - #INTidx# will be checked for valid index 
+//    - #INTidx# will be checked for valid index
 //
 // -----------------------------------------------------------------------------
 // misc s$ clearall
@@ -94,12 +94,12 @@
 // -----------------------------------------------------------------------------
 // misc s$ set #INTidx# #STRescapedvalue#
 //    - s$[#INTidx#] = #STRescapedvalue#
-//    - #INTidx# will be checked for valid index 
+//    - #INTidx# will be checked for valid index
 //
 // -----------------------------------------------------------------------------
 // misc s$ sethex #INTidx# #HEXdigitsvalue#
 //    - s$[#INTidx#] = #HEXdigitsvalue#
-//    - #INTidx# will be checked for valid index 
+//    - #INTidx# will be checked for valid index
 //
 // -----------------------------------------------------------------------------
 // quit OR exit
@@ -116,11 +116,11 @@
 //
 // ::Note::
 //      - Upon connection, the module will automatically switch to bridge mode. Any data arriving
-//        at the VSP port will be sent to the UART and vice versa. 
+//        at the VSP port will be sent to the UART and vice versa.
 //
-//        -> To switch back to command mode so the module can accept commands again, assert the 
+//        -> To switch back to command mode so the module can accept commands again, assert the
 //           nAutorun pin. This can be done by unticking DTR in UwTerminal. Switch back to bridge mode
-//           by deasserting the nAutorun pin - ticking DTR in UwTerminal. This can also be done by 
+//           by deasserting the nAutorun pin - ticking DTR in UwTerminal. This can also be done by
 //           pressing the caret "^" key 3 times with LineMode disabled.
 //
 //        -> Make sure DIP Switch 2 on CON12 is in the ON position if using a DVK kit.
@@ -144,7 +144,7 @@
 #define APP_VERSION                        "1.0"
         // size of i[]
 #define NUM_OF_I_PARAMS                    (5)
-        // size of s$[]     
+        // size of s$[]
 #define NUM_OF_S_PARAMS                    (5)
 
 #define DISCON_TIMER                       0       //if this is changed, make sure to change the EvTmrX statement
@@ -163,7 +163,7 @@
 #define MOUUID        "\56\9a\20\02\b8\7f\49\0c\92\cb\11\ba\5e\a5\16\7c"  //Modem out UUID
 #define RXUUID        "\56\9a\20\01\b8\7f\49\0c\92\cb\11\ba\5e\a5\16\7c"  //Receive VSP UUID
 #define TXUUID        "\56\9a\20\00\b8\7f\49\0c\92\cb\11\ba\5e\a5\16\7c"  //Transmit VSP UUID
-#define BT900_DEV_ID  0x42370900 
+#define BT900_DEV_ID  0x42370900
 #define BL620_DEV_ID  0x424C0620
 
 //******************************************************************************
@@ -226,7 +226,7 @@ ENDSUB
 //-------------------------------------------------------------------------
 //#CMD#//  ath OR disconnect
 //-------------------------------------------------------------------------
-function _disconnect() 
+function _disconnect()
 rc = BLEDISCONNECT(BleHandle)
     if rc!=0 then
         exitfunc rc
@@ -238,17 +238,17 @@ endfunc -3  //dont give response to user
 // - When the carCnt value is 3, end func with 1 to switch to command mode
 // - Think of it like a boolean value
 //-------------------------------------------------------------------------
-function SwitchToCmd() 
+function SwitchToCmd()
     '//if ^ was sent after the delay time (valid) increment the counter
     if TimerRunning(CARET_TIMER)==0 then
         carCnt = carCnt + 1
         if carCnt<3 then
-            TimerStart(CARET_TIMER,CARET_TIMER_DUR_MS,0)                       
+            TimerStart(CARET_TIMER,CARET_TIMER_DUR_MS,0)
         else
             TimerCancel(CARET_TIMER)
             exitfunc 1
         endif
-    else 
+    else
         //invalid press
         print "\n"
         TimerCancel(CARET_TIMER)
@@ -264,10 +264,10 @@ FUNCTION HndlrUartRxVSP()
     IF BufferState == 0 && ModemStat == 1 then
         //get number of bytes waiting in actual Uart RX Buffer before reading
         bytesWaiting = UartInfo(3)
-  
+
         //read data that has arrived through via the UART
         uLen = UartReadN(u$, 20)
-        
+
         //get the most recently received data
         newData$ = Right$(u$, bytesWaiting)
 
@@ -278,7 +278,7 @@ FUNCTION HndlrUartRxVSP()
                     print "\n"
                     //switch to command mode
                     rc = SendMsgApp(0,CMD_MODE)
-                endif           
+                endif
             else
                 rc = BLEGATTCWRITE(BleHandle, RXHandle, u$)
                 BufferState = 1
@@ -369,7 +369,7 @@ FUNCTION HndlrAttrWrite(cHndl,aHndl,nSts)
         AssertRC(rc, 349)
         exitfunc 1
     endif
-    
+
     IF (Mode == 7) THEN
         //Enable TX notIFications
         Mode = 8
@@ -544,10 +544,10 @@ ENDFUNC 1
 FUNCTION HndlrBleMsg(nMsgId, nCtx)
     //clear the caret count
     carCnt = 0
-    
+
     IF (nMsgId == 0) then
         //Connected!
-        
+
         //Opening the GATT client only whe connected to save memory
         rc = BleGattcOpen(256, 0)
         AssertRC(rc, 0)
@@ -560,7 +560,7 @@ FUNCTION HndlrBleMsg(nMsgId, nCtx)
         AssertRC(rc, 2)
         PRINT "Connected!\n"
         InConnection = 1
-        
+
         // encrypt the connection if previously bonded with this device
         dim addr$, fAsCentral, info, rollingAge, rollingCount
         rc = BleGetAddrFromConnHandle(nCtx, addr$)
@@ -569,14 +569,14 @@ FUNCTION HndlrBleMsg(nMsgId, nCtx)
                 rc = BleEncryptConnection(nCtx, 7, 1)   //might not need this
             endif
         endif
-        
+
     ELSEIF (nMsgId == 1) then
         //Disconnected!
         PRINT "\nDisconnected!\n"
         InConnection = 0
         BleGattcClose()
         rc = SendMsgApp(0,CMD_MODE)
-    
+
     elseif (nMsgId == 10) then
         //start process of writing characteristics and descriptors from the beginning
         Mode = 6
@@ -586,7 +586,7 @@ ENDFUNC 1
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-function ClearS() 
+function ClearS()
   dim j
   for j = 0 to (NUM_OF_S_PARAMS-1)
     s$[j]=""
@@ -613,7 +613,7 @@ sub UartRsp(rsp as integer)
         print ok$
     elseif rsp == -4 then
         print uc$;pr$
-    elseif rsp > 0 then 
+    elseif rsp > 0 then
         print er$;integer.h' rsp;pr$
     endif
 endsub
@@ -647,7 +647,7 @@ endfunc 0
 //-------------------------------------------------------------------------
 //#CMD#//  ato OR bridge
 //-------------------------------------------------------------------------
-sub _bridge() 
+sub _bridge()
     TimerCancel(CARET_TIMER)
     carCnt = 0
     rc = SendMsgApp(0,BRIDGE_VSP_MODE)
@@ -656,7 +656,7 @@ endsub
 //-------------------------------------------------------------------------
 //#CMD#//  at+bls OR scan
 //-------------------------------------------------------------------------
-function _scan()            
+function _scan()
     rc = BLESCANSTART(SCAN_TMT, 0)
     if rc!=0 then
         exitfunc rc
@@ -666,19 +666,19 @@ endfunc -1      //dont give response to user
 //-------------------------------------------------------------------------
 //#CMD#//  atd #HEXbdAddr7bytes# OR connect #HEXbdAddr7bytes#
 //-------------------------------------------------------------------------
-function _connect() 
+function _connect()
     if InConnection == 1 then
         print "\nALREADY CONNECTED"
         exitfunc -2
     endif
-    
+
     rc = ExtractStrTokens(urtcmd$,1,1)
-    
+
     //use #defined/stored mac address if none given
     if rc!=0 then
         s$[1] = BTAddr
     endif
-    
+
     s$[1] = StrDehexize$(s$[1])
 
     //Stop scanning in case
@@ -687,7 +687,7 @@ function _connect()
     //Connect to target device
     rc = BLECONNECT(s$[1], 5000, 7500, 30000, 500000)
 
-    if rc!=0 then  
+    if rc!=0 then
         exitfunc rc
     endif
 endfunc -1
@@ -695,17 +695,17 @@ endfunc -1
 //-------------------------------------------------------------------------
 //#CMD#//  at+btd #HEXbdAddr7bytes#
 //-------------------------------------------------------------------------
-function _delete()     
+function _delete()
     rc = ExtractStrTokens(urtcmd$,1,1)
 
     if rc!=0 then
         exitfunc -2
     endif
-    
+
     s$[1] = StrDehexize$(s$[1])
 
     rc = BleBondingEraseKey(s$[1])
-    if rc!=0 then  
+    if rc!=0 then
         exitfunc rc
     endif
 endfunc 0
@@ -714,15 +714,15 @@ endfunc 0
 // #CMD#//  at+bti
 // #CMD#//  at+btd #HEXbdAddr7bytes#
 //------------------------------------------------------------------------------
-Function _at() 
+Function _at()
     StrShiftLeft(urtcmd$,1)              //remove the '+'
-    tlen = ExtractStrToken(urtcmd$,tkn$) 
+    tlen = ExtractStrToken(urtcmd$,tkn$)
     if tlen > 0 then
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        if strcmp(tkn$,"btd")==0 then    
-            exitfunc _delete()            
+        if strcmp(tkn$,"btd")==0 then
+            exitfunc _delete()
         //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        elseif strcmp(tkn$,"bls")==0 then    
+        elseif strcmp(tkn$,"bls")==0 then
             exitfunc _scan()
         endif
     endif
@@ -735,7 +735,7 @@ endfunc -4  //print 'UNKNOWN COMMAND' if incorrect command
 //#CMD#//  misc s$ set #INTidx# #STRescapedvalue#
 //#CMD#//  misc s$ sethex #INTidx# #HEXdigitsvalue#
 //------------------------------------------------------------------------------
-function _Misc()  
+function _Misc()
   tlen = ExtractStrToken(urtcmd$,tkn$)
   if tlen == 0 then
     exitfunc 5
@@ -749,7 +749,7 @@ function _Misc()
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if strcmp(tkn$,"clearall")==0 then
       exitfunc ClearS()
-    endif  
+    endif
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if strcmp(tkn$,"set")==0 then
       //extract 1 (#INTidx#) and store starting at i[1]
@@ -757,7 +757,7 @@ function _Misc()
       if rc != 0 then
         exitfunc rc
       endif
-      if (i[1] < 0) || (i[1] >= NUM_OF_S_PARAMS) then 
+      if (i[1] < 0) || (i[1] >= NUM_OF_S_PARAMS) then
         exitfunc 6
       endif
       //extract 1 (#STRescapedvalue#) and store starting at s$[1]
@@ -767,7 +767,7 @@ function _Misc()
       endif
       StrDeEscape(s$[i[1]])
       exitfunc 0
-    endif  
+    endif
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if strcmp(tkn$,"sethex")==0 then
       //extract 1 (#INTidx#) and store starting at i[1]
@@ -775,7 +775,7 @@ function _Misc()
       if rc != 0 then
         exitfunc rc
       endif
-      if (i[1] < 0) || (i[1] >= NUM_OF_S_PARAMS) then 
+      if (i[1] < 0) || (i[1] >= NUM_OF_S_PARAMS) then
         exitfunc 6
       endif
       //extract 1 (#STRescapedvalue#) and store starting at s$[1]
@@ -785,7 +785,7 @@ function _Misc()
       endif
       StrDeEscape(s$[i[1]])
       exitfunc 0
-    endif  
+    endif
   endif
   //=================================================
   if strcmp(tkn$,"i")==0 then
@@ -796,7 +796,7 @@ function _Misc()
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if strcmp(tkn$,"clearall")==0 then
       exitfunc ClearI()
-    endif  
+    endif
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if strcmp(tkn$,"set")==0 then
       dim idx
@@ -804,7 +804,7 @@ function _Misc()
       if tlen == 0 then
         exitfunc 5
       endif
-      if (idx < 0) || (idx >= NUM_OF_I_PARAMS) then 
+      if (idx < 0) || (idx >= NUM_OF_I_PARAMS) then
         exitfunc 6
       endif
       tlen = ExtractIntToken(urtcmd$,i[idx])
@@ -812,7 +812,7 @@ function _Misc()
         exitfunc 5
       endif
       exitfunc 0
-    endif  
+    endif
   endif
 endfunc 5
 
@@ -820,7 +820,7 @@ endfunc 5
 // This handler is called when there is an scan timeout
 //------------------------------------------------------------------------------
 function HndlrScanTO() as integer
-    UartRsp(0)   
+    UartRsp(0)
 endfunc 1
 
 //------------------------------------------------------------------------------
@@ -828,34 +828,34 @@ endfunc 1
 function OnUartCmd() as integer
     rc = -2 //assume there is no error
     tlen = ExtractStrToken(urtcmd$,tkn$) //get first token
-    if tlen > 0 then  
-            
-        if strcmp(tkn$,"at")==0 then    
+    if tlen > 0 then
+
+        if strcmp(tkn$,"at")==0 then
             rc = _at()
 
-        elseif strcmp(tkn$,"atd")==0 || strcmp(tkn$,"connect")==0 then    
+        elseif strcmp(tkn$,"atd")==0 || strcmp(tkn$,"connect")==0 then
             rc = _connect()
 
         elseif StrCmp(tkn$,"ato")==0 || StrCmp(tkn$,"bridge")==0 then
             _bridge()
             rc = -1       //don't give response to user
-            
-        elseif strcmp(tkn$,"scan")==0  then    
+
+        elseif strcmp(tkn$,"scan")==0  then
             rc = _scan()
-            
+
         elseif StrCmp(tkn$,"ato")==0 || StrCmp(tkn$,"bridge")==0 then
             rc = SendMsgApp(0,BRIDGE_VSP_MODE)
             rc = -1       //don't give response to user
-            
+
         elseif StrCmp(tkn$,"ath")==0 || StrCmp(tkn$,"disconnect")==0 then
             rc = _disconnect()
-    
+
         elseif strcmp(tkn$,"misc")==0 then
             rc = _misc()
-            
+
         elseif strcmp(tkn$,"stop")==0 then
             rc = BleScanStop()
-    
+
         elseif strcmp(tkn$,"quit")==0 || strcmp(tkn$,"exit")==0 then
             if (InConnection == 1) then
                 //Disconnect
@@ -868,7 +868,7 @@ function OnUartCmd() as integer
             s$[1] = SysInfo$(4)
             print "\n";StrHexize$(s$[1])
 
-        endif  
+        endif
     endif
     // send a response back to the user
     UartRsp(rc)
@@ -915,7 +915,7 @@ endfunc 1
 //------------------------------------------------------------------------------
 function HndlrScanResp()
     DIM periphAddr$, advData$, nDiscarded, nRssi, nme$
-    
+
     '//Read all cached advert reports
     rc=BleScanGetAdvReport(periphAddr$, advData$, nDiscarded, nRssi)
     WHILE (rc == 0)
@@ -930,11 +930,11 @@ endfunc 1
 //------------------------------------------------------------------------------
 function HndlrGpioChan0()
     dim i : i = GpioRead(22)
-    
+
     '//if DTR unticked
     if i == 1 then
         TimerStart(DISCON_TIMER, DISCON_TIMER_DUR_MS, 0)
-    
+
     '//DTR ticked -> switch to command mode
     elseif TimerRunning(DISCON_TIMER)!=0 then
         TimerCancel(DISCON_TIMER)

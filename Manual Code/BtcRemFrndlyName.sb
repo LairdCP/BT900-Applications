@@ -1,0 +1,65 @@
+//Example :: BtcQueryRemoteFriendlyName.sb
+dim rc
+dim addr$[10]
+dim nIndex : nIndex = 0
+
+//==============================================================================
+// This handler is called when there is an inquiry report waiting to be read
+// Algorithm will prevent display of data from the same peer consecutively
+//==============================================================================
+function HandlerInqResp(respType) as integer
+    dim ad$,dta$,ndx,rsi
+    rc = BtcInquiryGetReport(ad$,dta$,ndx,rsi)
+  
+    //load the array with the devices
+	if (nIndex < 10) then
+		addr$[nIndex] = ad$
+		nIndex = nIndex + 1
+	endif
+endfunc 1
+
+
+function HandlerBtcInqTimOut() as integer
+	dim nContinue
+	// Start polling for names now
+	nIndex = 0
+	
+	if (StrLen(addr$[nIndex]) == 6) then
+		rc = BtcQueryRemoteFriendlyName(addr$[nIndex])
+		nContinue = 1
+	else
+		nContinue = 0
+	endif
+endfunc nContinue
+
+function HandlerRemoteName(nStatus) as integer
+	//print "\nRemote name got ";nStatus; " "; StrHexize$(addr$[nIndex])
+
+	dim ad$, tname$, stat, nContinue
+	// is nStatus valid?
+	if (nStatus == 0) then
+		rc = BtcGetRemoteFriendlyName(tname$, ad$, stat)
+	endif
+	
+	print "\nAddress: "; StrHexize$(addr$[nIndex]); " Name: ";tname$
+	
+	nIndex = nIndex + 1
+	if (nIndex < 10) & (StrLen(addr$[nIndex]) == 6) then
+		rc = BtcQueryRemoteFriendlyName(addr$[nIndex])
+		nContinue = 1
+	else
+		nCOntinue = 0
+	endif 
+	
+endfunc nContinue
+
+
+OnEvent  EVINQRESP              call HandlerInqResp
+OnEvent  EVBTC_INQUIRY_TIMEOUT  call HandlerBtcInqTimOut
+OnEvent  EVBTC_REMOTENAME_RECEIVED call HandlerRemoteName
+
+rc = BtcInquiryConfig(1,0)      //standard inquiry mode
+rc = BtcInquiryConfig(2,10)     //max 10 devices to return
+rc = BtcInquiryStart(10)
+
+WaitEvent
