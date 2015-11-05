@@ -651,21 +651,37 @@ endfunc 1
 //==============================================================================
 // Called when there is a pairing request from another device
 //==============================================================================
-function HandlerPairReq()
+function HandlerPasskey(passkey)
 
-	dim s$
-    rc=BtcGetPAIRRequestBDAddr(s$)
-	rc = BtcSendPAIRResp(1)
-	AssertResCode(rc)
+	print "\nPasskey: ";passkey;"\n"
+	print pr$
 
 endfunc 1
 
 //==============================================================================
-// Called on a pin request from another device
+// Called after a pairing attempt
 //==============================================================================
-function HandlerPINReq()
+function HandlerAuthReq(reqType)
 
-	print "\nPIN feature will be added in future versions\n";pr$
+	AuthType = reqType
+	if AuthType == EBTCAUTHKEYTYPE_NONE then
+			print "\nPair wih device (y/n)? "
+
+	elseif AuthType == EBTCAUTHKEYTYPE_PASSKEY then
+			print "\nEnter passkey : "
+
+	elseif reqType == EBTCAUTHKEYTYPE_OOB then
+			print "OOB pairing will be added in future versions\n"
+			exitfunc 1
+
+	elseif AuthType == EBTCAUTHKEYTYPE_PIN then
+			print "\nEnter PIN : "
+
+	endif
+
+	// Switch to Authentication mode as we are expecting user input
+	rc=SendMsgApp(0,AUTH_MODE)
+	AssertResCode(rc)
 
 endfunc 1
 
@@ -757,6 +773,53 @@ function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as intege
 
 endfunc 1
 
+//==============================================================================
+// This handler is called when we expect input by the user during a pairing process
+//==============================================================================
+function HandlerUartAuth() as integer
+
+	// Upon gettting the carriage return send the (y/n), passkey, or PIN
+
+	dim nMatch
+
+	nMatch=UartReadMatch(stRsp$,13)
+	if nMatch!=0 then
+		//CR exists in the input buffer
+		urtcmd$ = strsplitleft$(stRsp$, nMatch)
+		tlen = ExtractStrToken(urtcmd$,tkn$)
+		if AuthType == EBTCAUTHKEYTYPE_NONE then
+			// If the user has entered (y), then pair
+			if strcmp(tkn$,"y")==0 then
+				rc = BtcSendPAIRResp(1)
+				AssertResCode(rc)
+			else
+				rc = BtcSendPAIRResp(0)
+				AssertResCode(rc)
+			endif
+
+		elseif AuthType == EBTCAUTHKEYTYPE_PASSKEY then
+			// Send the extracted token as PASSKEY
+			dim nPasskey
+			tlen = ExtractIntToken(tkn$,nPasskey)
+			rc = BtcSecMngrPassKey(nPassKey)
+			AssertResCode(rc)
+
+		elseif AuthType == EBTCAUTHKEYTYPE_PIN then
+			// Send the extracted token as PIN
+			rc = BtcSendPINResp(tkn$)
+			AssertResCode(rc)
+
+		endif
+		print pr$
+
+		// User input has been entered. Go back to normal mode
+		rc = SendMsgApp(0, NORMAL_MODE)
+		AssertResCode(rc)
+
+	endif
+
+endfunc 1
+
 //------------------------------------------------------------------------------
 // Enable synchronous event handlers
 //------------------------------------------------------------------------------
@@ -766,9 +829,9 @@ OnEvent	EVBTC_INQUIRY_TIMEOUT		call HandlerBtcInqTimOut
 OnEvent EVBTC_DISCOV_TIMEOUT		call HandlerBtcDiscTimOut
 
 // hcitool related events (BTC)
-OnEvent  EVBTC_PAIR_REQUEST       	call HandlerPairReq
-OnEvent  EVBTC_PIN_REQUEST        	call HandlerPinReq
 OnEvent  EVBTC_PAIR_RESULT        	call HandlerPairRes
+OnEvent  EVBTC_AUTHREQ			  	call HandlerAuthReq
+OnEvent  EVBTC_PASSKEY			  	call HandlerPasskey
 
 // hcitool related events (BLE)
 OnEvent EVBLE_ADV_REPORT			call HandlerAdvRpt

@@ -59,8 +59,10 @@ sub _hciCfgHelp()
 	print "	inqtpl	[level]		Get/Set inquiry transmit power level\n"
 	print "	inqmode	[mode]		Get/Set inquiry mode\n"
 	print "	inqtype	[type]		Get/Set inquiry scan type\n"
+	print "	iocap		<iocap>		Get/Set IO capability\n"
 	print "	putkey	<bdaddr>		Store link key on the device\n"
 	print "	delkey	<bdaddr>		Delete link key from the device\n"
+	print "	oobdata				Display local OOB data\n"
 	print "	version				Display version information\n"
 	print "	leadv  				Enable LE advertising\n"
 	print "	noleadv				Disable LE advertising\n"
@@ -228,6 +230,42 @@ sub _hciCfg()
 			endif
 
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		elseif strcmp(tkn$, "iocap")==0 then
+			if ExtractStrToken(s$, tkn$) == 0  then
+				// Get the ssp mode
+				print "IO capability: "
+				if iocap == IOCAP_JUSTWORKS then
+					print "Just Works\n"
+				elseif iocap == IOCAP_YESNO then
+					print "YES/NO\n"
+				elseif iocap == IOCAP_KEYBOARD then
+					print "Keyboard\n"
+				elseif iocap == IOCAP_DISPLAY then
+					print "Display\n"
+				else
+					print "Invalid IO capability detected. Please set iocap type to 0, 1, 2, or 3\n"
+				endif
+			else
+				val = StrValDec(tkn$)
+				if val >= 0 && val < 4 then
+					iocap = val
+					if iocap == 0 then
+						// Set JustWorks to 0 so that we pairing happens automagically
+						rc = BtcSecMngrJustWorksConf(0)
+						AssertResCode(rc)
+					else
+						// Set JustWorks to 1 so that we get an authentication event
+						rc = BtcSecMngrJustWorksConf(1)
+						AssertResCode(rc)
+					endif
+					rc = BtcSecMngrIoCap(val)
+					AssertResCode(rc)
+				else
+					print "Invalid IO capability. Valid values are 0, 1, 2, and 3\n"
+				endif
+			endif
+
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$, "putkey")==0 then
 			// store link key on the device
 			if ExtractStrToken(s$, tkn$) == 0 then
@@ -254,6 +292,15 @@ sub _hciCfg()
 					print "Link key erased\n"
 				endif
 			endif
+
+		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+		elseif strcmp(tkn$, "oobdata")==0 then
+			// Display local oob data
+			dim oobHash$, oobRand$
+			rc = BtcSecMngrRetrieveLocalOobKey(oobHash$, oobRand$)
+			AssertResCode(rc)
+			print "OOB Hash:   ";StrHexize$(oobHash$);"\n"
+			print "Randomizer: ";StrHexize$(oobRand$);"\n"
 
 		//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		elseif strcmp(tkn$, "leadv")==0 then

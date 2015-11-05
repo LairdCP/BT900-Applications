@@ -112,10 +112,23 @@
 // SMARTZ COMMAND IDs: RFCOMM
 #define SMARTZ_COMMAND_RFCOMM_CONNECT					31
 
+// AUTHENTICATION EVENT TYPES
+#define EBTCAUTHKEYTYPE_NONE                 			0
+#define EBTCAUTHKEYTYPE_PASSKEY				 			1
+#define EBTCAUTHKEYTYPE_OOB					 			2
+#define EBTCAUTHKEYTYPE_PIN  				 			3
+
+// IO CAPABILITIES
+#define IOCAP_JUSTWORKS			             			0
+#define IOCAP_YESNO							 			1
+#define IOCAP_KEYBOARD						 			2
+#define IOCAP_DISPLAY		  				 			3
+
 // APP RUN MODES
 #define NORMAL_MODE                                 	0
 #define RFCOMM_MODE                          			1
 #define GATTTOOL_LISTEN									2
+#define AUTH_MODE										3
 
 //******************************************************************************
 // Global Variable Declarations
@@ -135,6 +148,11 @@ dim name$						// local device name
 dim addr$						// address of device being connected to
 dim command : command = 0		// Currently active smartZ command
 
+
+// global variables used for hcitool command
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+dim AuthType
+
 // global variables used for rfcomm command
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 dim hcSpp						// handle of connection to use for VSP service
@@ -150,8 +168,9 @@ dim inqtype	: inqtype = 0		// Inquiry Type: 0 General, 1 Limited
 dim inqmode	: inqmode = 2		// Inquiry Mode: 0 for Standard, 1 for with RSSI, 2 for Extended)
 dim inqtpl : inqtpl=4			// Inquiry transmit power level
 dim letpl : letpl = 4			// LE Tx Power level in dBm
-dim mjVersion : mjVersion=1		// Major version number
-dim mnVersion : mnVersion=4		// Minor version number
+dim iocap : iocap = 0			// IO Capability: 0 JustWorks, 1 YES/NO, 2 KEYBOARD, 3 DISPLAY
+dim mjVersion : mjVersion=2		// Major version number
+dim mnVersion : mnVersion=0		// Minor version number
 
 
 // globale variables used for gatttool command
@@ -288,6 +307,13 @@ sub InitBtDevice()
 	AssertResCode(rc)
 	// Open Spp
 	rc = btcSppOpen(nHandle)
+	AssertResCode(rc)
+	// Set the IO capability to Just works
+	rc = BtcSecMngrIoCap(0)
+	AssertResCode(rc)
+	// Set the JustWorks configuration to 0 so that pairing works by itself
+	rc = BtcSecMngrJustWorksConf(0)
+	AssertResCode(rc)
 
 endsub
 //==============================================================================
@@ -402,10 +428,14 @@ function SetMode(msgID, cmd) as integer
 		OnEvent	EVUARTRX					call HandlerUartRxSpp
 
 	elseif cmd == GATTTOOL_LISTEN then
-		// if rfcomm mode, UART data will be discarded as terminal
+		// if gatttool mode, UART data will be discarded as terminal
 		// is used for displaying notifications/indications
 		print "\nListening for notifications/indications. For hangup, type \22stop\22\n"
 		OnEvent	EVUARTRX					call HandlerUartRxLsn
+
+	elseif cmd == AUTH_MODE then
+		// Now wait for UART event
+		OnEvent	EVUARTRX					call HandlerUartAuth
 
 	endif
 
