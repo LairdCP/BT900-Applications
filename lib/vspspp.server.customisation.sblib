@@ -1,0 +1,151 @@
+//******************************************************************************
+//
+//##############################################################################
+//#                                                                                     
+//#  BT900 VSP and SPP -> User customisation file                                  
+//#                                                                                     
+//#                                                                                     
+//##############################################################################
+//# Version history in reverse chronological order                                      
+//##############################################################################
+//#                                                                                     
+//#  ---------------------------------------------------------------------------   
+//#  ::Changelog::
+//#                                                                                                          
+//#   27/10/15 ->
+//#     Initial release
+//#  ---------------------------------------------------------------------------                                                                         
+//#                                                                                                          
+//##############################################################################
+//
+//##############################################################################                                                                                                                                               
+//#                                                                                     
+//#  This file contains generic (for both VSP and SPP) hooks for the following events:
+//#  - Connection                                                                              
+//#  - Disconnection                                                                             
+//#  - New Bond                                                                             
+//#                                                                                     
+//#  These hooks are called by the main application at the appropriate times and
+//#  are provided for you to add extra functinality if you wish.                                                                            
+//#                                                                                     
+//##############################################################################
+//    
+//
+//******************************************************************************
+
+//******************************************************************************
+// User changable #defines
+//******************************************************************************
+
+    //On power up assume pure cable replacement mode
+#define INITIAL_MODE                          INITIAL_MODE_CABLEREPLACEMENT
+
+    //Name of the device used in BLE adverts and the Classic BT friendly name
+    //Note in BLE if name gets clipped then increase BLE_MAX_DEVNAME_CHRS_IN_ADVERT
+#define DEVICE_NAME                           "VSPSPP_Server_BT900"
+
+    //In BLE adverts this specifies the max number of DEVICE_NAME characters
+    //used in the name AD element. An advert cannot be > 31 characters
+#define BLE_MAX_DEVNAME_CHRS_IN_ADVERT        10
+
+    //set to 1 to enable encryption for VSP service (require bonding)
+#define BLE_VSP_REQUIRE_ENCRYPTION            0     
+
+    //Prefered minimum connection interval in microseconds 
+    // - low value means higher throughput
+    // - must be <= BLE_MAX_CONN_INTVL_usec
+#define BLE_MIN_CONN_INTVL_usec               7500  
+
+    //Prefered maximum connection interval in microseconds 
+    // - low value means higher throughput
+    // - must be >= BLE_MIN_CONN_INTVL_usec
+#define BLE_MAX_CONN_INTVL_usec               40000
+
+    //BLE connection preferred slave latency. Given this is VSP use, leave it at 0
+    //unless you really mean it
+#define BLE_SLAVE_LATENCY                     0
+
+    //BLE connection link supervision timeout in microseconds. 
+    // - It should be at least 1 sec or about 5 times BLE_MAX_CONN_INTVL_usec
+#define BLE_CONN_SUPVSN_TOUT_usec             1000000
+
+    //This is used by the central device to display an appropriate icon.
+    // - see BT Spec for various adopted values
+#define BLE_APPEARANCE                        512
+
+    //All connectable BLE adverts need to have a flags AD element and this
+    //specifies what value to use in that element
+#define BLE_ADVERT_FLAGS_DISCOVERYMODE        FLAGS_GENERAL_DISCOVERY_MODE
+
+    //Baud rate at which to open the UART
+#define UART_BAUDRATE                         (115200)    
+
+    // Timeout used by the app for managing the CCCD update
+#define TIMER_CONN_CCCD_BLE_DELAY_MS          (2500)  //must be < TIMER_CONN_ENC_BLE_DELAY_MS
+    // Timeout used by the app for ensuring connection state waits for encryption if appropriate
+#define TIMER_CONN_ENC_BLE_DELAY_MS           (5000)  //must be > TIMER_CONN_CCCD_BLE_DELAY_MS
+    // Timeout used do detect the inter-escape character delay
+#define TIMER_BREAK_DATA_DELAY_MS             (150)
+
+
+//******************************************************************************
+// User Handler definitions
+//******************************************************************************
+
+//------------------------------------------------------------------------------
+// This will be called on startup just before the InitModule() is called
+//------------------------------------------------------------------------------
+sub OnModuleInitPre()
+endsub 
+
+//------------------------------------------------------------------------------
+// This will be called on startup just after the InitModule() is called
+//------------------------------------------------------------------------------
+sub OnModuleInitPost()
+endsub 
+
+//------------------------------------------------------------------------------
+// Called when a new bond has been established
+// nType is the type of connection: 0 - BLE (VSP), 1 - BTC (SPP)
+//------------------------------------------------------------------------------
+sub OnBond(byval addr$, nType) 
+  //do something here
+endsub
+
+//------------------------------------------------------------------------------
+// Called when a successful connection has been made 
+// nType is the type of connection: 0 - BLE (VSP), 1 - BTC (SPP)
+//------------------------------------------------------------------------------
+sub OnConnection(byval addr$, nType)  
+  //do something here
+endsub 
+
+//------------------------------------------------------------------------------
+// Called when **new** data has been received via the UART while bridged to a 
+// VSP/SPP connection
+//
+// All the data that is still pending to be sent can be examined in 'UartRxBuffer$'
+//------------------------------------------------------------------------------
+sub OnUartData(byval rxData$)
+  //do something here with 'rxData$'
+endsub 
+
+//------------------------------------------------------------------------------
+// Called when data has been received via the VSP or SPP port
+// 'rxData$' is the most recently received data - provided for processsing if needed
+//------------------------------------------------------------------------------
+sub OnWirelessData(byval rxData$) 
+  //do something here with 'rxData$'
+endsub
+
+//------------------------------------------------------------------------------
+// Called when a connection has been terminated
+//------------------------------------------------------------------------------
+sub OnHangup(hConn) 
+  //do something here
+endsub    
+
+ 
+
+     
+                               
