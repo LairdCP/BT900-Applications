@@ -17,7 +17,7 @@ function HandlerSniff(nStatus, nMode) as integer
     
     if(nStatus==0) then
         // Successful mode change - Query the link
-        rc = BtcQuerySniffChange(bdaddr$, link_mode, interval)
+        rc = BtcQueryModeChange(bdaddr$, link_mode, interval)
         
         if(nMode == LINKMODE_SNIFF) then
             print "\nSniff mode enabled: "
@@ -56,7 +56,7 @@ rc = BtcSniffEnable(mac$, 80, 128, 544, 1600)
 
 
 //Wait for a confirmation from the remote device that parameters were successfully negotiated
-onevent EVBTC_SNIFF_CHANGE call HandlerSniff
+onevent EVBTC_MODE_CHANGE call HandlerSniff
 waitevent
 
 

@@ -1,7 +1,0 @@
-//Example :: BleWhiteListDestroy.sb
-DIM hWhiteList : hWhiteList = BleWhiteListCreate(20,10)
-
-IF hWhiteList!=0 THEN
-    BleWhiteListDestroy(hWhiteList)
-    PRINT "\nWhitelist with handle: ";hWhiteList;" destroyed"
-ENDIF
