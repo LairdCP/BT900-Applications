@@ -39,9 +39,7 @@ FUNCTION SPPTimeout()
 ENDFUNC 1
 
 FUNCTION SPPDisconnect(nHandle)
-        //SPP disconnection. Remove UART bridge
-        rc = StreamUnBridge(nHandleB)
-        AssertRC(rc, 42)
+        //SPP disconnected
         PRINT "Disconnected\n"
 ENDFUNC 1
 
