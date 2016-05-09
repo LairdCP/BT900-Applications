@@ -170,7 +170,7 @@ dim inqtpl : inqtpl=4			// Inquiry transmit power level
 dim letpl : letpl = 4			// LE Tx Power level in dBm
 dim iocap : iocap = 0			// IO Capability: 0 JustWorks, 1 YES/NO, 2 KEYBOARD, 3 DISPLAY
 dim mjVersion : mjVersion=2		// Major version number
-dim mnVersion : mnVersion=1		// Minor version number
+dim mnVersion : mnVersion=2		// Minor version number
 
 
 // globale variables used for gatttool command

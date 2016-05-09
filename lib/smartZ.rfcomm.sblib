@@ -27,10 +27,14 @@
 //******************************************************************************
 //
 //******************************************************************************
+// User changable defines
+//******************************************************************************
+#define UART_RX_BUFFER (200)
+
+//******************************************************************************
 // Global Variables
 //******************************************************************************
 dim SPPTxWaiting : SPPTxWaiting = 0
-dim nUartBuffLen : nUartBuffLen = 0
 dim UartBuff$ : UartBuff$ = ""
 
 //==============================================================================
@@ -170,75 +174,70 @@ function HandlerSppData()
 endfunc 1
 
 //==============================================================================
+// This function is called to send SPP data
+//==============================================================================
+function WriteSPPData(txData$)
+	dim txLength
+
+	if (SPPTxWaiting == 1) then
+		// We are waiting for a TX notify event from SPP
+		exitfunc 0
+	endif
+
+	rc = BtcSPPWrite(hcSpp, txData$, txLength)
+	if (rc != 0) then
+		//Failed to send
+	else
+		StrShiftLeft(txData$, txLength)
+		SPPTxWaiting = 1
+	endif
+endfunc 1
+
+//==============================================================================
 // Called when data is received via UART
 //==============================================================================
 function HandlerUartRxSpp()
 
 	// Data is printed immediately unless "^^^" is received
 	// in which case the device will disconnect
-    dim nUartDataLen         : nUartDataLen = 1         // Length of data read from Uart after one UartRead
-    dim UartData$            : UartData$ = ""           // Data read from Uart after one Uart Read
-    dim nUartDataTotalLen    : nUartDataTotalLen = 0    // Length of total data read from the Uart
-    dim UartDataTotal$       : UartDataTotal$ = ""      // Total data read from the Uart
-    dim nSppWriteLen         : nSppWriteLen = 0         // Number of bytes successfully sent over SPP using BtcSppWrite
-    dim nSppWriteTotalLen    : nSppWriteTotalLen = 0    // Total number of bytes that was successfully sent over SPP
+    dim nUartDataLen             // Length of data read from Uart after one UartReadN
 
-    // Extract all data from the UART
-    while nUartDataLen > 0
-        nUartDataLen = UartRead(UartData$)
-        nUartDataTotalLen = nUartDataTotalLen + nUartDataLen
-        UartDataTotal$ = UartDataTotal$ + UartData$
-        // Empty string before going and trying to read again
-        UartData$ = ""
-    endwhile
+    nUartDataLen = UartReadN(UartBuff$, UART_RX_BUFFER)
 
     // Check if there was any UART data
-    if nUartDataTotalLen > 0 then
-        if nUartDataTotalLen == 4 then
+    if nUartDataLen > 0 then
+        if (nUartDataLen == 3 || nUartDataLen == 4) then
             // Check if received ^^^ in Line mode
             dim i$, j$
-            i$ = UartDataTotal$
-            rc = ExtractStrToken(i$,j$)
+            i$ = UartBuff$
+            //rc = ExtractStrToken(i$,j$)
+            j$ = strsplitleft$(i$,3)
             if strcmp(j$,"^^^")==0 then
                 // Disconnect and exit gracefully
                 rc = BtcSppDisconnect(hcSpp)
                 AssertResCode(rc)
+                UartBuff$ = ""
                 exitfunc 1
             endif
 
-        elseif StrCmp(UartDataTotal$,"^")==0 then
+        elseif StrCmp(UartBuff$,"^")==0 then
             carCnt = carCnt + 1
             if carCnt >= 3 then
                 rc = BtcSppDisconnect(hcSpp)
                 AssertResCode(rc)
+                UartBuff$ = ""
                 exitfunc 1
             endif
         else
             // Set carrot count to 0 as we got something else
             carCnt = 0
         endif
-    endif
 
+        // Reaching here means we have data to send
+        if (hcSpp != 0) then
+            rc = WriteSPPData(UartBuff$)
+        endif
 
-    // Concatenate UART data just read to preexisting data, increase total length appropriately
-    UartBuff$ = UartBuff$ + UartDataTotal$
-    // Set the total length of data we need to send to the UartData length + UartBuff length
-    nUartBuffLen = nUartDataTotalLen + nUartBuffLen
-    nUartDataTotalLen = 0
-
-    // Now that we have adjusted our buffer, see if we can actually send data
-    if (SPPTxWaiting == 1) then
-        // We are waiting for a TX notify event from SPP but add UART data to buff appropriately
-        exitfunc 1
-    else
-
-        while (nUartBuffLen > 0)
-            rc = BtcSPPWrite(hcSpp, UartBuff$, nSppWriteLen)
-            STRSHIFTLEFT(UartBuff$, nSppWriteLen)
-            nUartBuffLen = nUartBuffLen - nSppWriteLen
-            // Assume buffer is full unless we get an event telling us that it isn't
-            SPPTxWaiting = 1
-        endwhile
     endif
 
 endfunc 1
