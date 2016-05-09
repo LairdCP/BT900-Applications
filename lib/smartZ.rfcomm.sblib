@@ -26,6 +26,13 @@
 // Function and Subroutine definitions
 //******************************************************************************
 //
+//******************************************************************************
+// Global Variables
+//******************************************************************************
+dim SPPTxWaiting : SPPTxWaiting = 0
+dim nUartBuffLen : nUartBuffLen = 0
+dim UartBuff$ : UartBuff$ = ""
+
 //==============================================================================
 // Print the rfcomm help menu
 //==============================================================================
@@ -169,50 +176,83 @@ function HandlerUartRxSpp()
 
 	// Data is printed immediately unless "^^^" is received
 	// in which case the device will disconnect
+    dim nUartDataLen         : nUartDataLen = 1         // Length of data read from Uart after one UartRead
+    dim UartData$            : UartData$ = ""           // Data read from Uart after one Uart Read
+    dim nUartDataTotalLen    : nUartDataTotalLen = 0    // Length of total data read from the Uart
+    dim UartDataTotal$       : UartDataTotal$ = ""      // Total data read from the Uart
+    dim nSppWriteLen         : nSppWriteLen = 0         // Number of bytes successfully sent over SPP using BtcSppWrite
+    dim nSppWriteTotalLen    : nSppWriteTotalLen = 0    // Total number of bytes that was successfully sent over SPP
 
-	dim uLen, u$, nLen, nLen2 : uLen = 1
-    while uLen != 0
-        //read data that has arrived through the UART
-        uLen = UartRead(u$)
-        if uLen > 0 then
-			if uLen == 4 then
-				// Check if received ^^^ in Line mode
-				dim i$, j$
-				i$ = u$
-				rc = ExtractStrToken(i$,j$)
-				if strcmp(j$,"^^^")==0 then 
-					rc = BtcSppDisconnect(hcSpp)
-					AssertResCode(rc)
-				endif 
-				STRSHIFTLEFT(u$, nLen)
-
-            elseif StrCmp(u$,"^")==0 then
-				carCnt = carCnt + 1
-				if carCnt<3 then
-					exitfunc 1
-				else
-					carCnt = 0
-					rc = BtcSppDisconnect(hcSpp)
-					AssertResCode(rc)
-				endif
-
-			else
-				carCnt = 0
-                //write data to most recent spp connection
-                nLen2 = 0
-                while nLen2 != uLen
-                    rc = BtcSPPWrite(hcSpp, u$, nLen)
-                    if rc != 0 then
-                        //Assume problem with the SPP connection
-                        exitfunc rc
-                    endif
-                    STRSHIFTLEFT(u$, nLen)
-                    nLen2 = nLen2 + nLen
-                endwhile
-            endif
-        endif
-
+    // Extract all data from the UART
+    while nUartDataLen > 0
+        nUartDataLen = UartRead(UartData$)
+        nUartDataTotalLen = nUartDataTotalLen + nUartDataLen
+        UartDataTotal$ = UartDataTotal$ + UartData$
+        // Empty string before going and trying to read again
+        UartData$ = ""
     endwhile
+
+    // Check if there was any UART data
+    if nUartDataTotalLen > 0 then
+        if nUartDataTotalLen == 4 then
+            // Check if received ^^^ in Line mode
+            dim i$, j$
+            i$ = UartDataTotal$
+            rc = ExtractStrToken(i$,j$)
+            if strcmp(j$,"^^^")==0 then
+                // Disconnect and exit gracefully
+                rc = BtcSppDisconnect(hcSpp)
+                AssertResCode(rc)
+                exitfunc 1
+            endif
+
+        elseif StrCmp(UartDataTotal$,"^")==0 then
+            carCnt = carCnt + 1
+            if carCnt >= 3 then
+                rc = BtcSppDisconnect(hcSpp)
+                AssertResCode(rc)
+                exitfunc 1
+            endif
+        else
+            // Set carrot count to 0 as we got something else
+            carCnt = 0
+        endif
+    endif
+
+
+    // Concatenate UART data just read to preexisting data, increase total length appropriately
+    UartBuff$ = UartBuff$ + UartDataTotal$
+    // Set the total length of data we need to send to the UartData length + UartBuff length
+    nUartBuffLen = nUartDataTotalLen + nUartBuffLen
+    nUartDataTotalLen = 0
+
+    // Now that we have adjusted our buffer, see if we can actually send data
+    if (SPPTxWaiting == 1) then
+        // We are waiting for a TX notify event from SPP but add UART data to buff appropriately
+        exitfunc 1
+    else
+
+        while (nUartBuffLen > 0)
+            rc = BtcSPPWrite(hcSpp, UartBuff$, nSppWriteLen)
+            STRSHIFTLEFT(UartBuff$, nSppWriteLen)
+            nUartBuffLen = nUartBuffLen - nSppWriteLen
+            // Assume buffer is full unless we get an event telling us that it isn't
+            SPPTxWaiting = 1
+        endwhile
+    endif
+
+endfunc 1
+
+//==============================================================================
+//Handler for SPP tx empty
+//==============================================================================
+function HndlrSPPTxEmpty(hConn)
+
+    //BLE notify buffer has free space, so set flag accordingly
+    SPPTxWaiting = 0
+
+    // Call the Uart Handle to make sure that data is emptied
+    rc = HandlerUartRxSpp()
 
 endfunc 1
 
@@ -224,3 +264,4 @@ OnEvent  EVSPPCONN                	call HandlerSppCon
 OnEvent  EVBTC_SPP_CONN_TIMEOUT   	call HandlerSppConnTimOut
 OnEvent  EVSPPDISCON              	call HandlerSppDiscon
 OnEvent  EVBTC_SPP_DATA_RECEIVED  	call HandlerSppData
+OnEvent  EvSPPTxEmpty 			    call HndlrSPPTxEmpty
