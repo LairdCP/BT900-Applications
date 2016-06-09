@@ -50,7 +50,7 @@
         //Advertise timeout
 #define ADV_TIMEOUT_MS                       0
         //Whitelist Policy in Adverts
-#define ADV_WHITELIST_FILTER_POLICY          ADV_FILTERPOLICY_ANY
+#define ADV_WHITELIST_FILTER_POLICY          0
 
 
 //******************************************************************************

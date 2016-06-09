@@ -73,7 +73,7 @@
 #define ADV_TIMEOUT_MS                    60000  //Advertise timeout
 
         //Whitelist Policy in Adverts
-#define ADV_WHITELIST_FILTER_POLICY       ADV_FILTERPOLICY_ANY
+#define ADV_WHITELIST_FILTER_POLICY       0
 
         //Minimum long term key size in octets
 #define MIN_LTK_SIZE                      8

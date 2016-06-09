@@ -534,6 +534,49 @@
 //    - i[0] will contain the uuid handle as well
 //
 // -----------------------------------------------------------------------------
+// whitelist print   #INTwlHndlIdx#
+//    - Prints the value of the whitelist handle specified
+//
+// -----------------------------------------------------------------------------
+// whitelist create  #INTwlHndlIdx# #INTmaxaddr# #INTmaxIrks# #INTfiltermask#
+//    - Creates a new whitelist and the handle in passed by in in hWlist[INTwlHndlIdx]
+//
+// -----------------------------------------------------------------------------
+// whitelist destroy #INTwlHndlIdx#
+//    - Destroys the whitelist specified. hWlist[INTwlHndlIdx] will get updated
+//      with FFFFFFFF
+//
+// -----------------------------------------------------------------------------
+// whitelist clear   #INTwlHndlIdx#
+//    - Clear the whitelist specified by hWlist[INTwlHndlIdx]
+//
+// -----------------------------------------------------------------------------
+// whitelist AddAddr #INTwlHndlIdx# #HEXaddr14Bytes#
+//    - Add the mac address specified (can be resolvable one) to the whitelist
+//      identified by the handle specified
+//      If the address is in the trusted device database then the IRK is 
+//      automatically added.
+//
+// -----------------------------------------------------------------------------
+// whitelist AddIdx  #INTwlHndlIdx# #INTdBIndex#
+//    - Add the mac address and IRK (if it exists) at the trusted device database
+//      specified
+//
+// -----------------------------------------------------------------------------
+// whitelist info    #INTwlHndlIdx# #INTinfoId#
+//    - Get whitelist information
+//      0 = maximum whitelists
+//      1 = maximum addresses in a whitelist
+//      2 = maximum irks in a whitelist
+//    101 = Addresses in the whitelist
+//    102 = IRKS in the whitelist
+// -----------------------------------------------------------------------------
+// whitelist filter  #INTwlHndlIdx# #INTfiltermask#
+//    - Change the whitelist filter type (ANY, SCAN, CONN or BOTH)
+//        Bit 0 set for Scan Reqs
+//        Bit 1 set for Conn Reqs
+//        Bit 2 set for Advert Reports (ignored in BL600)
+//        Bits 3..31 : Reserved for future use (can set to 1)
 //
 // For a list of BTC and SPP commands please refer to lib/cmd.btc.manager.sblib
 //
@@ -670,8 +713,9 @@ dim hSvc[NUM_OF_SVCS]       //gatts : handle for new service being created is in
 dim amd[NUM_OF_METADATA]    //gatts : attribute meta data
 dim hchar[NUM_OF_CHARS]     //gatts : handles for characteristics
 dim hc[NUM_OF_CONNS+1]      //Contains connection handles
+dim hWlist[NUM_OF_WHITELIST+1]      //Contains whitelist handles
 dim conns                   //Number of connections
-dim gcState                 //gatt client state, 0=IDLE, 1=TableMapping
+dim gcState                 //Gatt client state, 0=IDLE, 1=TableMapping
 dim urts                    //Will be <0 if uart parser suspended
 dim hcVsp                   //Handle of connection to use for VSP service
 dim vdta$                   //Data to send over virtual serial port
@@ -1824,11 +1868,114 @@ function _BleBond()
     endif
 endfunc 5
 
+//-------------------------------------------------------------------------
+//#CMD#//  whitelist print   #INTwlHndlIdx#
+//#CMD#//  whitelist create  #INTwlHndlIdx# #INTmaxaddr# #INTmaxIrks# #INTfiltermask#
+//#CMD#//  whitelist destroy #INTwlHndlIdx#
+//#CMD#//  whitelist clear   #INTwlHndlIdx#
+//#CMD#//  whitelist AddAddr #INTwlHndlIdx# #HEXaddr14Bytes#
+//#CMD#//  whitelist AddIdx  #INTwlHndlIdx# #INTdBIndex#
+//#CMD#//  whitelist info    #INTwlHndlIdx# #INTinfoId#
+//#CMD#//  whitelist filter  #INTwlHndlIdx# #INTfiltermask#
+//-------------------------------------------------------------------------
+function _whitelist()  
+  dim ad$
+  tlen = ExtractStrToken(urtcmd$,tkn$)
+  if tlen == 0 then
+    exitfunc 5
+  endif
+  //=================================================
+  if strcmp(tkn$,"print")==0 then
+    //extract 1 (#INTwlHndlIdx#) and store starting at i[1]
+    rc = ExtractIntTokens(urtcmd$,1,1)
+    if rc != 0 then
+      exitfunc rc
+    endif
+    print "\n";integer.h'  hWlist[i[1]]
+    exitfunc 0
+  endif
+  //=================================================
+  if strcmp(tkn$,"create")==0 then
+    //extract 4 (#INTwlHndlIdx# #INTmaxaddr# #INTmaxIrks# #INTfiltermask#) and store starting at i[1]
+    rc = ExtractIntTokens(urtcmd$,1,4)
+    if rc != 0 then
+      exitfunc rc
+    endif
+    exitfunc BleWhitelistCreate(hWlist[i[1]],i[2],i[3],i[4])
+  endif
+  //=================================================
+  if strcmp(tkn$,"destroy")==0 then
+    //extract 1 (#INTwlHndlIdx#) and store starting at i[1]
+    rc = ExtractIntTokens(urtcmd$,1,1)
+    if rc != 0 then
+      exitfunc rc
+    endif
+    BleWhitelistDestroy(hWlist[i[1]])
+    exitfunc 0
+  endif
+  //=================================================
+  if strcmp(tkn$,"clear")==0 then
+    //extract 1 (#INTwlHndlIdx#) and store starting at i[1]
+    rc = ExtractIntTokens(urtcmd$,1,1)
+    if rc != 0 then
+      exitfunc rc
+    endif
+    exitfunc BleWhitelistClear(hWlist[i[1]])
+  endif
+  //=================================================
+  if strcmp(tkn$,"AddAddr")==0 then
+    //extract 1 (#INTwlHndlIdx#) and store starting at i[1]
+    rc = ExtractIntTokens(urtcmd$,1,1)
+    if rc != 0 then
+      exitfunc rc
+    endif
+    tlen = ExtractStrToken(urtcmd$,tkn$)
+    if tlen == 0 then
+      exitfunc 5
+    endif
+    s$[1]=StrDehexize$(tkn$)
+    if strlen(s$[1]) != 7 then
+      exitfunc 5
+    endif    
+    exitfunc BleWhitelistAddAddr(hWlist[i[1]], s$[1])
+  endif
+  //=================================================
+  if strcmp(tkn$,"AddIdx")==0 then
+    //extract 2 (#INTwlHndlIdx# #INTdBIndex#) and store starting at i[1]
+    rc = ExtractIntTokens(urtcmd$,1,2)
+    if rc != 0 then
+      exitfunc rc
+    endif
+    exitfunc BleWhitelistAddIndex(hWlist[i[1]],i[2])
+  endif
+  //=================================================
+  if strcmp(tkn$,"info")==0 then
+    //extract 2 (#INTwlHndlIdx# #INTinfoId#) and store starting at i[1]
+    rc = ExtractIntTokens(urtcmd$,1,2)
+    if rc != 0 then
+      exitfunc rc
+    endif
+    rc=BleWhitelistInfo(hWlist[i[1]],i[2],i[0])
+    print "\n";integer.h' i[0]
+    exitfunc rc    
+  endif
+  //=================================================
+  if strcmp(tkn$,"filter")==0 then
+    //extract 2 (#INTwlHndlIdx# #INTfiltermask#) and store starting at i[1]
+    rc = ExtractIntTokens(urtcmd$,1,2)
+    if rc != 0 then
+      exitfunc rc
+    endif
+    exitfunc BleWhitelistSetFilter(hWlist[i[1]],i[2])
+  endif
+
+endfunc 5
 
 //-------------------------------------------------------------------------
 //#CMD#//  ble bond
 //#CMD#//  ble pair
 //#CMD#//  ble encrypt
+//#CMD#//  ble whitelist
 //-------------------------------------------------------------------------
 function _Ble()
     tlen = ExtractStrToken(urtcmd$,tkn$)
@@ -2033,6 +2180,9 @@ function OnUartCmd() as integer
 
     elseif strcmp(tkn$,"bridge")==0 then
       rc = _bridge()
+      
+    elseif strcmp(tkn$,"whitelist")==0 then
+      rc = _whitelist()
 
     elseif strcmp(tkn$,"exit")==0 || strcmp(tkn$,"quit")==0  then
       exitfunc 0
