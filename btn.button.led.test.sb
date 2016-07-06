@@ -1,39 +1,52 @@
-'//******************************************************************************
-'// Laird Technologies (c) 2013
-'//
-'// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-'// +++++                                                                      ++
-'// +++++  When UwTerminal downloads the app it will store it as a filenname   ++
-'// +++++  which consists of all characters up to the first . and excluding it ++
-'// +++++                                                                      ++
-'// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-'//
-'//
-'// Simple development board button and LED test
-'// Tests the functionality of button 0, button 1, LED 0 and LED 1 on the BL600
-'// or BT900 devkit
-'//
-'// 24/01/2013 Initial version
-'//
-'//******************************************************************************
+// Copyright (c) 2013, Laird
+//
+// Permission to use, copy, modify, and/or distribute this software for any
+// purpose with or without fee is hereby granted, provided that the above
+// copyright notice and this permission notice appear in all copies.
+//
+// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+// ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
+// IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+//
+// SPDX-License-Identifier:ISC
+//
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// +++++                                                                      ++
+// +++++  When UwTerminal downloads the app it will store it as a filenname   ++
+// +++++  which consists of all characters up to the first . and excluding it ++
+// +++++                                                                      ++
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//
+//
+// Simple development board button and LED test
+// Tests the functionality of button 0, button 1, LED 0 and LED 1 on the BL600
+// or BT900 devkit
+//
+// 24/01/2013 Initial version
+//
+//******************************************************************************
 
-'//******************************************************************************
-'// Definitions
-'//******************************************************************************
+//******************************************************************************
+// Definitions
+//******************************************************************************
 #define BT900_DEV_ID            0x42370900
 #define BL600_DEV_ID            0x424C0600
 #define BL620_DEV_ID            0x424C0620
 
-'//******************************************************************************
-'// Global Variable Declarations
-'//******************************************************************************
+//******************************************************************************
+// Global Variable Declarations
+//******************************************************************************
 
-dim rc                          '// declare rc as integer variable
+dim rc                          //Declare rc as integer variable
 
 
-'//******************************************************************************
-'// Library Import
-'//******************************************************************************
+//******************************************************************************
+// Library Import
+//******************************************************************************
 //------------------------------------------------------------------------------
 //** #include the correct GPIO library file for the smartBASIC module being used
 //------------------------------------------------------------------------------
@@ -41,12 +54,11 @@ dim rc                          '// declare rc as integer variable
 #include "lib\gpio.bt9xx.sblib"
 
 
-
-'//******************************************************************************
-'// Function and Subroutine definitions
-'//******************************************************************************
-'//==============================================================================
-'//==============================================================================
+//******************************************************************************
+// Function and Subroutine definitions
+//******************************************************************************
+//==============================================================================
+//==============================================================================
 sub AssertResCode(byval rc as integer,byval tag as integer)
   if (rc!=0) then
     print "Failed with ";integer.h' rc;" at tag ";tag;"\n"
@@ -54,24 +66,23 @@ sub AssertResCode(byval rc as integer,byval tag as integer)
 endsub
 
 
-
-'//******************************************************************************
-'// Handler definitions
-'//******************************************************************************
+//******************************************************************************
+// Handler definitions
+//******************************************************************************
 function handlerbutton0()
     dim i : i = GpioRead(GPIO_BTN0)
 
-    '//if button 0 was pressed
+    //If button 0 was pressed
     if i==0 then
-        GpioWrite(GPIO_LED0,1)                         '// turns LED 0 on
-        // print "Button 0 has been pressed \n"            '//these lines are printed to the UART when the button is pressed
-        // print "LED 0 will light while the button is pressed \n"
+        GpioWrite(GPIO_LED0,1)                         //Turns LED 0 on
+        //print "Button 0 has been pressed \n"           //These lines are printed to the UART when the button is pressed
+        //print "LED 0 will light while the button is pressed \n"
         print "\nButton 0 Pressed  : LED 0 ON"
-    '//if button 0 was released
+    //if button 0 was released
     elseif i==1 then
-        GpioWrite(GPIO_LED0,0)                         '//turns LED 1 off
-        // print "Button 0 has been released \n"           '//these lines are printed to the UART when the button is released
-        // print "LED 0 should now go out \n\n"
+        GpioWrite(GPIO_LED0,0)                         //Turns LED 1 off
+        //print "Button 0 has been released \n"          //These lines are printed to the UART when the button is released
+        //print "LED 0 should now go out \n\n"
         print "\nButton 0 Released : LED 0 OFF"
     endif
 endfunc 1
@@ -80,45 +91,45 @@ endfunc 1
 function handlerbutton1()
     dim i : i = GpioRead(GPIO_BTN1)
 
-    '//if button 1 was pressed
+    //if button 1 was pressed
     if i==0 then
-        GpioWrite(GPIO_LED1,1)                         '// turns LED 0 on
-        // print "Button 1 has been pressed \n"            '//these lines are printed to the UART when the button is pressed
-        // print "LED 1 will light while the button is pressed \n"
+        GpioWrite(GPIO_LED1,1)                         //Turns LED 0 on
+        //print "Button 1 has been pressed \n"           //These lines are printed to the UART when the button is pressed
+        //print "LED 1 will light while the button is pressed \n"
         print "\nButton 1 Pressed  : LED 1 ON"
-    '//if button 1 was pressed
+    //if button 1 was pressed
     elseif i==1 then
-        GpioWrite(GPIO_LED1,0)                         '//turns LED 1 off
-        // print "Button 1 has been released \n"           '//these lines are printed to the UART when the button is released
-        // print "LED 1 should now go out \n\n"
+        GpioWrite(GPIO_LED1,0)                         //Turns LED 1 off
+        //print "Button 1 has been released \n"          //These lines are printed to the UART when the button is released
+        //print "LED 1 should now go out \n\n"
         print "\nButton 1 Released : LED 1 OFF"
     endif
 endfunc 1
 
 
 
-'//******************************************************************************
-'// Equivalent to main() in C
-'//******************************************************************************
-rc = gpiosetfunc(GPIO_BTN0,1,2)                '//sets sio16 (Button 0) as a digital in with a weak pull up resistor
+//******************************************************************************
+// Equivalent to main() in C
+//******************************************************************************
+rc = gpiosetfunc(GPIO_BTN0,1,2)                //Sets sio16 (Button 0) as a digital in with a weak pull up resistor
 AssertResCode(rc,1000)
-rc = gpiosetfunc(GPIO_BTN1,1,2)                '//sets sio17 (Button 1) as a digital in with a weak pull up resistor
+rc = gpiosetfunc(GPIO_BTN1,1,2)                //Sets sio17 (Button 1) as a digital in with a weak pull up resistor
 AssertResCode(rc,1010)
-rc = gpiosetfunc(GPIO_LED0,2,0)                '//sets sio18 (LED0) as a digital out
+rc = gpiosetfunc(GPIO_LED0,2,0)                //Sets sio18 (LED0) as a digital out
 AssertResCode(rc,1020)
-rc = gpiosetfunc(GPIO_LED1,2,0)                '//sets sio19 (LED1) as a digital out
+rc = gpiosetfunc(GPIO_LED1,2,0)                //Sets sio19 (LED1) as a digital out
 AssertResCode(rc,1030)
-rc = gpiobindevent(0,GPIO_BTN0,2)              '//binds a gpio transition high or low to an event. sio16 (button 0)
+rc = gpiobindevent(0,GPIO_BTN0,2)              //Binds a gpio transition high or low to an event. sio16 (button 0)
 AssertResCode(rc,1040)
-rc = gpiobindevent(1,GPIO_BTN1,2)              '//binds a gpio transition high to an event. sio17 (button 1)
+rc = gpiobindevent(1,GPIO_BTN1,2)              //Binds a gpio transition high to an event. sio17 (button 1)
 AssertResCode(rc,1050)
 
 
-onevent evgpiochan0 call handlerbutton0         '//detects when button 0 is pressed or released and calls the function
-onevent evgpiochan1 call handlerbutton1         '//detects when button 0 is pressed or released and calls the function
+onevent evgpiochan0 call handlerbutton0        //Detects when button 0 is pressed or released and calls the function
+onevent evgpiochan1 call handlerbutton1        //Detects when button 0 is pressed or released and calls the function
 
 
-'//Print devkit config info
+//Print devkit config info
 select DEV_ID
     print "\nEnsure the DIP switches on CON"
     case BT900_DEV_ID
@@ -130,7 +141,7 @@ select DEV_ID
         print "\nTrimPot [4   x    ]"
         print "\nx = doesn't matter"
         print "\nPlace a jumper across each of the 2 pin headers below buttons 0 and 1"
-    '//BL600 or BL620
+    //BL600 or BL620
     case else
         print "15 are set as follows:"
         print "\n       OFF      ON"
@@ -144,11 +155,11 @@ endselect
 
 print "\n\n"
 
-print "Ready to begin button and LED test \n"        '//these lines are printed to the UART when the program is run
+print "Ready to begin button and LED test \n"        //These lines are printed to the UART when the program is run
 print "Please press button 0 or button 1 \n\n"
 
-'//------------------------------------------------------------------------------
-'// Wait for a synchronous event.
-'// An application can have multiple <WaitEvent> statements
-'//------------------------------------------------------------------------------
-waitevent                       '//when program is run it waits here until an event is detected
+//------------------------------------------------------------------------------
+// Wait for a synchronous event.
+// An application can have multiple <WaitEvent> statements
+//------------------------------------------------------------------------------
+waitevent                       //when program is run it waits here until an event is detected

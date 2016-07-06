@@ -1,5 +1,18 @@
-//******************************************************************************
-// Laird Technologies (c) 2014-2015
+// Copyright (c) 2015, Laird
+//
+// Permission to use, copy, modify, and/or distribute this software for any
+// purpose with or without fee is hereby granted, provided that the above
+// copyright notice and this permission notice appear in all copies.
+//
+// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+// ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
+// IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+//
+// SPDX-License-Identifier:ISC
 //
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // +++++                                                                      ++
@@ -169,59 +182,58 @@
         //Set this to the BT address of the BT classic device you want to connect to by default
 #define PEER_BT_ADDR                     "0016A4093D96"
 
-        //if set to 1, on startup an SPP port will be opened for peer devices to connect to
-#define OPEN_SPP_ON_STARTUP                 0
+        //If set to 1, on startup an SPP port will be opened for peer devices to connect to
+#define OPEN_SPP_ON_STARTUP              0
 
-        //if set to 1, on startup the module will connect to device PEER_BT_ADDR for SPP
-#define CONNECT_ON_STARTUP                  0
+        //If set to 1, on startup the module will connect to device PEER_BT_ADDR for SPP
+#define CONNECT_ON_STARTUP               0
 
-#define PAIRABLE_ON_STARTUP                 1
+#define PAIRABLE_ON_STARTUP              1
 
-#define DISCOVERABLE_ON_STARTUP             0       //if OPEN_SPP_ON_STARTUP==1, discoverablilty will be enabled for DISCOV_TIMEOUT specified
+#define DISCOVERABLE_ON_STARTUP          0    //If OPEN_SPP_ON_STARTUP==1, discoverablilty will be enabled for DISCOV_TIMEOUT specified
 
         //0 - General, 1 - Limited
-#define DISCOV_MODE                         0
+#define DISCOV_MODE                      0
 
-        //time module will be discoverable for in seconds if discoverabilty enabled
-#define DISCOV_TIMEOUT                     120
+        //Time module will be discoverable for in seconds if discoverabilty enabled
+#define DISCOV_TIMEOUT                   120
 
-#define USE_BRIDGE                          1   //Set to 0 to use smartBASIC to transfer data between UART and SPP, set to 1 to use direct briding (faster throughput)
+#define USE_BRIDGE                       1    //Set to 0 to use smartBASIC to transfer data between UART and SPP, set to 1 to use direct briding (faster throughput)
 
 
 //Inquiry config parameters (See description for BtcInquiryConfig() in BT900 Extention user manual)
-#define INQR_TMT                           20   //Inquiry timeout in seconds
-#define INQR_TYPE                          0    //Inquiry type - general inquiry
-#define INQR_MODE                          2    //Inquiry mode - extended inquiry
-#define MAX_DEVS_REC_RESP                  100  //Max number of devices to receive inquiry responses from
+#define INQR_TMT                         20   //Inquiry timeout in seconds
+#define INQR_TYPE                        0    //Inquiry type - general inquiry
+#define INQR_MODE                        2    //Inquiry mode - extended inquiry
+#define MAX_DEVS_REC_RESP                100  //Max number of devices to receive inquiry responses from
 
-        //for subsequent incoming pair requests, if set to 1, pairing information will be saved in bonding manager
-#define SAVE_PAIRINGS                      1
+        //For subsequent incoming pair requests, if set to 1, pairing information will be saved in bonding manager
+#define SAVE_PAIRINGS                    1
 
         //Set this to 0 to disable all debugging messages
-#define ENABLE_DEBUG_PRINTS                1
-#define APP_VERSION                          "1.2"
-        // size of i[]
-#define NUM_OF_I_PARAMS                     (5)
-        // size of s$[]
-#define NUM_OF_S_PARAMS                     (5)
+#define ENABLE_DEBUG_PRINTS              1
+#define APP_VERSION                      "1.2"
+        //Size of i[]
+#define NUM_OF_I_PARAMS                  (5)
+        //Size of s$[]
+#define NUM_OF_S_PARAMS                  (5)
 
 //Misc
-#define CAR_PRESS_DELAY                     100 //ms to wait between registering entries of '^'
-
+#define CAR_PRESS_DELAY                  100  //ms to wait between registering entries of '^'
 
 //APP RUN MODES
-#define CMD_MODE                            0
-#define BRIDGE_SPP_MODE                     1
+#define CMD_MODE                         0
+#define BRIDGE_SPP_MODE                  1
 
 
-#define AUTH_FAILURE                        0x05
+#define AUTH_FAILURE                     0x05
 
-#define DISCON_TIMER                        0   //if this is changed, make sure to change the EvTmrX statement
-#define DISCON_TIMER_DUR_MS               500
+#define DISCON_TIMER                     0    //If this is changed, make sure to change the EvTmrX statement
+#define DISCON_TIMER_DUR_MS              500
 
-#define UART_BAUDRATE			            (115200)
-#define MAX_FRAME_SIZE                     192
-#define RX_CREDITS                          3
+#define UART_BAUDRATE                    (115200)
+#define MAX_FRAME_SIZE                   192
+#define RX_CREDITS                       3
 
 //******************************************************************************
 // Register Error Handler as early as possible
@@ -291,21 +303,20 @@ dim stRsp$ as string        //Uart rx data is stored here
 
 dim ok$,er$,pr$, nc$, uc$, t$, e$, p$
 
-dim i[NUM_OF_I_PARAMS]      // index 0 used for return values
-dim s$[NUM_OF_S_PARAMS]     // must be at least 8 elements
+dim i[NUM_OF_I_PARAMS]      //Index 0 used for return values
+dim s$[NUM_OF_S_PARAMS]     //Must be at least 8 elements
 
-dim urtcmd$                 //cmd line from uart
-dim tkn$,tlen               //used by command parser
+dim urtcmd$                 //CMD line from uart
+dim tkn$,tlen               //Used by command parser
 
 dim hC                      //SPP connection handle
-dim carCnt                  //count variable for number of times '^' entered
-dim hSppPort                //handle of spp port that a peer will connect to
-dim BridgeHandle            //handle of UART sB bridge
+dim carCnt                  //Count variable for number of times '^' entered
+dim hSppPort                //Handle of spp port that a peer will connect to
+dim BridgeHandle            //Handle of UART sB bridge
 
 dim buffer
 dim u$
-dim RecBuf$ //UART buffer
-
+dim RecBuf$                 //UART buffer
 
 
 //******************************************************************************
@@ -411,17 +422,16 @@ endfunc 0
 function InConnection()
     dim bdAddr$
 
-    '//will fail if invalid handle - no connection
+    //Will fail if invalid handle - no connection
     if BtcGetBDAddrFromHandle(hC,bdAddr$)!=0 then
         exitfunc 0
     endif
 
-    '//length of 'bdAddr$' will be zero if no connection
+    //Length of 'bdAddr$' will be zero if no connection
     if StrLen(bdAddr$)==0 then
         exitfunc 0
     endif
 endfunc 1
-
 
 
 //-------------------------------------------------------------------------
@@ -430,7 +440,7 @@ endfunc 1
 // - Think of it like a boolean value
 //-------------------------------------------------------------------------
 function SwitchToCmd()
-    '//if ^ was sent after the delay time (valid) increment the counter
+    //If ^ was sent after the delay time (valid) increment the counter
     if TimerRunning(0)==0 then
         carCnt = carCnt + 1
         if carCnt<3 then
@@ -439,11 +449,11 @@ function SwitchToCmd()
             exitfunc 1
         endif
     else
-        //invalid press
+        //Invalid press
         TimerCancel(0)
         carCnt = 0
     endif
-endfunc 0  //dont give response to user
+endfunc 0  //Don't give response to user
 
 
 //-------------------------------------------------------------------------
@@ -462,7 +472,7 @@ function _inquiry()
     if rc!=0 then
         exitfunc rc
     endif
-endfunc -1      //dont give response to user
+endfunc -1 //Don't give response to user
 
 
 //-------------------------------------------------------------------------
@@ -472,11 +482,11 @@ endfunc -1      //dont give response to user
 function _spp()
     tlen = ExtractStrToken(urtcmd$,tkn$)
     if tlen == 0 then
-        exitfunc -4     //send unknown command response to user
+        exitfunc -4     //Send unknown command response to user
     endif
 
     if strcmp(tkn$,"open")==0 then
-        '//don't open another SPP port if one is already open
+        //Don't open another SPP port if one is already open
         if hSppPort!=0 then
             print "\nSPP Port Already Open"
             exitfunc -2
@@ -496,7 +506,7 @@ function _spp()
             exitfunc -2
         endif
 
-        rc = BtcSppClose(hSppPort)              //open the spp port. Store handle in the array at acquired index
+        rc = BtcSppClose(hSppPort)              //Open the spp port. Store handle in the array at acquired index
         if rc ==0 then
             print "\nSPP Port closed : (";integer.h'hSppPort;")"
             hSppPort=0
@@ -506,7 +516,7 @@ function _spp()
             exitfunc rc
         endif
     else
-        UartRsp(-4)     //send unknown command response to user
+        UartRsp(-4)     //Send unknown command response to user
     endif
 endfunc -1
 
@@ -524,14 +534,14 @@ function _pair()
 
     rc = BtcPair(s$[1], 2)
 
-    //if incorrect mode
+    //If incorrect mode
     if rc ==0x571A then
         rc = BtcSetPairable(1)
         AssertRC(rc,430)
         rc = BtcSetConnectable(1)
         AssertRC(rc,432)
 
-        //try pairing again
+        //Try pairing again
         rc = BtcPair(s$[1], 2)
         AssertRC(rc,436)
     endif
@@ -550,7 +560,7 @@ function _connect()
 
     rc = ExtractStrTokens(urtcmd$,1,1)
 
-    '//use #defined/stored BT address if none given
+    //Use #defined/stored BT address if none given
     if rc!=0 then
         s$[1] = PEER_BT_ADDR
     endif
@@ -594,7 +604,7 @@ function _disconnect()
     if rc!=0 then
         exitfunc rc
     endif
-endfunc -3  //dont give response to user
+endfunc -3  //Don't give response to user
 
 
 //-------------------------------------------------------------------------
@@ -608,7 +618,7 @@ endfunc BtcInquiryCancel()
 // #CMD#//  at+bls
 //------------------------------------------------------------------------------
 Function _at()
-    StrShiftLeft(urtcmd$,1)              //remove the '+'
+    StrShiftLeft(urtcmd$,1)              //Remove the '+'
     tlen = ExtractStrToken(urtcmd$,tkn$)
     if tlen > 0 then
 
@@ -621,7 +631,7 @@ Function _at()
             exitfunc _pair()
         endif
     endif
-endfunc -4  //print 'UNKNOWN COMMAND' if incorrect command
+endfunc -4  //Print 'UNKNOWN COMMAND' if incorrect command
 
 
 //------------------------------------------------------------------------------
@@ -648,7 +658,7 @@ function _Misc()
     endif
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if strcmp(tkn$,"set")==0 then
-      //extract 1 (#INTidx#) and store starting at i[1]
+      //Extract 1 (#INTidx#) and store starting at i[1]
       rc = ExtractIntTokens(urtcmd$,1,1)
       if rc != 0 then
         exitfunc rc
@@ -656,7 +666,7 @@ function _Misc()
       if (i[1] < 0) || (i[1] >= NUM_OF_S_PARAMS) then
         exitfunc 6
       endif
-      //extract 1 (#STRescapedvalue#) and store starting at s$[1]
+      //Extract 1 (#STRescapedvalue#) and store starting at s$[1]
       rc = ExtractStrTokens(urtcmd$,i[1],1)
       if rc != 0 then
         exitfunc rc
@@ -666,7 +676,7 @@ function _Misc()
     endif
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if strcmp(tkn$,"sethex")==0 then
-      //extract 1 (#INTidx#) and store starting at i[1]
+      //Extract 1 (#INTidx#) and store starting at i[1]
       rc = ExtractIntTokens(urtcmd$,1,1)
       if rc != 0 then
         exitfunc rc
@@ -674,7 +684,7 @@ function _Misc()
       if (i[1] < 0) || (i[1] >= NUM_OF_S_PARAMS) then
         exitfunc 6
       endif
-      //extract 1 (#STRescapedvalue#) and store starting at s$[1]
+      //Extract 1 (#STRescapedvalue#) and store starting at s$[1]
       rc = ExtractStrTokens(urtcmd$,i[1],1)
       if rc != 0 then
         exitfunc rc
@@ -716,8 +726,8 @@ endfunc 5
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 function OnUartCmd() as integer
-    rc = -2 //assume there is no error
-    tlen = ExtractStrToken(urtcmd$,tkn$) //get first token
+    rc = -2 //Assume there is no error
+    tlen = ExtractStrToken(urtcmd$,tkn$) //Get first token
     if tlen > 0 then
 
         if strcmp(tkn$,"at")==0 then
@@ -731,7 +741,7 @@ function OnUartCmd() as integer
 
         elseif StrCmp(tkn$,"ato")==0 || StrCmp(tkn$,"bridge")==0 then
             _bridge()
-            rc = -1       //don't give response to user
+            rc = -1       //Don't give response to user
 
         elseif strcmp(tkn$,"at+btd")==0 then
             rc = _delete()
@@ -744,7 +754,7 @@ function OnUartCmd() as integer
 
         elseif StrCmp(tkn$,"ato")==0 || StrCmp(tkn$,"bridge")==0 then
             rc = SendMsgApp(0,BRIDGE_SPP_MODE)
-            rc = -1       //don't give response to user
+            rc = -1       //Don't give response to user
 
         elseif StrCmp(tkn$,"ath")==0 || StrCmp(tkn$,"disconnect")==0 then
             rc = _disconnect()
@@ -762,7 +772,7 @@ function OnUartCmd() as integer
             exitfunc 0
 
         elseif strcmp(tkn$,"setdiscoverable")==0 then
-            //extract 2 : (#INTenable# #INTtimeout#) and store starting at i[1]
+            //Extract 2 : (#INTenable# #INTtimeout#) and store starting at i[1]
             rc = ExtractIntTokens(urtcmd$,1,2)
             if rc != 0 then
                 exitfunc rc
@@ -770,7 +780,7 @@ function OnUartCmd() as integer
             rc = BtcSetDiscoverable(i[1], i[2])
 
         elseif strcmp(tkn$,"setpairable")==0 then
-            //extract 1 : (#INTenable#) and store starting at i[1]
+            //Extract 1 : (#INTenable#) and store starting at i[1]
             rc = ExtractIntTokens(urtcmd$,1,1)
             if rc != 0 then
                 exitfunc rc
@@ -784,25 +794,25 @@ function OnUartCmd() as integer
 
         endif
     endif
-    // send a response back to the user
+    //Send a response back to the user
     UartRsp(rc)
 endfunc 1
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 sub Initialise()
-    '//Setup nAutorun pin to control switching between command and bridge mode
+    //Setup nAutorun pin to control switching between command and bridge mode
     rc=GpioBindEvent(0,22,2)
 
     rc = UartOpen(UART_BAUDRATE, 0, 0, "CN81H")
-	AssertRC(rc,738)
+    AssertRC(rc,738)
 
-    '//set friendly name
+    //Set friendly name
     s$[1] = FRIENDLY_NAME
     rc = BtcSetFriendlyName(s$[1])
     AssertRC(rc,739)
 
-    '//Configure inquiries from #defined configuration values
+    //Configure inquiries from #defined configuration values
     rc = BtcInquiryConfig(0,INQR_TYPE)
     AssertRC(rc,741)
     rc = BtcInquiryConfig(1,INQR_MODE)
@@ -810,17 +820,17 @@ sub Initialise()
     rc = BtcInquiryConfig(2,MAX_DEVS_REC_RESP)
     AssertRC(rc,749)
 
-    //configure discoverability mode
+    //Configure discoverability mode
     rc = BtcDiscoveryConfig(0,DISCOV_MODE)
     AssertRC(rc,679)
 
-    //save subsequent pairings -bond
+    //Save subsequent pairings -bond
     rc = BtcSavePairings(SAVE_PAIRINGS)
     AssertRC(rc,615)
 
     rc = BtcSetPairable(PAIRABLE_ON_STARTUP)
 
-    //set connectable so other devices can connect to this device
+    //Set connectable so other devices can connect to this device
     rc = BtcSetConnectable(1)
     AssertRC(rc,682)
 
@@ -833,10 +843,10 @@ sub Initialise()
         AssertRC(rc,651)
     endif
 
-    //set discoverable if DISCOVERABLE_ON_STARTUP ==1 OR OPEN_SPP_ON_STARTUP==1
+    //Set discoverable if DISCOVERABLE_ON_STARTUP ==1 OR OPEN_SPP_ON_STARTUP==1
     rc = BtcSetDiscoverable(DISCOVERABLE_ON_STARTUP || OPEN_SPP_ON_STARTUP, DISCOV_TIMEOUT)
 
-    '//Set and print friendly name
+    //Set and print friendly name
     s$[1] = FRIENDLY_NAME
     rc = BtcSetFriendlyName(s$[1])
     print "\n\r";s$[1];"\n\r"
@@ -853,7 +863,6 @@ sub Initialise()
 endsub
 
 
-
 //******************************************************************************
 // Handler definitions
 //******************************************************************************
@@ -863,7 +872,7 @@ endsub
 //------------------------------------------------------------------------------
 function HandlerUartRx() as integer
     dim nMatch : nMatch = 0
-    //check if CR has been received
+    //Check if CR has been received
     nMatch=UartReadMatch(stRsp$,13)
     if nMatch!=0 then
         //CR exists in the input buffer
@@ -879,18 +888,18 @@ endfunc 1
 function HandlerUartRxSpp()
     dim uLen, wLen
     if buffer ==0 then
-        //read data that has arrived through dia the UART
+        //Read data that has arrived through dia the UART
         uLen  = UartRead(u$)
 
         if uLen > 0 then
             if StrCmp(u$,"^")==0 then
-            '//parse the ^ entry
+                //Parse the ^ entry
                 if SwitchToCmd() == 1 then
                     print "\n"
                     rc = SendMsgApp(0,CMD_MODE)
                 endif
             else
-                //write data to most recent spp connection
+                //Write data to most recent spp connection
                 rc = BtcSppWrite(hC, u$, wLen)
                 if wLen != uLen then
                     buffer = 1
@@ -942,7 +951,7 @@ function HandlerInqResp(respType) as integer
     dim ad$,dta$,rsi,nme$,ndx
 
     while BtcInquiryGetReport(ad$,dta$,ndx,rsi)==0
-        '//get and print name of device
+        //Get and print name of device
         rc = BtcGetEIRByTag(dta$,0x09,nme$)
         print "\nINQ: "; StrHexize$(ad$), rsi, nme$
     endwhile
@@ -953,7 +962,7 @@ endfunc 1
 // This handler is called when there is an inquiry timeout
 //------------------------------------------------------------------------------
 function HandlerInqTO() as integer
-    '//service any waiting inquiry responses
+    //Service any waiting inquiry responses
     rc = HandlerInqResp(2)
     UartRsp(0)
 endfunc 1
@@ -989,8 +998,6 @@ function HandlerSppData()
         endwhile
     endif
 endfunc 1
-
-
 
 
 //------------------------------------------------------------------------------
@@ -1043,15 +1050,15 @@ endfunc 1
 //------------------------------------------------------------------------------
 function HandlerSppDiscon(hConn)
     print "\n --- Spp Disconnect"
-    //set connectable
+    //Set connectable
     rc = BtcSetConnectable(1)
 
-    '//set discoverable if spp port open
+    //Set discoverable if spp port open
     if hSppPort!=0 then
         rc = BtcSetDiscoverable(1, DISCOV_TIMEOUT)
     endif
 
-    //switch back to command mode so module can accept commands
+    //Switch back to command mode so module can accept commands
     rc = SendMsgApp(0,CMD_MODE)
 endfunc 1
 
@@ -1061,23 +1068,23 @@ endfunc 1
 //------------------------------------------------------------------------------
 function HandlerSppConn(hConn, res) as integer
     print "\n --- SPP Connect: (";integer.h' res;")"
-    //if connected successfully
+    //If connected successfully
     if res == 0 then
         hC = hConn
         rc = SendMsgApp(0,BRIDGE_SPP_MODE)
 
-        '//set not discoverable or connectable to prevent multiple connections
+        //Set not discoverable or connectable to prevent multiple connections
         rc = BtcSetDiscoverable(0,DISCOV_TIMEOUT)
         rc = BtcSetConnectable(0)
         AssertRC(rc,804)
     endif
 
-    '//set pairable and attempt to pair if an authentication failure was the reason connect attempt failed
+    //Set pairable and attempt to pair if an authentication failure was the reason connect attempt failed
     if res == AUTH_FAILURE then
         rc = BtcSetPairable(1)
         AssertRC(rc,863)
 
-        rc = BtcPair(s$[1],2) //attempt to pair, using default setting for bonding
+        rc = BtcPair(s$[1],2) //Attempt to pair, using default setting for bonding
         AssertRC(rc,866)
     endif
 endfunc 1
@@ -1105,8 +1112,8 @@ endfunc 1
 //------------------------------------------------------------------------------
 function HandlerUartRxPair()
     i[2] = UartReadMatch(s$[2],13)
-    if i[2] !=0 then                            //if any data was read
-        s$[2] = StrSplitLeft$(s$[2],i[2]-1)     //split string to include everything up to the carriage return
+    if i[2] !=0 then                            //If any data was read
+        s$[2] = StrSplitLeft$(s$[2],i[2]-1)     //Split string to include everything up to the carriage return
 
         if strcmp(s$[2],"quit")==0 || strcmp(s$[2],"exit")==0 then
             rc = BtcSppDisconnect(hC)
@@ -1151,7 +1158,7 @@ function HandlerUartRxPIN()
     i[2] = 0
     i[2] = UartReadMatch(s$[2],13)
     if i[2] !=0 then
-        s$[2] = StrSplitLeft$(s$[2],i[2]-1)     //split string to include everything up to the carriage return
+        s$[2] = StrSplitLeft$(s$[2],i[2]-1)     //Split string to include everything up to the carriage return
 
         if strcmp(s$[2],"quit")==0 || strcmp(s$[2],"exit")==0 then
             rc = BtcSppDisconnect(hC)
@@ -1175,11 +1182,11 @@ endfunc 1
 // Called when there is a pairing request from another device
 //------------------------------------------------------------------------------
 function HandlerPairReq()
-    rc = BtcGetPAIRRequestBDAddr(s$[3])       //setting it to s$[3] so it doesn't get mixed up with any other strings (command params etc) that may be stored in s$[1]
-    rc = BtcBondingEraseKey(s$[3])            //erase link key for this bluetooth device incase already bonded with it
+    rc = BtcGetPAIRRequestBDAddr(s$[3])       //Setting it to s$[3] so it doesn't get mixed up with any other strings (command params etc) that may be stored in s$[1]
+    rc = BtcBondingEraseKey(s$[3])            //Erase link key for this bluetooth device incase already bonded with it
     print "\nPair Req: "; StrHexize$(s$[3])
     print t$;"\n"
-    UartFlush(1)    //flush the uart rx buffer
+    UartFlush(1)                              //Flush the uart rx buffer
     onevent evuartrx call HandlerUartRxPair
 endfunc 1
 
@@ -1189,10 +1196,10 @@ endfunc 1
 //------------------------------------------------------------------------------
 function HandlerPINReq()
     rc = BtcGetPinRequestBDAddr(s$[3])
-    rc = BtcBondingEraseKey(s$[3])            //erase link key for this bluetooth device incase already bonded with it
+    rc = BtcBondingEraseKey(s$[3])            //Erase link key for this bluetooth device incase already bonded with it
     print "\nPIN Req: "; StrHexize$(s$[3])
     print e$
-    UartFlush(1)    //flush the uart rx buffer
+    UartFlush(1)                              //Flush the uart rx buffer
     onevent evuartrx call HandlerUartRxPIN
 endfunc 1
 
@@ -1210,11 +1217,11 @@ endfunc 1
 function HandlerGpioChan0()
     dim i : i = GpioRead(22)
 
-    '//if DTR unticked
+    //If DTR unticked
     if i == 1 then
         TimerStart(DISCON_TIMER, DISCON_TIMER_DUR_MS, 0)
 
-    '//DTR ticked -> switch to command mode
+    //DTR ticked -> switch to command mode
     elseif TimerRunning(DISCON_TIMER)!=0 then
         TimerCancel(DISCON_TIMER)
         exitfunc SetMode(0, CMD_MODE)
@@ -1273,8 +1280,8 @@ OnEvent  EVBTC_DISCOV_TIMEOUT   call HandlerBtcDiscTimOut
 OnEvent  EVGPIOCHAN0            call HandlerGpioChan0
 OnEvent  EVTMR0                 call _disconnect
 OnEvent  EVBTC_DISCOV_TIMEOUT   call HandlerBtcDiscTimOut
-OnEvent  EVUARTTXEMPTY        call HandlerUartTxEmpty
-OnEvent  EVSPPTXEMPTY        call HandlerSppTxEmpty
+OnEvent  EVUARTTXEMPTY          call HandlerUartTxEmpty
+OnEvent  EVSPPTXEMPTY           call HandlerSppTxEmpty
 
 //------------------------------------------------------------------------------
 // Initialise and then wait for events

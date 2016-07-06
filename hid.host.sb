@@ -1,13 +1,26 @@
-//******************************************************************************
-// Laird Technologies (c) 2014
+// Copyright (c) 2014, Laird
+//
+// Permission to use, copy, modify, and/or distribute this software for any
+// purpose with or without fee is hereby granted, provided that the above
+// copyright notice and this permission notice appear in all copies.
+//
+// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+// ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
+// IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+//
+// SPDX-License-Identifier:ISC
 //
 
 //******************************************************************************
 // Modules
 //******************************************************************************
-#define MODULE_BTC		(0x01)
-#define MODULE_INQ		(0x02)
-#define MODULE_TEST		(0x04)
+#define MODULE_BTC        (0x01)
+#define MODULE_INQ        (0x02)
+#define MODULE_TEST        (0x04)
 
 //Module selection
 #set $cmpif,(0x01)
@@ -17,14 +30,14 @@
 //******************************************************************************
 
 //Set this to 0 to disable all debugging messages
-#define ENABLE_DEBUG_PRINTS                  1
+#define ENABLE_DEBUG_PRINTS                 1
 
-// Number of connections
-#define NUM_OF_CONNS                         8
+//Number of connections
+#define NUM_OF_CONNS                        8
 
-// size of i[]
+//Size of i[]
 #define NUM_OF_I_PARAMS                     (10)
-// size of s$[]
+//Size of s$[]
 #define NUM_OF_S_PARAMS                     (10)
 
 
@@ -84,21 +97,21 @@ endsub
 // Global Variable Declarations
 //******************************************************************************
 
-// Generic return code
+//Generic return code
 dim rc
 
-// Error and return strings
+//Error and return strings
 dim ok$,er$,pr$,uc$
 
-// Used for Uart command parsing
-dim stRsp$        			//Uart rx data is stored here
-dim urtcmd$                 //cmd line from uart
-dim tkn$,tlen               //used by command parser
-dim i[NUM_OF_I_PARAMS]      // index 0 used for return values
-dim s$[NUM_OF_S_PARAMS]    	// index 0 used for return string
+//Used for Uart command parsing
+dim stRsp$                 //Uart rx data is stored here
+dim urtcmd$                //CMD line from uart
+dim tkn$,tlen              //Used by command parser
+dim i[NUM_OF_I_PARAMS]     //Index 0 used for return values
+dim s$[NUM_OF_S_PARAMS]    //Index 0 used for return string
 
-// Connection handles
-dim hc[NUM_OF_CONNS+1]      //contains connection handles
+//Connection handles
+dim hc[NUM_OF_CONNS+1]     //Contains connection handles
 
 //******************************************************************************
 // Initialise Global Variable
@@ -132,7 +145,7 @@ function ClearI()
 endfunc 0
 
 //==============================================================================
-//release all connection handles
+//Release all connection handles
 //==============================================================================
 sub InitConnHandles()
   dim z
@@ -177,9 +190,9 @@ function GetConnHandle(hConn)
 endfunc 0
 
 //==============================================================================
-#define UARTRESP_OK_PR						(0)
-#define UARTRESP_PR							(-2)
-#define UARTRESP_UC_PR						(-4)
+#define UARTRESP_OK_PR                        (0)
+#define UARTRESP_PR                           (-2)
+#define UARTRESP_UC_PR                        (-4)
 //==============================================================================
 sub UartRsp(rsp as integer)
     if rsp == UARTRESP_OK_PR then
@@ -222,8 +235,8 @@ endfunc 0
 //-------------------------------------------------------------------------
 //-------------------------------------------------------------------------
 sub ProcessCmd()
-	rc = SendMsgApp(0,0)
-	waitevent
+    rc = SendMsgApp(0,0)
+    waitevent
 endsub
 
 
@@ -235,38 +248,38 @@ endsub
 //------------------------------------------------------------------------------
 #include "lib\mouse.module.sblib"
 
-#include "lib\btc.module.sblib"     // BTC module for pairing and connectable / discoverable
-#include "lib\inq.module.sblib"     // INQ module for classic inquiries
-#include "lib\hid.module.sblib"     // HID module for HID connections and data
+#include "lib\btc.module.sblib"     //BTC module for pairing and connectable / discoverable
+#include "lib\inq.module.sblib"     //INQ module for classic inquiries
+#include "lib\hid.module.sblib"     //HID module for HID connections and data
 
 //==============================================================================
 //==============================================================================
 function OnUartCmd() as integer
-  rc=UARTRESP_PR //default response is ">"
-  tlen = ExtractStrToken(urtcmd$,tkn$) //get first token
+  rc=UARTRESP_PR //Default response is ">"
+  tlen = ExtractStrToken(urtcmd$,tkn$) //Get first token
   if tlen > 0 then
 
-	if strcmp(tkn$,"exit")==0 || strcmp(tkn$,"quit")==0  then
+    if strcmp(tkn$,"exit")==0 || strcmp(tkn$,"quit")==0  then
       Reset(0)
 
-	elseif strcmp(tkn$,"inquiry")==0 then
-		rc = _inquiry()
+    elseif strcmp(tkn$,"inquiry")==0 then
+        rc = _inquiry()
 
-	elseif strcmp(tkn$,"hid")==0 then
-		rc = _hid()
+    elseif strcmp(tkn$,"hid")==0 then
+        rc = _hid()
 
-	elseif strcmp(tkn$,"btc")==0 then
-		rc = _btc()
+    elseif strcmp(tkn$,"btc")==0 then
+        rc = _btc()
 
-	elseif strcmp(tkn$,"mouse")==0 then
-		rc = _mouse()
+    elseif strcmp(tkn$,"mouse")==0 then
+        rc = _mouse()
 
     else
-        rc=UARTRESP_UC_PR //send an "UNKNOWN COMMAND" response to user
+        rc=UARTRESP_UC_PR //Send an "UNKNOWN COMMAND" response to user
 
     endif
   endif
-  // send a response back to the user
+  //Send a response back to the user
   exitfunc rc
 endfunc 1
 
@@ -280,13 +293,13 @@ endfunc 1
 function HandlerUartRxCmd() as integer
   dim nMatch
 
-  //check if CR has been received
+  //Check if CR has been received
   nMatch=UartReadMatch(stRsp$,13)
   if nMatch!=0 then
     //CR exists in the input buffer
     urtcmd$ = strsplitleft$(stRsp$,nMatch)
     rc = OnUartCmd()
-	UartRsp(rc)
+    UartRsp(rc)
   endif
 endfunc 1
 
@@ -306,8 +319,8 @@ endfunc 0
 //------------------------------------------------------------------------------
 // Enable synchronous event handlers
 //------------------------------------------------------------------------------
-OnEvent  EVUARTRX                 call HandlerUartRxCmd
-OnEvent  EVMSGAPP 				  call HandlerMsgApp
+OnEvent  EVUARTRX   call HandlerUartRxCmd
+OnEvent  EVMSGAPP   call HandlerMsgApp
 
 //------------------------------------------------------------------------------
 // Initialise and then wait for events

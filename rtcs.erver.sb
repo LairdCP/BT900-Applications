@@ -1,53 +1,66 @@
- //******************************************************************************
- // Laird Technologies (c) 2014-2015
- //
- // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- // +++++                                                                      ++
- // +++++  When UwTerminal downloads the app it will store it as a filenname   ++
- // +++++  which consists of all characters up to the first . and excluding it ++
- // +++++                                                                      ++
- // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- //
- // BT900 custom Real Time Clock (RTC) Service
- //       This sample application implements the BLE RTC service with additional
- //       characteristics to allow control of the alarm and setting the time
- //       remotely.
- //
- //******************************************************************************
- //
- // -> Sends BLE adverts with time from RTC
- // -> Allows remote time setting
- // -> Supports alarm wakeup with broadcast on event
- // -> Allows remote wakeup configuration
- // -> Uses buzzer as a wake-up alarm (SIO_12) when jumper is fitted
- //
+// Copyright (c) 2015, Laird
+//
+// Permission to use, copy, modify, and/or distribute this software for any
+// purpose with or without fee is hereby granted, provided that the above
+// copyright notice and this permission notice appear in all copies.
+//
+// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+// ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
+// IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+//
+// SPDX-License-Identifier:ISC
+//
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// +++++                                                                      ++
+// +++++  When UwTerminal downloads the app it will store it as a filenname   ++
+// +++++  which consists of all characters up to the first . and excluding it ++
+// +++++                                                                      ++
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//
+// BT900 custom Real Time Clock (RTC) Service
+//       This sample application implements the BLE RTC service with additional
+//       characteristics to allow control of the alarm and setting the time
+//       remotely.
+//
+//******************************************************************************
+//
+// -> Sends BLE adverts with time from RTC
+// -> Allows remote time setting
+// -> Supports alarm wakeup with broadcast on event
+// -> Allows remote wakeup configuration
+// -> Uses buzzer as a wake-up alarm (SIO_12) when jumper is fitted
+//
 
 #DEFINE BLE_SERVICE_SECONDARY                           0
 #DEFINE BLE_SERVICE_PRIMARY                             1
 
-dim rc //Result code
-dim I2Ch //I2C Handle
-DIM Service1 //composite handle for hts primary service
-DIM Service1UUID : Service1UUID = BleHandleUuid16(0x1805) //HT Svc UUID Handle, 0x1805 for current time service
-DIM Char1 //Characteristic 1 (Current time)
-DIM Char2 //Characteristic 2 (Local time)
-DIM Char3 //Characteristic 3 (Reference time)
-DIM Char4 //Characteristic 4 (Alarm mode control)
-DIM Char5 //Characteristic 5 (Alarm time control)
-DIM Char6 //Characteristic 6 (Version)
-DIM Timezone : Timezone = 0 //Hours off from UTC, see https://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.time_zone.xml
-DIM DST : DST = 0 //0 for no DST, 4 for +1 hour DST, see https://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.dst_offset.xml
-DIM SendNotify : SendNotify = 0 //Set to 1 when notifications are enabled
+dim rc                                                     //Result code
+dim I2Ch                                                   //I2C Handle
+DIM Service1                                               //Composite handle for hts primary service
+DIM Service1UUID : Service1UUID = BleHandleUuid16(0x1805)  //HT Svc UUID Handle, 0x1805 for current time service
+DIM Char1                                                  //Characteristic 1 (Current time)
+DIM Char2                                                  //Characteristic 2 (Local time)
+DIM Char3                                                  //Characteristic 3 (Reference time)
+DIM Char4                                                  //Characteristic 4 (Alarm mode control)
+DIM Char5                                                  //Characteristic 5 (Alarm time control)
+DIM Char6                                                  //Characteristic 6 (Version)
+DIM Timezone : Timezone = 0                                //Hours off from UTC, see https://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.time_zone.xml
+DIM DST : DST = 0                                          //0 for no DST, 4 for +1 hour DST, see https://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.dst_offset.xml
+DIM SendNotify : SendNotify = 0                            //Set to 1 when notifications are enabled
 dim APP_VERSION$ : APP_VERSION$ = "0.92"
-dim BuzzerFunc : BuzzerFunc = 0 //Which function to do with the buzzer next
-dim I2CSpeed : I2CSpeed = 250000 //250KHz
-dim RTCAddr : RTCAddr = 111 //I2C Address of RTC
-dim AdjustReason : AdjustReason = 0 //Reason for last time adjustment
-dim DayOfWeek : DayOfWeek = 0 //The current day of the week (0 = unknown)
+dim BuzzerFunc : BuzzerFunc = 0                            //Which function to do with the buzzer next
+dim I2CSpeed : I2CSpeed = 250000                           //250KHz
+dim RTCAddr : RTCAddr = 111                                //I2C Address of RTC
+dim AdjustReason : AdjustReason = 0                        //Reason for last time adjustment
+dim DayOfWeek : DayOfWeek = 0                              //The current day of the week (0 = unknown)
 
-'//******************************************************************************
-'// Command success handler
-'//******************************************************************************
+//******************************************************************************
+// Command success handler
+//******************************************************************************
 SUB AssertRC(rc,ln)
     IF rc!=0 THEN
         PRINT "\nFail :";integer.h' rc;" at tag ";ln
@@ -100,9 +113,9 @@ FUNCTION HndlrTmr0()
 
     //Encode data
     dim TmpStr$ : TmpStr$ = ""
-    rc = BleEncode8(TmpStr$, AdjustReason, 9) //Adjust reason
-    rc = BleEncode8(TmpStr$, 0, 8) //1/256 seconds
-    rc = BleEncode8(TmpStr$, DayOfWeek, 7) //Day of week
+    rc = BleEncode8(TmpStr$, AdjustReason, 9)  //Adjust reason
+    rc = BleEncode8(TmpStr$, 0, 8)             //1/256 seconds
+    rc = BleEncode8(TmpStr$, DayOfWeek, 7)     //Day of week
     rc = BleEncode8(TmpStr$, Seconds, 6)
     rc = BleEncode8(TmpStr$, Minutes, 5)
     rc = BleEncode8(TmpStr$, Hours, 4)
@@ -267,9 +280,9 @@ FUNCTION HndlrCharVal(BYVAL charHandle, BYVAL offset, BYVAL len)
         rc = I2COpen(I2CSpeed, 0, I2Ch)
 
         //Write data to RTC
-        rc = BleDecodeU8(attr$, TmpVal, 0) //On/off
-        rc = BleDecodeU8(attr$, TmpVal2, 1) //Alarm match
-        TmpVal2 = ((TmpVal2 & 7) << 4) | 128 //Only use 3 bits and shift left, then enable MSB for high-level logic
+        rc = BleDecodeU8(attr$, TmpVal, 0)    //On/off
+        rc = BleDecodeU8(attr$, TmpVal2, 1)   //Alarm match
+        TmpVal2 = ((TmpVal2 & 7) << 4) | 128  //Only use 3 bits and shift left, then enable MSB for high-level logic
 
         //Write match conditions to RTC
         rc = I2CWriteReg8(RTCAddr, 0x0d, TmpVal2)
@@ -372,11 +385,11 @@ FUNCTION GetAlarmTime()
 
     //Write this to the characteristic
     dim TmpStr$ : TmpStr$ = ""
-    rc = BleEncode8(TmpStr$, AlmSec, 4) //Seconds
-    rc = BleEncode8(TmpStr$, AlmMin, 3) //Minutes
-    rc = BleEncode8(TmpStr$, AlmHour, 2) //Hours
-    rc = BleEncode8(TmpStr$, AlmDate, 1) //Day
-    rc = BleEncode8(TmpStr$, AlmMonth, 0) //Month
+    rc = BleEncode8(TmpStr$, AlmSec, 4)    //Seconds
+    rc = BleEncode8(TmpStr$, AlmMin, 3)    //Minutes
+    rc = BleEncode8(TmpStr$, AlmHour, 2)   //Hours
+    rc = BleEncode8(TmpStr$, AlmDate, 1)   //Day
+    rc = BleEncode8(TmpStr$, AlmMonth, 0)  //Month
 
     //Update GATT information
     rc = BleCharValueWrite(Char5, TmpStr$)
@@ -438,14 +451,14 @@ rc = I2CReadReg8(RTCAddr, 6, yearVal)
 
 IF ((secVal & 112) == 0 && (minVal & 112) == 0 && (dayVal & 63) == 1 && (monthVal & 31) == 1 && yearVal == 1) THEN
     //No settings configured! Set time to Monday, 8:15am
-    rc = I2CWriteReg8(RTCAddr, 3, 41) //Power and day of week (day 1/Monday)
-    rc = I2CWriteReg8(RTCAddr, 1, 16+5) //Minutes
-    rc = I2CWriteReg8(RTCAddr, 2, 8) //Hours (24-hour format)
+    rc = I2CWriteReg8(RTCAddr, 3, 41)    //Power and day of week (day 1/Monday)
+    rc = I2CWriteReg8(RTCAddr, 1, 16+5)  //Minutes
+    rc = I2CWriteReg8(RTCAddr, 2, 8)     //Hours (24-hour format)
 
     //Set date to 15/04/2014
-    rc = I2CWriteReg8(RTCAddr, 4, 21) //15th
-    rc = I2CWriteReg8(RTCAddr, 5, 4) //April
-    rc = I2CWriteReg8(RTCAddr, 6, 19) //2014 (2014-2001 = 13)
+    rc = I2CWriteReg8(RTCAddr, 4, 21)    //15th
+    rc = I2CWriteReg8(RTCAddr, 5, 4)     //April
+    rc = I2CWriteReg8(RTCAddr, 6, 19)    //2014 (2014-2001 = 13)
 
     //Enable RTC
     rc = I2CWriteReg8(RTCAddr, 0, 128)
@@ -514,7 +527,7 @@ AssertRC(rc,489)
 
 //Setup local time information characteristic
 dim TmpStr$ : TmpStr$ = ""
-rc = BleEncode8(TmpStr$, DST, 1) //DST
+rc = BleEncode8(TmpStr$, DST, 1)      //DST
 rc = BleEncode8(TmpStr$, Timezone, 0) //Timezone
 
 //Update GATT information
@@ -525,7 +538,7 @@ TmpStr$ = ""
 rc = BleEncode8(TmpStr$, 255, 3) //Hours since update
 rc = BleEncode8(TmpStr$, 255, 2) //Days since update
 rc = BleEncode8(TmpStr$, 255, 1) //Accuracy is unknown
-rc = BleEncode8(TmpStr$, 4, 0) //Source is manual
+rc = BleEncode8(TmpStr$, 4, 0)   //Source is manual
 
 //Update GATT information
 rc = BleCharValueWrite(Char3, TmpStr$)
@@ -599,11 +612,11 @@ BTAddr$ = SysInfo$(4)
 PRINT "\nrtcs.erver running with Bluetooth address: ";STRHEXIZE$(BTAddr$);"\nNow accepting connections...\n\n"
 
 //Events
-ONEVENT EVTMR0 CALL HndlrTmr0 //Runs when timer0 expires
-ONEVENT EVTMR1 CALL HndlrTmr1 //Runs when timer1 expires
-ONEVENT EVBLEMSG CALL BleEvent //Runs on BLE event
-ONEVENT EVCHARCCCD CALL HndlrCharCccd //Runs when CCCD is written
-ONEVENT EVCHARVAL CALL HndlrCharVal //Runs when characteristic is written
-ONEVENT EVGPIOCHAN1 CALL HndlrAlarm //Runs when the RTC alarm wakes up
+ONEVENT EVTMR0 CALL HndlrTmr0          //Runs when timer0 expires
+ONEVENT EVTMR1 CALL HndlrTmr1          //Runs when timer1 expires
+ONEVENT EVBLEMSG CALL BleEvent         //Runs on BLE event
+ONEVENT EVCHARCCCD CALL HndlrCharCccd  //Runs when CCCD is written
+ONEVENT EVCHARVAL CALL HndlrCharVal    //Runs when characteristic is written
+ONEVENT EVGPIOCHAN1 CALL HndlrAlarm    //Runs when the RTC alarm wakes up
 
 WAITEVENT

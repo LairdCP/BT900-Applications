@@ -1,24 +1,37 @@
-'//******************************************************************************
-'// Laird Technologies (c) 2013
-'//
-'// bcv.broadcast.characteristic.val
-'//
-'// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-'// +++++                                                                      ++
-'// +++++  When UwTerminal downloads the app it will store it as a filenname   ++
-'// +++++  which consists of all characters up to the first . and excluding it ++
-'// +++++                                                                      ++
-'// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-'//
-'// This sample app will encode the temperature data in the first 3 #defines
-'// below and broadcast it in an advert report. GATT Client can then read this
-'// temperature data without connecting to the module.
-'//
-'//******************************************************************************
+// Copyright (c) 2013, Laird
+//
+// Permission to use, copy, modify, and/or distribute this software for any
+// purpose with or without fee is hereby granted, provided that the above
+// copyright notice and this permission notice appear in all copies.
+//
+// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+// ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
+// IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+//
+// SPDX-License-Identifier:ISC
+//
+// bcv.broadcast.characteristic.val
+//
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// +++++                                                                      ++
+// +++++  When UwTerminal downloads the app it will store it as a filenname   ++
+// +++++  which consists of all characters up to the first . and excluding it ++
+// +++++                                                                      ++
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//
+// This sample app will encode the temperature data in the first 3 #defines
+// below and broadcast it in an advert report. GATT Client can then read this
+// temperature data without connecting to the module.
+//
+//******************************************************************************
 
-'//******************************************************************************
-'// Definitions
-'//******************************************************************************
+//******************************************************************************
+// Definitions
+//******************************************************************************
 #define TEMP_MANTISSA                        2711
 #define TEMP_EXPONENT                        -2
 #define UUID_HEALTH_THERMOMETER_SERVICE      0x1809
@@ -32,35 +45,35 @@
 #define ADV_SCAN_IND                         2
 #define ADV_FILTERPOLICY_ANY                 0
 
-        '//Advertise interval
+        //Advertise interval
 #define ADV_INTERVAL_MS                      250
-        '//Advertise timeout
+        //Advertise timeout
 #define ADV_TIMEOUT_MS                       0
-        '//Whitelist Policy in Adverts
+        //Whitelist Policy in Adverts
 #define ADV_WHITELIST_FILTER_POLICY          ADV_FILTERPOLICY_ANY
 
 
-'//******************************************************************************
-'// Library Import
-'//******************************************************************************
+//******************************************************************************
+// Library Import
+//******************************************************************************
 
-'//******************************************************************************
-'// Global Variable Declarations
-'//******************************************************************************
-dim rc         '//result code
-dim devName$   '//Device name
-dim hChar      '//characteristic handle
-dim hSvc       '//service handle
+//******************************************************************************
+// Global Variable Declarations
+//******************************************************************************
+dim rc         //Result code
+dim devName$   //Device name
+dim hChar      //Characteristic handle
+dim hSvc       //Service handle
 
-'//******************************************************************************
-'// Function and Subroutine definitions
-'//******************************************************************************
+//******************************************************************************
+// Function and Subroutine definitions
+//******************************************************************************
 
-'//------------------------------------------------------------------------------
-'// For debugging
-'// --- rc = result code
-'// --- ln = line number
-'//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+// For debugging
+// --- rc = result code
+// --- ln = line number
+//------------------------------------------------------------------------------
 Sub AssertRC(rc,ln)
     if rc!=0 then
         print "\nFail :";integer.h' rc;" at tag ";ln
@@ -68,9 +81,9 @@ Sub AssertRC(rc,ln)
 EndSub
 
 
-'//------------------------------------------------------------------------------
-'// Register Error Handler as early as possible
-'//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+// Register Error Handler as early as possible
+//------------------------------------------------------------------------------
 sub HandlerOnErr()
   if (ENABLE_DEBUG_PRINTS!=0) then
     print "\n OnErr - ";GetLastError();"\n"
@@ -80,24 +93,24 @@ endsub
 onerror next HandlerOnErr
 
 
-'//------------------------------------------------------------------------------
-'// Initialise advert report and add characteristic value to it
-'//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+// Initialise advert report and add characteristic value to it
+//------------------------------------------------------------------------------
 sub MakeAdvertRpts()
-    dim tempVal$ '//characteristic value
-    dim advRpt$  '//advert report
-    dim scnRpt$  '//empty scan report
+    dim tempVal$ //Characteristic value
+    dim advRpt$  //Advert report
+    dim scnRpt$  //Empty scan report
 
     rc=BleAdvRptInit(advRpt$, BLE_DISCOVERABILITY_GENERAL, BLE_APPEARANCE, MAX_DEVNAME_CHRS)
     AssertRC(rc,100)
 
-    '//Encode temperature advert data
-    rc=BleEncode16(tempVal$, UUID_HEALTH_THERMOMETER_SERVICE, 0)   //encode temperature svc UUID from index 0 in charVal$
+    //Encode temperature advert data
+    rc=BleEncode16(tempVal$, UUID_HEALTH_THERMOMETER_SERVICE, 0)   //Encode temperature svc UUID from index 0 in charVal$
     AssertRC(rc,104)
-    rc=BleEncodeFloat(tempVal$, TEMP_MANTISSA, TEMP_EXPONENT, 2)   //encode temp (342 * 10^-1) as float from index 2 in charVal$
+    rc=BleEncodeFloat(tempVal$, TEMP_MANTISSA, TEMP_EXPONENT, 2)   //Encode temp (342 * 10^-1) as float from index 2 in charVal$
     AssertRC(rc,106)
 
-    '//Append temperature value to the advert report
+    //Append temperature value to the advert report
     rc=BleAdvRptAppendAD(advRpt$, BLE_CHARVAL_AD_TAG, tempVal$)
     AssertRC(rc,110)
 
@@ -108,15 +121,15 @@ sub MakeAdvertRpts()
 endsub
 
 
-'//------------------------------------------------------------------------------
-'// This subroutine gets called first
-'//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+// This subroutine gets called first
+//------------------------------------------------------------------------------
 sub OnStartup()
-    dim addr$    '//empty peer address
+    dim addr$    //Empty peer address
 
     MakeAdvertRpts()
 
-    '//Start advertising
+    //Start advertising
     rc=BleAdvertStart(ADV_SCAN_IND, addr$, ADV_INTERVAL_MS, ADV_TIMEOUT_MS, ADV_WHITELIST_FILTER_POLICY)
     AssertRC(rc,129)
 
@@ -124,24 +137,24 @@ sub OnStartup()
 endsub
 
 
-'//******************************************************************************
-'// Handler definitions
-'//******************************************************************************
-function h()        //incase you want to update the temperature periodically
-    dim tempVal$ '//characteristic value
-    dim advRpt$  '//advert report
-    dim scnRpt$  '//empty scan report
+//******************************************************************************
+// Handler definitions
+//******************************************************************************
+function h()     //Incase you want to update the temperature periodically
+    dim tempVal$ //Characteristic value
+    dim advRpt$  //Advert report
+    dim scnRpt$  //Empty scan report
 
     rc=BleAdvRptInit(advRpt$, BLE_DISCOVERABILITY_GENERAL, BLE_APPEARANCE, MAX_DEVNAME_CHRS)
     AssertRC(rc,100)
 
-    '//Encode temperature advert data
-    rc=BleEncode16(tempVal$, UUID_HEALTH_THERMOMETER_SERVICE, 0)   //encode temperature svc UUID from index 0 in charVal$
+    //Encode temperature advert data
+    rc=BleEncode16(tempVal$, UUID_HEALTH_THERMOMETER_SERVICE, 0)   //Encode temperature svc UUID from index 0 in charVal$
     AssertRC(rc,104)
-    rc=BleEncodeFloat(tempVal$, 1992, -2, 2)   //encode temp (342 * 10^-1) as float from index 2 in charVal$
+    rc=BleEncodeFloat(tempVal$, 1992, -2, 2)                       //Encode temp (342 * 10^-1) as float from index 2 in charVal$
     AssertRC(rc,106)
 
-    '//Append temperature value to the advert report
+    //Append temperature value to the advert report
     rc=BleAdvRptAppendAD(advRpt$, BLE_CHARVAL_AD_TAG, tempVal$)
     AssertRC(rc,110)
 
@@ -153,15 +166,15 @@ endfunc 1
 
 
 
-'//******************************************************************************
-'// Equivalent to main() in C
-'//******************************************************************************
+//******************************************************************************
+// Equivalent to main() in C
+//******************************************************************************
 onevent evtmr0 call h
 
 OnStartup()
 
-'//------------------------------------------------------------------------------
-'// Wait for a synchronous event.
-'// An application can have multiple <WaitEvent> statements
-'//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+// Wait for a synchronous event.
+// An application can have multiple <WaitEvent> statements
+//------------------------------------------------------------------------------
 waitevent

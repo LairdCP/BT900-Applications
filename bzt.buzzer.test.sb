@@ -1,40 +1,53 @@
-'//******************************************************************************
-'// Laird Technologies (c) 2013
-'//
-'// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-'// +++++                                                                      ++
-'// +++++  When UwTerminal downloads the app it will store it as a filenname   ++
-'// +++++  which consists of all characters up to the first . and excluding it ++
-'// +++++                                                                      ++
-'// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-'//
-'// Simple program that activates the buzzer in one of two tones based on the
-'// state of button 0
-'//
-'// Hit the reset button on the dev board to stop the irritating sound!
-'//
-'// 28/01/2013
-'//
-'//******************************************************************************
+// Copyright (c) 2013, Laird
+//
+// Permission to use, copy, modify, and/or distribute this software for any
+// purpose with or without fee is hereby granted, provided that the above
+// copyright notice and this permission notice appear in all copies.
+//
+// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+// ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
+// IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+//
+// SPDX-License-Identifier:ISC
+//
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// +++++                                                                      ++
+// +++++  When UwTerminal downloads the app it will store it as a filenname   ++
+// +++++  which consists of all characters up to the first . and excluding it ++
+// +++++                                                                      ++
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//
+// Simple program that activates the buzzer in one of two tones based on the
+// state of button 0
+//
+// Hit the reset button on the dev board to stop the irritating sound!
+//
+// 28/01/2013
+//
+//******************************************************************************
 
-'//******************************************************************************
-'// Definitions
-'//******************************************************************************
+//******************************************************************************
+// Definitions
+//******************************************************************************
 #define BT900_DEV_ID            0x42370900
 #define BL600_DEV_ID            0x424C0600
 #define BL620_DEV_ID            0x424C0620
 
 
-'//******************************************************************************
-'// Global Variable Declarations
-'//******************************************************************************
-dim rc      '//result code
+//******************************************************************************
+// Global Variable Declarations
+//******************************************************************************
+dim rc      //Result code
 dim n
 
 
-'//******************************************************************************
-'// Library Import
-'//******************************************************************************
+//******************************************************************************
+// Library Import
+//******************************************************************************
 //------------------------------------------------------------------------------
 //** #include the correct GPIO library file for the smartBASIC module being used
 //------------------------------------------------------------------------------
@@ -42,21 +55,19 @@ dim n
 #include "lib\gpio.bt9xx.sblib"
 
 
+//******************************************************************************
+// Function and Subroutine definitions
+//******************************************************************************
 
+//******************************************************************************
+// Handler definitions
+//******************************************************************************
 
-'//******************************************************************************
-'// Function and Subroutine definitions
-'//******************************************************************************
+//******************************************************************************
+// Equivalent to main() in C
+//******************************************************************************
 
-'//******************************************************************************
-'// Handler definitions
-'//******************************************************************************
-
-'//******************************************************************************
-'// Equivalent to main() in C
-'//******************************************************************************
-
-'//Print devkit config info
+//Print devkit config info
 select DEV_ID
     print "\nEnsure the DIP switches on CON15 are set as follows:"
     case BT900_DEV_ID
@@ -66,7 +77,7 @@ select DEV_ID
         print "\nBuzzer  [3     -->]"
         print "\n        [4   x    ]"
         print "\nx = doesn't matter"
-    '//BL600 or BL620
+    //BL600 or BL620
     case else
         print "\n       OFF      ON"
         print "\n       [1   x    ]"
@@ -79,10 +90,10 @@ endselect
 print "\n\n"
 
 
-rc=GpioSetFunc(GPIO_BUZZER,2,0)  '// configure the SIO for the buzzer
+rc=GpioSetFunc(GPIO_BUZZER,2,0)  //Configure the SIO for the buzzer
 
 for n = 1 to 10000000
- rc=gpioread(GPIO_BTN0)    '// reads the state of button 0
+ rc=gpioread(GPIO_BTN0)    //Reads the state of button 0
  IF rc==1 then
   GpioWrite(GPIO_BUZZER,1)
   GpioWrite(GPIO_BUZZER,0)
@@ -95,8 +106,8 @@ for n = 1 to 10000000
 next
 
 
-'//------------------------------------------------------------------------------
-'// Wait for a synchronous event.
-'// An application can have multiple <WaitEvent> statements
-'//------------------------------------------------------------------------------
-'//waitevent  // PURPOSELY COMMENTED OUT
+//------------------------------------------------------------------------------
+// Wait for a synchronous event.
+// An application can have multiple <WaitEvent> statements
+//------------------------------------------------------------------------------
+//waitevent  //PURPOSELY COMMENTED OUT

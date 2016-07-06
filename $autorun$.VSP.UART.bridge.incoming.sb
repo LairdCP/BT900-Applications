@@ -1,18 +1,31 @@
- //******************************************************************************
- // Laird Technologies (c) 2015
- //
- // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- // +++++                                                                      ++
- // +++++  When UwTerminal downloads the app it will store it as a filenname   ++
- // +++++  which consists of all characters up to the first . and excluding it ++
- // +++++                                                                      ++
- // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- //
- // BT900 custom VSP service: This application will host a VSP service and allow
- //                           connections and communication similar to how VSP
- //                           bridge mode on the BL600 works.
- //
- //******************************************************************************
+// Copyright (c) 2015, Laird
+//
+// Permission to use, copy, modify, and/or distribute this software for any
+// purpose with or without fee is hereby granted, provided that the above
+// copyright notice and this permission notice appear in all copies.
+//
+// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+// ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
+// IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+//
+// SPDX-License-Identifier:ISC
+//
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// +++++                                                                      ++
+// +++++  When UwTerminal downloads the app it will store it as a filenname   ++
+// +++++  which consists of all characters up to the first . and excluding it ++
+// +++++                                                                      ++
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//
+// BT900 custom VSP service: This application will host a VSP service and allow
+//                           connections and communication similar to how VSP
+//                           bridge mode on the BL600 works.
+//
+//******************************************************************************
 
 //******************************************************************************
 // Definitions
@@ -27,16 +40,16 @@
 //******************************************************************************
 // Global Variable Declarations
 //******************************************************************************
-dim rc //Result code
-dim svcID //Service ID
-dim TXchar //TX characteristic
-dim RXchar //RX characteristic
-dim MOchar //Modem Out characteristic
-dim MIchar //Modem In characteristic
-dim MIval //Modem In value
-dim SendData$ //Data from the UART waiting to be sent out
-dim UARTBlocked : UARTBlocked = 0 //When set to 1 will not read data from the UART
-dim RecBuf$ : RecBuf$ = "" //VSP receive buffer
+dim rc                             //Result code
+dim svcID                          //Service ID
+dim TXchar                         //TX characteristic
+dim RXchar                         //RX characteristic
+dim MOchar                         //Modem Out characteristic
+dim MIchar                         //Modem In characteristic
+dim MIval                          //Modem In value
+dim SendData$                      //Data from the UART waiting to be sent out
+dim UARTBlocked : UARTBlocked = 0  //When set to 1 will not read data from the UART
+dim RecBuf$ : RecBuf$ = ""         //VSP receive buffer
 dim BufferFull : BufferFull = 0
 dim DataQueued : DataQueued = 1
 

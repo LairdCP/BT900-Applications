@@ -1,4 +1,18 @@
-//******************************************************************************
+// Copyright (c) 2015, Laird
+//
+// Permission to use, copy, modify, and/or distribute this software for any
+// purpose with or without fee is hereby granted, provided that the above
+// copyright notice and this permission notice appear in all copies.
+//
+// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+// ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
+// IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+//
+// SPDX-License-Identifier:ISC
 //
 //##############################################################################
 //#                                                                                     
@@ -85,26 +99,25 @@
 
 
 //******************************************************************************
-//# Below is a list of commonly tweaked advanced options - see similar section
-//# in the user customisable file "vspspp.customisation.sblib"
-//#
-//# Advanced defines may be tweaked but may effect application performance.
+// Below is a list of commonly tweaked advanced options - see similar section
+// in the user customisable file "vspspp.customisation.sblib"
+//
+// Advanced defines may be tweaked but may effect application performance.
 //******************************************************************************
     
-    //In file 'vspspp.customisation.sblib' update INITIAL_MODE with one of
-    //these values.
-    // When INITIAL_MODE_CABLEREPLACEMENT, then the module will immediately
-    // be connectable and command mode can be entered by sending the escape
-    // sequence ^^^
+//In file 'vspspp.customisation.sblib' update INITIAL_MODE with one of these.
+//When INITIAL_MODE_CABLEREPLACEMENT, then the module will immediately
+//be connectable and command mode can be entered by sending the escape
+//sequence ^^^
 #define INITIAL_MODE_COMMAND_PARSE          0
 #define INITIAL_MODE_CABLEREPLACEMENT       1
 
-    //Used to exit transparent data mode
-#define DATA_BREAK_CHAR     (94) // "^"     //Break character
-#define DATA_BREAK_COUNT    (3)             //Break character repetition
+//Used to exit transparent data mode
+#define DATA_BREAK_CHAR     (94) //"^"   //Break character
+#define DATA_BREAK_COUNT    (3)          //Break character repetition
     
-    //Command strings. By default all commands are in the form AT*COMMAND <variable>
-    //although '*' can be any symbol e.g. AT+COMMAND or AT%COMMAND
+//Command strings. By default all commands are in the form AT*COMMAND <variable>
+//although '*' can be any symbol e.g. AT+COMMAND or AT%COMMAND
 #define COMMAND_STR_AT          "AT"    
 #define COMMAND_STR_CONNECTABLE "CONN"    
 #define COMMAND_STR_DATA        "DATA"    
@@ -112,70 +125,69 @@
 #define COMMAND_STR_REMOVE      "REMOVE"    
 #define COMMAND_STR_QUIT        "quit"    
     
-    // BLE discovery mode flags
+//BLE discovery mode flags
 #define FLAGS_LIMITED_DISCOVERY_MODE                1
 #define FLAGS_GENERAL_DISCOVERY_MODE                2
 
-    // BLE service and caharacteristic UUIDs
+//BLE service and caharacteristic UUIDs
 #define BASEUUID "\56\9a\11\01\b8\7f\49\0c\92\cb\11\ba\5e\a5\16\7c"  //VSP base UUID
 #define MIUUID   "\56\9a\20\03\b8\7f\49\0c\92\cb\11\ba\5e\a5\16\7c"  //Modem in UUID
 #define MOUUID   "\56\9a\20\02\b8\7f\49\0c\92\cb\11\ba\5e\a5\16\7c"  //Modem out UUID
 #define RXUUID   "\56\9a\20\01\b8\7f\49\0c\92\cb\11\ba\5e\a5\16\7c"  //Receive VSP UUID
 #define TXUUID   "\56\9a\20\00\b8\7f\49\0c\92\cb\11\ba\5e\a5\16\7c"  //Transmit VSP UUID
 
-    // Timers used by the app for managing the CCCD update
+//Timers used by the app for managing the CCCD update
 #define TIMER_CONN_CCCD_BLE           (0)
-    // Timers used by the app for ensuring connection state waits for encryption if appropriate
+//Timers used by the app for ensuring connection state waits for encryption if appropriate
 #define TIMER_CONN_ENC_BLE            (1)
-    // Timers used do detect the inter-escape character delay
+//Timers used do detect the inter-escape character delay
 #define TIMER_BREAK_DATA              (2)
-
 
 
 //******************************************************************************
 // Global Variables
 //******************************************************************************
-    //--------------------------------------------------------------------------
-    //many functions return a resultCode, predefining that variable makes it convenient
+
+//Many functions return a resultCode, predefining that variable makes it convenient
 dim rc    
-    //--------------------------------------------------------------------------
-    //Cached BLE connection
+
+//Cached BLE connection
 dim hBleConn
-    //--------------------------------------------------------------------------
-    //Flag denoting the BLE connection is encrypted
+
+//Flag denoting the BLE connection is encrypted
 dim fBleConnEnc
-    //--------------------------------------------------------------------------
-    //Flag denoting notify has been enabled
+
+//Flag denoting notify has been enabled
 dim fBleNotify : fBleNotify=0
-    //--------------------------------------------------------------------------
-    //Handle for open SPP port
+
+//Handle for open SPP port
 dim hSPPPort    
-    //--------------------------------------------------------------------------
-    //Handle for an active SPP connection 
+
+//Handle for an active SPP connection 
 dim hSPPConn    
-    //--------------------------------------------------------------------------
-    //Flag if there is a 'Wireless Connection' 
+
+//Flag if there is a 'Wireless Connection' 
 dim fWirelessConnection
-    //--------------------------------------------------------------------------
-    //UART Reception buffer, used for command parsing or data streaming.
+
+//UART Reception buffer, used for command parsing or data streaming.
 dim UartRxBuffer$ 
-    //--------------------------------------------------------------------------
-    //UART Trasmission buffer, used for data streaming.        
+
+//UART Trasmission buffer, used for data streaming.        
 dim UartTxBuffer$ 
-    //--------------------------------------------------------------------------
-    //handles for managing the VSP service
+
+//Handles for managing the VSP service
 dim hndlTXchar    //TX characteristic handle
 dim hndlRXchar    //RX characteristic handle
 dim hndlMOchar    //Modem Out characteristic handle
 dim hndlMIchar    //Modem In characteristic handle
-    //--------------------------------------------------------------------------
-    //set to 1 to enable encryption for VSP service (require bonding)
+
+//Set to 1 to enable encryption for VSP service (require bonding)
 dim secConn       //0 for open connections    
-    //--------------------------------------------------------------------------
-    //set to 1 to for pure cable replacement mode
+
+//Set to 1 to for pure cable replacement mode
 dim initialMode   //0 for command mode
-    //--------------------------------------------------------------------------
-    //used by UartMessage() to send other responses out from the uart
+
+//Used by UartMessage() to send other responses out from the uart
 dim msg$
 
 //******************************************************************************
@@ -185,7 +197,7 @@ dim msg$
 //--------------------------------------------------------------------------
 // For debugging
 //--------------------------------------------------------------------------
-#cmpif DEBUG_ALL_FLAG : dim dbg$  // General debug string
+#cmpif DEBUG_ALL_FLAG : dim dbg$  //General debug string
 #cmpif DEBUG_ALL_FLAG : sub DbgPrint()
 #cmpif DEBUG_ALL_FLAG :     print dbg$
 #cmpif DEBUG_ALL_FLAG : endsub
@@ -226,8 +238,8 @@ dim nCurrentState : nCurrentState = STATE_COMMANDMODE
 //--------------------------------------------------------------------------
 sub ChangeState(nNewState)
     //If we have command debug enabled
-  #cmpif DEBUG_STATE_FLAG : sprint #dbg$, "\nDEBUG: New State "; stateString$[nNewState] : DbgPrint()
-  nCurrentState = nNewState 
+    #cmpif DEBUG_STATE_FLAG : sprint #dbg$, "\nDEBUG: New State "; stateString$[nNewState] : DbgPrint()
+    nCurrentState = nNewState 
 endsub
 
 //--------------------------------------------------------------------------
@@ -241,23 +253,23 @@ endsub
 #define COMMAND_PROMPT_STR      ""
 //--------------------------------------------------------------------------
 sub UartResponse(nResponse)
-  if initialMode != INITIAL_MODE_CABLEREPLACEMENT then
-    select nResponse
-        case RESPONSE_OK
-            print "\r\nOK\r\n"
+    if initialMode != INITIAL_MODE_CABLEREPLACEMENT then
+        select nResponse
+            case RESPONSE_OK
+                print "\r\nOK\r\n"
             
-        case RESPONSE_PROMPT
-            print COMMAND_PROMPT_STR
+            case RESPONSE_PROMPT
+                print COMMAND_PROMPT_STR
         
-        case RESPONSE_NO_RESPONSE
+            case RESPONSE_NO_RESPONSE
         
-        case RESPONSE_UNKNOWN_CMD
-            print "\r\nUNKNOWN COMMAND\r\n"
+            case RESPONSE_UNKNOWN_CMD
+                print "\r\nUNKNOWN COMMAND\r\n"
         
-        case else
-            print "\r\nERROR "; integer.h'nResponse; "\r\n"
-    endselect      
-  endif
+            case else
+                print "\r\nERROR "; integer.h'nResponse; "\r\n"
+        endselect      
+    endif
 endsub
 
 
@@ -291,27 +303,27 @@ endsub
 dim CommandTable$
 //--------------------------------------------------------------------------
 sub InitialiseCommands()
-  //Make the table which holds the commands
-  rc = TableInit(CommandTable$)
-  #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1000)
+    //Make the table which holds the commands
+    rc = TableInit(CommandTable$)
+    #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1000)
     
-  rc = TableAdd(CommandTable$, COMMAND_STR_AT, COMMAND_NUM_AT)
-  #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1001)
+    rc = TableAdd(CommandTable$, COMMAND_STR_AT, COMMAND_NUM_AT)
+    #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1001)
     
-  rc = TableAdd(CommandTable$, COMMAND_STR_CONNECTABLE, COMMAND_NUM_CONNECTABLE)
-  #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1002)
+    rc = TableAdd(CommandTable$, COMMAND_STR_CONNECTABLE, COMMAND_NUM_CONNECTABLE)
+    #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1002)
     
-  rc = TableAdd(CommandTable$, COMMAND_STR_DATA, COMMAND_NUM_DATA)
-  #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1003) 
+    rc = TableAdd(CommandTable$, COMMAND_STR_DATA, COMMAND_NUM_DATA)
+    #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1003) 
     
-  rc = TableAdd(CommandTable$, COMMAND_STR_DISCONNECT, COMMAND_NUM_DISCONNECT)
-  #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1004) 
+    rc = TableAdd(CommandTable$, COMMAND_STR_DISCONNECT, COMMAND_NUM_DISCONNECT)
+    #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1004) 
     
-  rc = TableAdd(CommandTable$, COMMAND_STR_REMOVE, COMMAND_NUM_REMOVE)
-  #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1005)
+    rc = TableAdd(CommandTable$, COMMAND_STR_REMOVE, COMMAND_NUM_REMOVE)
+    #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1005)
     
     rc = TableAdd(CommandTable$, COMMAND_STR_QUIT, COMMAND_NUM_QUIT)
-  #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1006)
+    #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1006)
 endsub
 
 
@@ -323,22 +335,22 @@ endsub
 // Helper function to get IEEE address of connected device
 //--------------------------------------------------------------------------
 function BleIEEEFromHandle(hConn, addr$)
-  dim isTrusted, asCentral, keyInfo, rollAge, rollCount
+    dim isTrusted, asCentral, keyInfo, rollAge, rollCount
   
-    //get address of connected device
+    //Get address of connected device
     rc = BleGetAddrFromConnHandle(hConn,addr$)
-  #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(3000)
+    #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(3000)
   
-    //if debug all flag enabled, print if not bonded with connected device
+    //If debug all flag enabled, print if not bonded with connected device
     #cmpif DEBUG_ALL_FLAG : if (secConn == 1) then
     #cmpif DEBUG_ALL_FLAG :     if (BleBondingIsTrusted(addr$, asCentral, keyInfo, rollAge, rollCount) == 0) then
     #cmpif DEBUG_ALL_FLAG :         sprint #dbg$, "\nDEBUG: Not bonded with connected device" : DbgPrint()  
     #cmpif DEBUG_ALL_FLAG :     endif                             
     #cmpif DEBUG_ALL_FLAG : endif
   
-  //Should have the IEEE address thats been transfered now, as its IEEE drop the leading 00
-  addr$ = Right$(addr$, 6)
-  addr$ = StrHexize$(addr$)
+    //Should have the IEEE address thats been transfered now, as its IEEE drop the leading 00
+    addr$ = Right$(addr$, 6)
+    addr$ = StrHexize$(addr$)
 endfunc rc
 
 //--------------------------------------------------------------------------
@@ -348,37 +360,37 @@ endfunc rc
 dim VSPTxWaiting : VSPTxWaiting = 0
 //--------------------------------------------------------------------------
 function WriteVSPData(txData$)
-  dim ModemIn$
-  dim txChunk$
+    dim ModemIn$
+    dim txChunk$
   
-  if (VSPTxWaiting == 1) then
-    //We are waiting for a TX notify event
-    exitfunc 0
-  endif
-  
-  //proceed only if notifies enabled
-  if fBleNotify!=0 then  
-    //Check the modem in characteristic
-    rc = BleCharValueRead(hndlMIchar, ModemIn$)
-    #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(4000)
-
-    //if value of modemIn characteristic is '1', partner device able to accept
-    if (StrCmp(ModemIn$, "\01") == 0) then
-
-      txChunk$ = Left$(txData$, VSP_TX_CHUNK)
-      rc = BleCharValueNotify(hndlTXchar, txChunk$) // Send in chunks of 20 bytes for VSP
-
-      //successfully sent data is shifted from the TX buffer. It is left there if not sent successfully
-      if (rc != 0) then
-        //Failed to send - leave data in buffer
-        #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(4001)
-      else
-        // Sucessfully sent data, shift from the TX buffer
-        StrShiftLeft(txData$, VSP_TX_CHUNK) 
-        VSPTxWaiting = 1
-      endif
+    if (VSPTxWaiting == 1) then
+        //We are waiting for a TX notify event
+        exitfunc 0
     endif
-  endif
+  
+    //Proceed only if notifies enabled
+    if fBleNotify!=0 then  
+        //Check the modem in characteristic
+        rc = BleCharValueRead(hndlMIchar, ModemIn$)
+        #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(4000)
+
+        //If value of modemIn characteristic is '1', partner device able to accept
+        if (StrCmp(ModemIn$, "\01") == 0) then
+
+            txChunk$ = Left$(txData$, VSP_TX_CHUNK)
+            rc = BleCharValueNotify(hndlTXchar, txChunk$) //Send in chunks of 20 bytes for VSP
+
+            //Successfully sent data is shifted from the TX buffer. It is left there if not sent successfully
+            if (rc != 0) then
+                //Failed to send - leave data in buffer
+                #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(4001)
+            else
+                //Sucessfully sent data, shift from the TX buffer
+                StrShiftLeft(txData$, VSP_TX_CHUNK) 
+                VSPTxWaiting = 1
+            endif
+        endif
+    endif
 endfunc rc
 
 //--------------------------------------------------------------------------
@@ -387,21 +399,21 @@ endfunc rc
 dim SPPTxWaiting : SPPTxWaiting = 0
 //--------------------------------------------------------------------------
 function WriteSPPData(txData$)
-  dim txLength
+    dim txLength
   
-  if (SPPTxWaiting == 1) then
-    // We are waiting for a TX notify event from SPP
-    exitfunc 0
-  endif
+    if (SPPTxWaiting == 1) then
+        //We are waiting for a TX notify event from SPP
+        exitfunc 0
+    endif
   
     rc = BtcSPPWrite(hSPPConn, txData$, txLength)
-  if (rc != 0) then
-    //Failed to send
+    if (rc != 0) then
+        //Failed to send
         #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(4100)
-  else
-    StrShiftLeft(txData$, txLength)
-    SPPTxWaiting = 1
-  endif
+    else
+        StrShiftLeft(txData$, txLength)
+        SPPTxWaiting = 1
+    endif
 endfunc rc
 
 //------------------------------------------------------------------------------
@@ -435,22 +447,22 @@ endsub
 #define MESSAGE_BLECONNECTION         (0)
 //--------------------------------------------------------------------------
 function MakeConnectable()
-  dim nBleRolling, nBlePersistent, nBtcRolling, nBtcPersistent, capacity
-  dim addr$
+    dim nBleRolling, nBlePersistent, nBtcRolling, nBtcPersistent, capacity
+    dim addr$
     
-  //get number of persistent bonds
-  #cmpif DEBUG_STATECHECK_FLAG  : rc = BleBondingStats(nBleRolling, nBlePersistent)
-  #cmpif DEBUG_STATECHECK_FLAG  : rc = BtcBondingStats(nBtcRolling, nBtcPersistent)
-  #cmpif DEBUG_STATECHECK_FLAG  : if ((nBlePersistent + nBtcPersistent) == 0) then
-  #cmpif DEBUG_STATECHECK_FLAG  :     sprint #dbg$,  "\nDEBUG: No persistent bonds" : DbgPrint()
-  #cmpif DEBUG_STATECHECK_FLAG  : endif
+    //Get number of persistent bonds
+    #cmpif DEBUG_STATECHECK_FLAG  : rc = BleBondingStats(nBleRolling, nBlePersistent)
+    #cmpif DEBUG_STATECHECK_FLAG  : rc = BtcBondingStats(nBtcRolling, nBtcPersistent)
+    #cmpif DEBUG_STATECHECK_FLAG  : if ((nBlePersistent + nBtcPersistent) == 0) then
+    #cmpif DEBUG_STATECHECK_FLAG  :     sprint #dbg$,  "\nDEBUG: No persistent bonds" : DbgPrint()
+    #cmpif DEBUG_STATECHECK_FLAG  : endif
   
-  if (hBleConn != 0) then
+    if (hBleConn != 0) then
         //We have a current BLE connection
-    #cmpif DEBUG_STATECHECK_FLAG : sprint #dbg$,  "\nDEBUG: Existing BLE connection" : DbgPrint() 
-    if (fBleConnEnc == 1) && (secConn == 1) then
-      rc = SendMsgApp(MESSAGE_BLECONNECTION, hBleConn)
-    endif   
+        #cmpif DEBUG_STATECHECK_FLAG : sprint #dbg$,  "\nDEBUG: Existing BLE connection" : DbgPrint() 
+        if (fBleConnEnc == 1) && (secConn == 1) then
+            rc = SendMsgApp(MESSAGE_BLECONNECTION, hBleConn)
+        endif   
     else  
         //No exiting Ble connection, open SPP port
         if (hSPPPort == 0) then
@@ -461,21 +473,21 @@ function MakeConnectable()
             endif
         endif 
     
-        //require classic BT device to pair before connecting
+        //Require classic BT device to pair before connecting
         rc = BtcSetPairable(1)
         if (rc != 0) then
             #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(2101)
             exitfunc rc
         endif
     
-        //allow classic BT device to connect to this module 
+        //Allow classic BT device to connect to this module 
         rc = BtcSetConnectable(1)
         if (rc != 0) then
             #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(2102)
             exitfunc rc
         endif
             
-        //allow classic BT devices to discover this module
+        //Allow classic BT devices to discover this module
         rc = BtcSetDiscoverable(1, 0)
         if (rc != 0) then
             #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(2103)
@@ -483,16 +495,16 @@ function MakeConnectable()
         endif
             
         //Start advertising to BLE devices
-        addr$ = ""  //because we are not doing a DIRECT advert
+        addr$ = ""  //Because we are not doing a DIRECT advert
         rc = BleAdvertStart(0,addr$,100,0,0)
         if (rc != 0) then
             #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(2104)
             exitfunc rc
         endif
         
-        //at this point, we have successfully switched to the connect mode
+        //At this point, we have successfully switched to the connect mode
         ChangeState(STATE_CONNECTMODE)
-  endif
+    endif
 endfunc rc
 
 //--------------------------------------------------------------------------
@@ -502,9 +514,9 @@ endfunc rc
 //  UartMessage()
 //--------------------------------------------------------------------------
 sub UartMessage()
-  if initialMode != INITIAL_MODE_CABLEREPLACEMENT then
-    print msg$
-  endif
+    if initialMode != INITIAL_MODE_CABLEREPLACEMENT then
+        print msg$
+    endif
 endsub
 
 //--------------------------------------------------------------------------
@@ -512,12 +524,12 @@ endsub
 // is also flushed
 //--------------------------------------------------------------------------
 sub  FlushUartRx(lolvl)
-  //empty the app buffer
-  UartRxBuffer$ = "" 
-  if lolvl!=0 then
-    //and also the underlying RX buffer  
-    UartFlush(1)     
-  endif
+    //Empty the app buffer
+    UartRxBuffer$ = "" 
+    if lolvl!=0 then
+        //And also the underlying RX buffer  
+        UartFlush(1)     
+    endif
 endsub
 
 //--------------------------------------------------------------------------
@@ -525,12 +537,12 @@ endsub
 // is also flushed
 //--------------------------------------------------------------------------
 sub  FlushUartTx(lolvl)
-  //empty the app buffer
-  UartTxBuffer$ = "" 
-  if lolvl!=0 then
-    //and also the underlying TX buffer
-    UartFlush(2)     
-  endif
+    //Empty the app buffer
+    UartTxBuffer$ = "" 
+    if lolvl!=0 then
+        //And also the underlying TX buffer
+        UartFlush(2)     
+    endif
 endsub
 
 //******************************************************************************
@@ -546,8 +558,8 @@ endsub
 // Sets up the BLE service
 //--------------------------------------------------------------------------
 sub InitialiseBleService()
-  dim UUIDStr$, mdCccd, mdVal, s$, encr
-  dim svcID     //Service ID
+    dim UUIDStr$, mdCccd, mdVal, s$, encr
+    dim svcID     //Service ID
   
     s$ = "\00" //Default value for characteristics
     encr = 1   
@@ -607,14 +619,14 @@ endsub
 //--------------------------------------------------------------------------
 sub InitialiseVSPAdvert()
     dim addr$, scRpt$, adRpt$, UUIDStr$   
-  rc = BleGapSvcInit(DEVICE_NAME,0,BLE_APPEARANCE,BLE_MIN_CONN_INTVL_usec,BLE_MAX_CONN_INTVL_usec,BLE_CONN_SUPVSN_TOUT_usec,BLE_SLAVE_LATENCY)
-  #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1200)
+    rc = BleGapSvcInit(DEVICE_NAME,0,BLE_APPEARANCE,BLE_MIN_CONN_INTVL_usec,BLE_MAX_CONN_INTVL_usec,BLE_CONN_SUPVSN_TOUT_usec,BLE_SLAVE_LATENCY)
+    #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1200)
     
-  //Initialise the Advert report (no appearance AD)
-  rc = BleAdvRptInit(adRpt$, BLE_ADVERT_FLAGS_DISCOVERYMODE, 0, BLE_MAX_DEVNAME_CHRS_IN_ADVERT)
-  #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1201) 
+    //Initialise the Advert report (no appearance AD)
+    rc = BleAdvRptInit(adRpt$, BLE_ADVERT_FLAGS_DISCOVERYMODE, 0, BLE_MAX_DEVNAME_CHRS_IN_ADVERT)
+    #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1201) 
     
-  //Init the scan report for the VSP service 
+    //Init the scan report for the VSP service 
     rc = BleScanRptInit(scRpt$)
     #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1202)
     
@@ -633,58 +645,58 @@ endsub
 //--------------------------------------------------------------------------
 sub InitialiseModule()
   
-  //Global variables initialisation
-  secConn     = BLE_VSP_REQUIRE_ENCRYPTION
-  initialMode = INITIAL_MODE
+    //Global variables initialisation
+    secConn     = BLE_VSP_REQUIRE_ENCRYPTION
+    initialMode = INITIAL_MODE
 
-  //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  //Custom Pre-Initialise Action (see vspspp.customisation.sblib )
-  OnModuleInitPre()
-  //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    //Custom Pre-Initialise Action (see vspspp.customisation.sblib )
+    OnModuleInitPre()
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  //Open the UART
-  rc = UartOpen(UART_BAUDRATE, 0, 0, "CN81H")          
-  #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1300) 
+    //Open the UART
+    rc = UartOpen(UART_BAUDRATE, 0, 0, "CN81H")          
+    #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1300) 
     
-  //Classic bluetooth settings - Just Works pairing, auto accept requests, bond
-  rc = BtcSecMngrIOCap(0) 
-  #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1301) 
-  rc = BtcSecMngrJustWorksConf(0) 
-  #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1302) 
-  rc = BtcSavePairings(1) 
-  #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1303) 
-  rc = BtcSetFriendlyName(DEVICE_NAME)
-  #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1304)
+    //Classic bluetooth settings - Just Works pairing, auto accept requests, bond
+    rc = BtcSecMngrIOCap(0) 
+    #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1301) 
+    rc = BtcSecMngrJustWorksConf(0) 
+    #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1302) 
+    rc = BtcSavePairings(1) 
+    #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1303) 
+    rc = BtcSetFriendlyName(DEVICE_NAME)
+    #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1304)
   
-  //Low energy settings - Just Works pairing, auto accept requests, bond
-  rc = BleSecMngrIOCap(0) 
-  #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1305) 
-  rc = BleSecMngrJustWorksConf(0) 
-  #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1306)
-  rc = BleSecMngrBondReq(1) 
-  #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1307)
+    //Low energy settings - Just Works pairing, auto accept requests, bond
+    rc = BleSecMngrIOCap(0) 
+    #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1305) 
+    rc = BleSecMngrJustWorksConf(0) 
+    #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1306)
+    rc = BleSecMngrBondReq(1) 
+    #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1307)
     
-  //Get the BLE service registered
-  InitialiseBleService()
+    //Get the BLE service registered
+    InitialiseBleService()
     
-  //Get the VSP advert setup and ready to go
-  InitialiseVSPAdvert()    
+    //Get the VSP advert setup and ready to go
+    InitialiseVSPAdvert()    
     
-  if initialMode != INITIAL_MODE_CABLEREPLACEMENT then
-    //print device name and user prompt
-    sprint #msg$, "\n\r";DEVICE_NAME;"\n\r"
-    UartMessage()
-    UartResponse(RESPONSE_OK)
-  else
-    //Enable connection mode so make connectable/pairable, start BLE adverts
-    rc = MakeConnectable()
-    #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1310)   
-  endif  
+    if initialMode != INITIAL_MODE_CABLEREPLACEMENT then
+        //Print device name and user prompt
+        sprint #msg$, "\n\r";DEVICE_NAME;"\n\r"
+        UartMessage()
+        UartResponse(RESPONSE_OK)
+    else
+        //Enable connection mode so make connectable/pairable, start BLE adverts
+        rc = MakeConnectable()
+        #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(1310)   
+    endif  
   
-  //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  //Custom Post-Initialise Action (see vspspp.customisation.sblib )
-  OnModuleInitPost()
-  //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    //Custom Post-Initialise Action (see vspspp.customisation.sblib )
+    OnModuleInitPost()
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     
 endsub
 
@@ -702,20 +714,20 @@ endfunc 0
 // Set the CONN mode off
 //--------------------------------------------------------------------------
 function SetNoCONN()
-  rc = BtcSetPairable(0)
-  if (rc != 0) then
-    exitfunc rc
-  endif
+    rc = BtcSetPairable(0)
+    if (rc != 0) then
+        exitfunc rc
+    endif
   
-  rc = BtcSetConnectable(0)
-  if (rc != 0) then
-    exitfunc rc
-  endif
+    rc = BtcSetConnectable(0)
+    if (rc != 0) then
+        exitfunc rc
+    endif
   
-  rc = BtcSetDiscoverable(0, 0)
-  if (rc != 0) then
-    exitfunc rc
-  endif
+    rc = BtcSetDiscoverable(0, 0)
+    if (rc != 0) then
+        exitfunc rc
+    endif
   
     //Stop advertising
     rc = BleAdvertStop()
@@ -729,8 +741,8 @@ endfunc rc
 // to the module
 //--------------------------------------------------------------------------
 function _CONNECTABLE(Parameters$)
-  //If we have command debug enabled
-  #cmpif DEBUG_PARAMETER_FLAG : sprint #dbg$, "\nDEBUG: CONN parameters '"; Parameters$; "'" : DbgPrint()
+    //If we have command debug enabled
+    #cmpif DEBUG_PARAMETER_FLAG : sprint #dbg$, "\nDEBUG: CONN parameters '"; Parameters$; "'" : DbgPrint()
   
     if (nCurrentState != STATE_COMMANDMODE) && (nCurrentState != STATE_CONNECTMODE) then
         #cmpif DEBUG_STATECHECK_FLAG : sprint #dbg$,  "\nDEBUG: Invalid State: "; stateString$[nCurrentState] : DbgPrint()
@@ -738,86 +750,86 @@ function _CONNECTABLE(Parameters$)
         exitfunc -1
     endif
   
-  dim nEnable
-  if ExtractIntToken(Parameters$, nEnable) == 0 then
-    //We always expect a parameter
-    exitfunc -1
-  endif
+    dim nEnable
+    if ExtractIntToken(Parameters$, nEnable) == 0 then
+        //We always expect a parameter
+        exitfunc -1
+    endif
   
-  if (nEnable == 1) then
-    //If we have a connection going or already in connect mode, throw an error
-    if (fWirelessConnection == 1) || (nCurrentState == STATE_CONNECTMODE)  then
-      exitfunc -1
-    endif
+    if (nEnable == 1) then
+        //If we have a connection going or already in connect mode, throw an error
+        if (fWirelessConnection == 1) || (nCurrentState == STATE_CONNECTMODE)  then
+            exitfunc -1
+        endif
         
-    //Enable connection mode so make connectable/pairable, start BLE adverts
-    rc = MakeConnectable()
-    #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(2300) 
-  else 
-        //make module not connectable/discoverable/pairable in for BLE and BTC
-    rc = SetNoCONN()
-    #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(2301)
-    if (rc == 0) then
-      ChangeState(STATE_COMMANDMODE)
-    endif
-  endif 
+        //Enable connection mode so make connectable/pairable, start BLE adverts
+        rc = MakeConnectable()
+        #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(2300) 
+    else 
+        //Make module not connectable/discoverable/pairable in for BLE and BTC
+        rc = SetNoCONN()
+        #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(2301)
+        if (rc == 0) then
+            ChangeState(STATE_COMMANDMODE)
+        endif
+    endif 
 endfunc rc
 
 //--------------------------------------------------------------------------
 // DATA command, Connects the UART to either the VSP or the SPP port
 //--------------------------------------------------------------------------
 function _DATA()
-  dim lolvl
+    dim lolvl
   
-  if (nCurrentState == STATE_DATAMODE) then
-    //We are already in Data mode
-    exitfunc -1
-  endif
+    if (nCurrentState == STATE_DATAMODE) then
+        //We are already in Data mode
+        exitfunc -1
+    endif
   
-  //If we dont have a connection going
-  if (fWirelessConnection == 0) then
-    exitfunc -1
-  endif
+    //If we dont have a connection going
+    if (fWirelessConnection == 0) then
+        exitfunc -1
+    endif
   
     //Flush any buffer we have going on
     lolvl = (nCurrentState != STATE_CONNECTMODE)
     FlushUartRx(lolvl)
     FlushUartTx(lolvl)
   
-    //enable data reception if we are in a BLE connection
+    //Enable data reception if we are in a BLE connection
     if (hBleConn != 0) then
         dim ModemOut$
         ModemOut$ = "\01"
         rc = BleCharValueNotify(hndlMOchar, ModemOut$) 
     endif
   
-  ChangeState(STATE_DATAMODE)
+    ChangeState(STATE_DATAMODE)
 endfunc 0
 
 //--------------------------------------------------------------------------
 // The DROP command, kills any ongoing connections
 //--------------------------------------------------------------------------
 function _DROP()
-  if (nCurrentState != STATE_COMMANDMODE) then
-    //We are in an invalid state
-    exitfunc -1
-  endif
-  
-  //If we dont have a connection going
-  if (fWirelessConnection == 0) then
-    exitfunc -1
-  endif
-  
-  //Close the SPP connection if open
-  if (hSPPConn != 0) then
-    rc = BtcSPPDisconnect(hSPPConn)
-    #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(2500)
-    if (rc != 0) then
-      exitfunc rc
+    if (nCurrentState != STATE_COMMANDMODE) then
+        //We are in an invalid state
+        exitfunc -1
     endif
-  endif
+  
+    //If we dont have a connection going
+    if (fWirelessConnection == 0) then
+        exitfunc -1
+    endif
+  
+    //Close the SPP connection if open
+    if (hSPPConn != 0) then
+        rc = BtcSPPDisconnect(hSPPConn)
+        #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(2500)
+        if (rc != 0) then
+            exitfunc rc
+        endif
+    endif
 
-    //close BLE connection if open
+    //Close BLE connection if open
     if (hBleConn != 0) then
         rc = BleDisconnect(hBleConn)
         #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(2501)    
@@ -831,30 +843,30 @@ endfunc rc
 // The REMOVE command, finds the address in the bonding databases and removes them
 //--------------------------------------------------------------------------
 function _REMOVE(Parameters$)
-  //If we have command debug enabled
-  #cmpif DEBUG_PARAMETER_FLAG : sprint #dbg$, "\nDEBUG: REMOVE parameters '"; Parameters$; "'" : DbgPrint()
+    //If we have command debug enabled
+    #cmpif DEBUG_PARAMETER_FLAG : sprint #dbg$, "\nDEBUG: REMOVE parameters '"; Parameters$; "'" : DbgPrint()
   
-  if (nCurrentState != STATE_COMMANDMODE) then
-    //We are in an invalid state
-    exitfunc -1
-  endif
+    if (nCurrentState != STATE_COMMANDMODE) then
+        //We are in an invalid state
+        exitfunc -1
+    endif
   
-  dim addr$
-  if (ExtractStrToken(Parameters$, addr$) != 12) then
-    //We always expect a parameter, should always be a bluetooth address (6bytes, 12chars)
-    exitfunc -1
-  endif
+    dim addr$
+    if (ExtractStrToken(Parameters$, addr$) != 12) then
+        //We always expect a parameter, should always be a bluetooth address (6bytes, 12chars)
+        exitfunc -1
+    endif
   
-  #cmpif DEBUG_PARAMETER_FLAG : sprint #dbg$, "\nDEBUG: REMOVE address '"; addr$; "'" : DbgPrint()
-  addr$ = StrDeHexize$(addr$)
-  dim nIgnore
+    #cmpif DEBUG_PARAMETER_FLAG : sprint #dbg$, "\nDEBUG: REMOVE address '"; addr$; "'" : DbgPrint()
+    addr$ = StrDeHexize$(addr$)
+    dim nIgnore
     
-  //First check the BLE database for this addr, ignore the return (if it doesn't exist in this one)
-  nIgnore = BtcBondingEraseKey(addr$)
+    //First check the BLE database for this addr, ignore the return (if it doesn't exist in this one)
+    nIgnore = BtcBondingEraseKey(addr$)
     
-  //Prepend the leading 0 byte for BLE IEEE address
-  addr$ = "\00" + addr$
-  nIgnore = BleBondingEraseKey(addr$)
+    //Prepend the leading 0 byte for BLE IEEE address
+    addr$ = "\00" + addr$
+    nIgnore = BleBondingEraseKey(addr$)
 endfunc 0
 
 //--------------------------------------------------------------------------
@@ -868,13 +880,13 @@ function _QUIT()
     endif
     
     if (fWirelessConnection !=0) then
-        //drop any wireless connections and stop any adversiting
+        //Drop any wireless connections and stop any adversiting
         rc = BleDisconnect(hBleConn)
         rc = BtcSPPDisconnect(hSPPConn)
         rc = SetNoCONN()
     endif
     
-    //power cycle the module
+    //Power cycle the module
     reset(0)
 endfunc RESPONSE_NO_RESPONSE
 
@@ -882,51 +894,51 @@ endfunc RESPONSE_NO_RESPONSE
 // AT command parser
 //--------------------------------------------------------------------------
 function ParseCommand(Cmd$) as integer
-  dim Token$
-  dim nCommandNum : nCommandNum = COMMAND_NUM_CR
+    dim Token$
+    dim nCommandNum : nCommandNum = COMMAND_NUM_CR
   
-  //All commands are in the form AT*COMMAND <variable>
-  while ExtractStrToken(Cmd$,Token$) > 0
-    nCommandNum = TableLookup(CommandTable$, Token$)
-    //AT is a special case as it preceeds other commands
-    //as such stop processing if we find anything other then AT
-        //command precursor symbol '*' will return -1 -> unknown command so while loop will continue
-    if nCommandNum > COMMAND_NUM_AT then
-      break
-    endif
-  endwhile
+    //All commands are in the form AT*COMMAND <variable>
+    while ExtractStrToken(Cmd$,Token$) > 0
+        nCommandNum = TableLookup(CommandTable$, Token$)
+        //AT is a special case as it preceeds other commands as such stop
+        //processing if we find anything other then AT command precursor symbol
+        //'*' will return -1 -> unknown command so while loop will continue
+        if nCommandNum > COMMAND_NUM_AT then
+            break
+        endif
+    endwhile
     
-  //If we have command debug enabled
-  #cmpif DEBUG_COMMAND_FLAG : sprint #dbg$, "\nDEBUG: Command recieved "; commandString$[nCommandNum + 1] : DbgPrint()  
+    //If we have command debug enabled
+    #cmpif DEBUG_COMMAND_FLAG : sprint #dbg$, "\nDEBUG: Command recieved "; commandString$[nCommandNum + 1] : DbgPrint()  
   
-  //Call the relevent command with the parameters it requires
+    //Call the relevent command with the parameters it requires
     select nCommandNum
         case COMMAND_NUM_AT
             rc = _AT()
-            
+          
         case COMMAND_NUM_CR
             rc = RESPONSE_PROMPT
-            
+          
         case COMMAND_NUM_CONNECTABLE
             rc = _CONNECTABLE(Cmd$)
-            
+          
         case COMMAND_NUM_DATA
             rc = _DATA()
-            
+          
         case COMMAND_NUM_DISCONNECT
             rc = _DROP()
-            
+          
         case COMMAND_NUM_REMOVE
             rc = _REMOVE(Cmd$)
-            
+          
         case COMMAND_NUM_QUIT
             rc = _QUIT()
-            
+           
         case else
             rc = RESPONSE_UNKNOWN_CMD
     endselect
   
-    //send response back to the user
+    //Send response back to the user
     UartResponse(rc)
 endfunc nCommandNum
 
@@ -935,22 +947,23 @@ endfunc nCommandNum
 //------------------------------------------------------------------------------
 #define CONNECTION_TYPE_BLE   (0)
 #define CONNECTION_TYPE_BTC   (1)
+
 //------------------------------------------------------------------------------
 // Called when a successful connection has been made (VSP or SPP)
 //------------------------------------------------------------------------------
 sub OnConnectionSuccess(addr$, nType)
-    //notify user in the top level
+    //Notify user in the top level
     OnConnection(addr$, nType)   
     sprint #msg$, "\r\n*CONN "; addr$; "\r\n"
     UartMessage()
     fWirelessConnection = 1
 
-    //bridge wireless connection and UART
+    //Bridge wireless connection and UART
     rc = _DATA()
     #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(5800)
     
     //Set not connectable/pairable/discoverable so nothing else can try to connect
-  rc = SetNoCONN() 
+    rc = SetNoCONN() 
 endsub
 
 //******************************************************************************
@@ -964,7 +977,7 @@ endsub
 #define UART_TX_BUFFER              (200)    //Depth of the UART Tx buffer
 
 dim breakCount : breakCount = 0
-//------------------------------------------------------------------------------
+
 //------------------------------------------------------------------------------
 // This handler is called when data has arrived at the UART while bridged
 // to a VSP/SPP connection
@@ -972,21 +985,21 @@ dim breakCount : breakCount = 0
 sub HandlerUARTData()
     dim bufferLenNew, bufferLenOld, newBytesRead  
 
-    //check how much data we have in the app buffer    
+    //Check how much data we have in the app buffer    
     bufferLenOld = strlen(UartRxBuffer$)
-    //read from underlying buffer into app buffer by appending it
+    //Read from underlying buffer into app buffer by appending it
     bufferLenNew = UartReadN(UartRxBuffer$, UART_RX_BUFFER)
-    //determine how many new bytes read
+    //Determine how many new bytes read
     newBytesRead = bufferLenNew - bufferLenOld
 
-    //if any bytes were read from the uart
+    //If any bytes were read from the uart
     if (newBytesRead > 0) then
-        //notify user on top level, with the read data from the uart
+        //Notify user on top level, with the read data from the uart
         OnUartData(Right$(UartRxBuffer$, newBytesRead))
     endif
 
     if (bufferLenNew > 0) then
-        //increment break char counter if TIMER_BREAK_DATA_DELAY_MS has elapsed since last break cha
+        //Increment break char counter if TIMER_BREAK_DATA_DELAY_MS has elapsed since last break cha
         if (StrGetChr(UartRxBuffer$, bufferLenNew - 1) == DATA_BREAK_CHAR) then
             if (TimerRunning(TIMER_BREAK_DATA) == 0) then
                 //Timer expired
@@ -1020,43 +1033,43 @@ endsub
 // This handler is called when data received via the UART is a cmd (not bridged)
 //------------------------------------------------------------------------------
 sub HandlerUartRxCmd()
-  dim nMatch
-  //check if CR has been received
-  nMatch = UartReadMatch(UartRxBuffer$, 0x0D)
-  if (nMatch != 0) then
-    //CR exists in the input buffer
-    rc = ParseCommand(UartRxBuffer$)
-  endif
+    dim nMatch
+    //Check if CR has been received
+    nMatch = UartReadMatch(UartRxBuffer$, 0x0D)
+    if (nMatch != 0) then
+        //CR exists in the input buffer
+        rc = ParseCommand(UartRxBuffer$)
+    endif
 endsub
 
 //------------------------------------------------------------------------------
 // This handler is called when data has arrived at the serial port (UART)
 //------------------------------------------------------------------------------
 function HandlerUartRx()  
-  select nCurrentState 
-    case STATE_DATAMODE
-      //bridge the data
-      HandlerUARTData()
+    select nCurrentState 
+        case STATE_DATAMODE
+            //Bridge the data
+            HandlerUARTData()
       
-    case else      
-      if initialMode != INITIAL_MODE_CABLEREPLACEMENT then
-        //parse the data
-        HandlerUartRxCmd()
-      else
-        //just dump it
-        FlushUartRx(1)
-      endif      
-  endselect  
+        case else      
+            if initialMode != INITIAL_MODE_CABLEREPLACEMENT then
+               //Parse the data
+                HandlerUartRxCmd()
+            else
+                //Just dump it
+                FlushUartRx(1)
+            endif      
+    endselect  
 endfunc 1
 
 //------------------------------------------------------------------------------
 // Called when data has arrived from the VSP or SPP port
 //------------------------------------------------------------------------------
 sub HandlerWirelessData(byval rxData$ as string)
-    //notify user on the top level, with the data that was received
+    //Notify user on the top level, with the data that was received
     OnWirelessData(rxData$)
     
-    //send data through the uart
+    //Send data through the uart
     SendUartData()
 endsub
 
@@ -1073,7 +1086,7 @@ function HndlrCharVal(charHandle, offset, len)
         exitfunc 1
     endif
 
-    //read the received data
+    //Read the received data
     rc = BleCharValueRead(charHandle, charValue$)
     #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(5400)
 
@@ -1083,13 +1096,13 @@ function HndlrCharVal(charHandle, offset, len)
         UartTxBuffer$ = UartTxBuffer$ + charValue$ 
         txBufferLen = StrLen(UartTxBuffer$)   
     
-        //if more data was received than the allowed 20 bytes for vsp, tell connected device to stop sending data
+        //If more data was received than the allowed 20 bytes for vsp, tell connected device to stop sending data
         if ((UART_TX_BUFFER - txBufferLen) < VSP_TX_CHUNK) then
             ModemOut$ = "\00"
             rc = BleCharValueNotify(hndlMOchar, ModemOut$)
         endif
         
-        //call generic received wireless data handler
+        //Call generic received wireless data handler
         HandlerWirelessData(charValue$) 
         
     elseif (charHandle == hndlMIchar) then
@@ -1097,7 +1110,7 @@ function HndlrCharVal(charHandle, offset, len)
         rc = BleCharValueRead(hndlMIchar, charValue$)
         #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(5401)
         
-        //if value of the characteristic is '1', client is able to receive data again
+        //If value of the characteristic is '1', client is able to receive data again
         if (StrCmp(charValue$, "\01") == 0) then
             HandlerUARTData()
         endif
@@ -1108,33 +1121,33 @@ endfunc 1
 //Handler for cccd value written
 //------------------------------------------------------------------------------
 function HndlrCharCccd(charHandle, nVal)
-  dim addr$
+    dim addr$
   
-  if charHandle == hndlTXchar then
-    if (nVal&0x0001) == 0x0001 then
-      //Notifies have been enabled by the client
-      select nCurrentState  
-        case STATE_CONNECTMODE
-          //Set the flag to signify notify possible
-          fBleNotify=1
-          //Turn off the countdown to encryption
-          TimerCancel(TIMER_CONN_CCCD_BLE)     
-          rc = BleIEEEFromHandle(hBleConn, addr$) 
-          //call generic successful connection handler
-          OnConnectionSuccess(addr$, CONNECTION_TYPE_BLE)
+    if charHandle == hndlTXchar then
+        if (nVal&0x0001) == 0x0001 then
+            //Notifies have been enabled by the client
+            select nCurrentState  
+                case STATE_CONNECTMODE
+                    //Set the flag to signify notify possible
+                    fBleNotify=1
+                    //Turn off the countdown to encryption
+                    TimerCancel(TIMER_CONN_CCCD_BLE)     
+                    rc = BleIEEEFromHandle(hBleConn, addr$) 
+                    //Call generic successful connection handler
+                    OnConnectionSuccess(addr$, CONNECTION_TYPE_BLE)
 
-        case else
-      endselect
-    else
-      //Notifies disabled by client
-      if fBleNotify==1 then
-         //notify no longer enabled
-         TimerStart(TIMER_CONN_CCCD_BLE,TIMER_CONN_CCCD_BLE_DELAY_MS,0)
-         //notifies disabled
-         fBleNotify=0
-      endif
+                case else
+            endselect
+        else
+            //Notifies disabled by client
+            if fBleNotify==1 then
+                //Notify no longer enabled
+                TimerStart(TIMER_CONN_CCCD_BLE,TIMER_CONN_CCCD_BLE_DELAY_MS,0)
+                //Notifies disabled
+                fBleNotify=0
+            endif
+        endif
     endif
-  endif
 endfunc 1
 
 //------------------------------------------------------------------------------
@@ -1157,7 +1170,7 @@ function HndlrSPPData()
     dim readLen
     dim bytesRead
 
-    //read and print data while there is data available to read
+    //Read and print data while there is data available to read
     while BtcSppRead(hPort, rxData$, readLen) == 0
         if (nCurrentState == STATE_DATAMODE) then
         
@@ -1168,7 +1181,7 @@ function HndlrSPPData()
                 //If we have data and we are for the correct SPP connection
                 UartTxBuffer$ = UartTxBuffer$ + rxData$ 
                 
-                // If we are over our tx buffer size stop reading
+                //If we are over our tx buffer size stop reading
                 if (StrLen(UartTxBuffer$) > UART_TX_BUFFER) then  
                     break
                 endif
@@ -1176,7 +1189,7 @@ function HndlrSPPData()
         endif
     endwhile
 
-    //call generic wireless data received handler if we are in data mode
+    //Call generic wireless data received handler if we are in data mode
     if (nCurrentState == STATE_DATAMODE) then
         HandlerWirelessData(Right$(UartTxBuffer$, bytesRead))
     endif
@@ -1202,26 +1215,26 @@ sub OnBleConnect(hConn as integer)
     //In all cases store the BLE connection handle
     hBleConn = hConn
     
-    //this connection isn't encrypted yet so reset the flag
+    //This connection isn't encrypted yet so reset the flag
     fBleConnEnc = 0
     
     //Notifies have not been enabled yet
     fBleNotify  = 0
                 
     select nCurrentState
-      case STATE_CONNECTMODE
-        if (secConn == 1) then
-          //encryption is required we can enable the timer
-          TimerStart(TIMER_CONN_ENC_BLE,TIMER_CONN_ENC_BLE_DELAY_MS,0)
-        else
-          //encryption not required so wait for notify to be enabled
-          TimerStart(TIMER_CONN_CCCD_BLE,TIMER_CONN_CCCD_BLE_DELAY_MS,0)
-        endif  
+        case STATE_CONNECTMODE
+            if (secConn == 1) then
+                //Encryption is required we can enable the timer
+                TimerStart(TIMER_CONN_ENC_BLE,TIMER_CONN_ENC_BLE_DELAY_MS,0)
+            else
+                //Encryption not required so wait for notify to be enabled
+                TimerStart(TIMER_CONN_CCCD_BLE,TIMER_CONN_CCCD_BLE_DELAY_MS,0)
+            endif  
 
-      case else
-        //Not allowed connection events, disconnect
-        rc = BleDisconnect(hConn)
-        #cmpif DEBUG_STATECHECK_FLAG : sprint #dbg$,  "\nDEBUG: BLE Connect in invalid state: "; stateString$[nCurrentState] : DbgPrint()
+        case else
+            //Not allowed connection events, disconnect
+            rc = BleDisconnect(hConn)
+            #cmpif DEBUG_STATECHECK_FLAG : sprint #dbg$,  "\nDEBUG: BLE Connect in invalid state: "; stateString$[nCurrentState] : DbgPrint()
     endselect
 endsub
 
@@ -1229,9 +1242,9 @@ endsub
 // This subroutine will be called on BLE encryption
 //------------------------------------------------------------------------------
 sub OnBleEncrypted(hConn as integer)
-  dim addr$
-  #cmpif DEBUG_ASSERT_FLAG : DbgAssert(hConn, hBleConn, 6000)
-  fBleConnEnc = 1
+    dim addr$
+    #cmpif DEBUG_ASSERT_FLAG : DbgAssert(hConn, hBleConn, 6000)
+    fBleConnEnc = 1
   
     select nCurrentState  
         case STATE_CONNECTMODE
@@ -1239,7 +1252,7 @@ sub OnBleEncrypted(hConn as integer)
             TimerCancel(TIMER_CONN_ENC_BLE)     
             rc = BleIEEEFromHandle(hConn, addr$) 
             
-            //call generic successful connection handler
+            //Call generic successful connection handler
             OnConnectionSuccess(addr$, CONNECTION_TYPE_BLE)
 
         case else
@@ -1250,20 +1263,20 @@ endsub
 // Timer 0 Timeout Handler :: BLE Connection timed out, cccd was not enabled in time
 //------------------------------------------------------------------------------
 function HndlrBleCccdTout()  
-  //If we have expired then we must disconnect a BLE chappy, client did not enable cccd in time
-  #cmpif DEBUG_ASSERT_FLAG :DbgAssert(nCurrentState, STATE_CONNECTMODE, 6100) 
-  rc = BleDisconnect(hBleConn)
-  #cmpif DEBUG_STATECHECK_FLAG : sprint #dbg$,  "\nDEBUG: BLE Disconnect due to cccd not enabled" : DbgPrint()
+    //If we have expired then we must disconnect a BLE chappy, client did not enable cccd in time
+    #cmpif DEBUG_ASSERT_FLAG :DbgAssert(nCurrentState, STATE_CONNECTMODE, 6100) 
+    rc = BleDisconnect(hBleConn)
+    #cmpif DEBUG_STATECHECK_FLAG : sprint #dbg$,  "\nDEBUG: BLE Disconnect due to cccd not enabled" : DbgPrint()
 endfunc 1
 
 //------------------------------------------------------------------------------
 // Timer 1 Timeout Handler :: BLE Connection timed out, didnt encrypt within time
 //------------------------------------------------------------------------------
 function HndlrBleEncTout()  
-  //If we have expired then we must disconnect a BLE chappy, they didnt bond in time
-  #cmpif DEBUG_ASSERT_FLAG :DbgAssert(nCurrentState, STATE_CONNECTMODE, 6100) 
-  rc = BleDisconnect(hBleConn)
-  #cmpif DEBUG_STATECHECK_FLAG : sprint #dbg$,  "\nDEBUG: BLE Disconnect due to encrypt timeout" : DbgPrint()
+    //If we have expired then we must disconnect a BLE chappy, they didnt bond in time
+    #cmpif DEBUG_ASSERT_FLAG :DbgAssert(nCurrentState, STATE_CONNECTMODE, 6100) 
+    rc = BleDisconnect(hBleConn)
+    #cmpif DEBUG_STATECHECK_FLAG : sprint #dbg$,  "\nDEBUG: BLE Disconnect due to encrypt timeout" : DbgPrint()
 endfunc 1
 
 //--------------------------------------------------------------------------
@@ -1276,29 +1289,29 @@ endsub
 // Called when an SPP Connection has been established
 //--------------------------------------------------------------------------
 function HndlrSPPConn(hConn, nRes)
-  dim addr$
-  //We should only get successes, in state connectable
-  #cmpif DEBUG_ASSERT_FLAG : DbgAssert(nRes, 0, 6300)
-  #cmpif DEBUG_ASSERT_FLAG : DbgAssert(nCurrentState, STATE_CONNECTMODE, 6301)
-    
-  //get address of the connected device
-  rc = BtcGetBDAddrFromHandle(hConn, addr$)
-  #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(6302)
-    
-  //Should have the IEEE address
-  addr$ = StrHexize$(addr$)
-    
-  //call generic successful connection handler
-  OnConnectionSuccess(addr$, CONNECTION_TYPE_BTC)
-    
-  //store the SPP connection handle
-  hSPPConn = hConn
-    
-  //disconnect ble just incase - only 1 connection allowed at a time
-  if (hBleConn != 0) then
-    rc = BleDisconnect(hBleConn)
-    #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(6303)
-  endif
+    dim addr$
+    //We should only get successes, in state connectable
+    #cmpif DEBUG_ASSERT_FLAG : DbgAssert(nRes, 0, 6300)
+    #cmpif DEBUG_ASSERT_FLAG : DbgAssert(nCurrentState, STATE_CONNECTMODE, 6301)
+        
+    //Get address of the connected device
+    rc = BtcGetBDAddrFromHandle(hConn, addr$)
+    #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(6302)
+        
+    //Should have the IEEE address
+    addr$ = StrHexize$(addr$)
+        
+    //Call generic successful connection handler
+    OnConnectionSuccess(addr$, CONNECTION_TYPE_BTC)
+        
+    //Store the SPP connection handle
+    hSPPConn = hConn
+        
+    //Disconnect ble just incase - only 1 connection allowed at a time
+    if (hBleConn != 0) then
+        rc = BleDisconnect(hBleConn)
+        #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(6303)
+    endif
 endfunc 1
 
 //------------------------------------------------------------------------------
@@ -1307,19 +1320,19 @@ endfunc 1
 sub HandlerDiscon(hConn, sendHang)
 
     if sendHang != 0 then
-      sprint #msg$, "\r\n*HANG\r\n"
-      UartMessage()
+        sprint #msg$, "\r\n*HANG\r\n"
+        UartMessage()
     endif
 
-    //set module connectable automatically
+    //Set module connectable automatically
     rc = MakeConnectable()
     #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(6400)
     
-    //add if in data mode?
-    //clear uart rx buffers
+    //Add if in data mode?
+    //Clear uart rx buffers
     FlushUartRx(1)
     
-    //notify user in the top level
+    //Notify user in the top level
     OnHangup(hConn)
 endsub 
 
@@ -1327,43 +1340,43 @@ endsub
 // This subroutine will be called on BLE disconnection
 //------------------------------------------------------------------------------
 sub OnBleDisconnect(hConn as integer)
-  dim addr$, fSendHang 
-  //In all cases blank out the current connection
-  #cmpif DEBUG_ASSERT_FLAG : DbgAssert(hConn, hBleConn, 6500)
-    
-  //reset related connection handles and flags
-  hBleConn = 0
-  fBleConnEnc = 0
-  fSendHang = fWirelessConnection : fWirelessConnection = 0
-  fBleNotify  = 0
-    
-  //cancel BLE Encryption timer in case it was running
-  TimerCancel(TIMER_CONN_ENC_BLE)  
-    
-  //cancel BLE cccd timer in case it was running
-  TimerCancel(TIMER_CONN_CCCD_BLE)  
-    
-  //call generic disconnection handler
-  HandlerDiscon(hConn,fSendHang)   
+    dim addr$, fSendHang 
+    //In all cases blank out the current connection
+    #cmpif DEBUG_ASSERT_FLAG : DbgAssert(hConn, hBleConn, 6500)
+        
+    //Reset related connection handles and flags
+    hBleConn = 0
+    fBleConnEnc = 0
+    fSendHang = fWirelessConnection : fWirelessConnection = 0
+    fBleNotify    = 0
+        
+    //Cancel BLE Encryption timer in case it was running
+    TimerCancel(TIMER_CONN_ENC_BLE)    
+        
+    //Cancel BLE cccd timer in case it was running
+    TimerCancel(TIMER_CONN_CCCD_BLE)    
+        
+    //Call generic disconnection handler
+    HandlerDiscon(hConn,fSendHang)     
 endsub
 
 //------------------------------------------------------------------------------
 // Called when there is a SPP Disconnection
 //------------------------------------------------------------------------------
 function HndlrSPPDiscon(hConn)
-  dim addr$
-  #cmpif DEBUG_ASSERT_FLAG : DbgAssert((hSPPConn != 0), 1, 6600)
-  fWirelessConnection = 0
-  hSPPConn = 0  
+    dim addr$
+    #cmpif DEBUG_ASSERT_FLAG : DbgAssert((hSPPConn != 0), 1, 6600)
+    fWirelessConnection = 0
+    hSPPConn = 0    
+        
+    //Close spp port if it was open
+    if (hSPPPort != 0) then
+        rc = BtcSPPClose(hSPPPort)
+        #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(6601)
+        hSPPPort = 0
+    endif
     
-    //close spp port if it was open
-  if (hSPPPort != 0) then
-    rc = BtcSPPClose(hSPPPort)
-    #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(6601)
-    hSPPPort = 0
-  endif
-  
-  //call generic disconnection handler
+    //Call generic disconnection handler
     HandlerDiscon(hConn,1) 
 endfunc 1
 
@@ -1371,7 +1384,7 @@ endfunc 1
 // Called when a new bond has been established (VSP or SPP)
 //------------------------------------------------------------------------------
 sub HandlerNewBond(addr$, nType)
-  //notify user in the top level
+    //Notify user in the top level
     OnBond(addr$, nType)
     sprint #msg$, "\r\n*BOND "; addr$; "\r\n"
     UartMessage()
@@ -1392,7 +1405,7 @@ sub OnBleBonded(hConn as integer)
     //Get the IEEE address
     rc = BleIEEEFromHandle(hConn, addr$)     
     
-    //call generic bond handler
+    //Call generic bond handler
     HandlerNewBond(addr$, CONNECTION_TYPE_BLE)
 endsub
 
@@ -1400,23 +1413,23 @@ endsub
 // Called when there is a pairing result
 //------------------------------------------------------------------------------
 function HndlrBtcPairRes(nRes)
-  dim addr$
-  #cmpif DEBUG_ASSERT_FLAG : DbgAssert(nCurrentState, STATE_CONNECTMODE, 7000)
+    dim addr$
+    #cmpif DEBUG_ASSERT_FLAG : DbgAssert(nCurrentState, STATE_CONNECTMODE, 7000)
   
-  //if paired successfully
+    //If paired successfully
     if (nRes == 0) then
-    //Get the last paired address
-    rc = BtcGetPAIRRequestBDAddr(addr$)
-    #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(7001) 
-    rc = BtcBondingPersistKey(addr$)
-    #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(7002)
+        //Get the last paired address
+        rc = BtcGetPAIRRequestBDAddr(addr$)
+        #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(7001) 
+        rc = BtcBondingPersistKey(addr$)
+        #cmpif DEBUG_FUNCTION_RC_FLAG : DbgAssertRC(7002)
     
-    //Should have the IEEE address
-    addr$ = StrHexize$(addr$)   
+        //Should have the IEEE address
+        addr$ = StrHexize$(addr$)   
         
-        //call generic bond handler
-    HandlerNewBond(addr$, CONNECTION_TYPE_BTC)
-  else
+        //Call generic bond handler
+        HandlerNewBond(addr$, CONNECTION_TYPE_BTC)
+    else
         #cmpif DEBUG_STATECHECK_FLAG : sprint #dbg$,  "\nDEBUG: Pairing failed. Result Code: ";nRes : DbgPrint()
     endif
 endfunc 1
@@ -1424,83 +1437,82 @@ endfunc 1
 //------------------------------------------------------------------------------
 // Ble Message Handler
 //------------------------------------------------------------------------------
-#define BLE_EVBLEMSGID_CONNECT                      0  // msgCtx = connection handle
-#define BLE_EVBLEMSGID_DISCONNECT                   1  // msgCtx = connection handle
-#define BLE_EVBLEMSGID_SERVICE_ERROR                4  // msgCtx = resultcode
-#define BLE_EVBLEMSGID_DISPLAY_PASSKEY              9  // msgCtx = passcode to display
-#define BLE_EVBLEMSGID_NEW_BOND                     10 // msgCtx = connection handle
-#define BLE_EVBLEMSGID_AUTH_KEY_REQUEST             11 // msgCtx = 1 for passkey, 2 for 16 byte OOB data
-#define BLE_EVBLEMSGID_CONN_PARMS_UPDATE            14 // msgCtx = connection handle
-#define BLE_EVBLEMSGID_CONN_PARMS_UPDATE_FAIL       15 // msgCtx = connection handle
-#define BLE_EVBLEMSGID_CONN_TO_BONDED_MASTER        16 // msgCtx = connection handle
-#define BLE_EVBLEMSGID_UPDATED_BOND                 17 // msgCtx = connection handle
-#define BLE_EVBLEMSGID_ENCRYPTED                    18 // msgCtx = connection handle
-#define BLE_EVBLEMSGID_POWER_FAILURE_WARNING        19 // msgCtx = current supply voltage
-#define BLE_EVBLEMSGID_UNENCRYPTED                  20 // msgCtx = connection handle
-#define BLE_EVBLEMSGID_DEVICENAME_WRITE             21 // msgCtx = connection handle
-#define BLE_EVBLEMSGID_BOND_ADDFAIL                 22 // msgCtx = connection handle
+#define BLE_EVBLEMSGID_CONNECT                      0  //msgCtx = connection handle
+#define BLE_EVBLEMSGID_DISCONNECT                   1  //msgCtx = connection handle
+#define BLE_EVBLEMSGID_SERVICE_ERROR                4  //msgCtx = resultcode
+#define BLE_EVBLEMSGID_DISPLAY_PASSKEY              9  //msgCtx = passcode to display
+#define BLE_EVBLEMSGID_NEW_BOND                     10 //msgCtx = connection handle
+#define BLE_EVBLEMSGID_AUTH_KEY_REQUEST             11 //msgCtx = 1 for passkey, 2 for 16 byte OOB data
+#define BLE_EVBLEMSGID_CONN_PARMS_UPDATE            14 //msgCtx = connection handle
+#define BLE_EVBLEMSGID_CONN_PARMS_UPDATE_FAIL       15 //msgCtx = connection handle
+#define BLE_EVBLEMSGID_CONN_TO_BONDED_MASTER        16 //msgCtx = connection handle
+#define BLE_EVBLEMSGID_UPDATED_BOND                 17 //msgCtx = connection handle
+#define BLE_EVBLEMSGID_ENCRYPTED                    18 //msgCtx = connection handle
+#define BLE_EVBLEMSGID_POWER_FAILURE_WARNING        19 //msgCtx = current supply voltage
+#define BLE_EVBLEMSGID_UNENCRYPTED                  20 //msgCtx = connection handle
+#define BLE_EVBLEMSGID_DEVICENAME_WRITE             21 //msgCtx = connection handle
+#define BLE_EVBLEMSGID_BOND_ADDFAIL                 22 //msgCtx = connection handle
 //------------------------------------------------------------------------------
 function HndlrBleMsg(msgID as integer, nCtx as integer)
-  select(msgID)
-      case BLE_EVBLEMSGID_CONNECT
-        #cmpif DEBUG_BLEMSG_FLAG : sprint #dbg$,  "\nDEBUG: BLE Connect : ";nCtx : DbgPrint()
-        OnBleConnect(nCtx)
+    select(msgID)
+        case BLE_EVBLEMSGID_CONNECT
+            #cmpif DEBUG_BLEMSG_FLAG : sprint #dbg$,  "\nDEBUG: BLE Connect : ";nCtx : DbgPrint()
+            OnBleConnect(nCtx)
 
-      case BLE_EVBLEMSGID_DISCONNECT
-        #cmpif DEBUG_BLEMSG_FLAG : sprint #dbg$,  "\nDEBUG: BLE Disconnect : ";nCtx : DbgPrint()
-        OnBleDisconnect(nCtx)
+        case BLE_EVBLEMSGID_DISCONNECT
+            #cmpif DEBUG_BLEMSG_FLAG : sprint #dbg$,  "\nDEBUG: BLE Disconnect : ";nCtx : DbgPrint()
+            OnBleDisconnect(nCtx)
 
-      case BLE_EVBLEMSGID_DISPLAY_PASSKEY
-        #cmpif DEBUG_BLEMSG_FLAG : sprint #dbg$,  "\nDEBUG: BLE Display Pairing Passkey " : DbgPrint()
+        case BLE_EVBLEMSGID_DISPLAY_PASSKEY
+            #cmpif DEBUG_BLEMSG_FLAG : sprint #dbg$,  "\nDEBUG: BLE Display Pairing Passkey " : DbgPrint()
 
-      case BLE_EVBLEMSGID_NEW_BOND
-        #cmpif DEBUG_BLEMSG_FLAG : sprint #dbg$,  "\nDEBUG: BLE New Bond" : DbgPrint()
-        OnBleBonded(nCtx)
+        case BLE_EVBLEMSGID_NEW_BOND
+            #cmpif DEBUG_BLEMSG_FLAG : sprint #dbg$,  "\nDEBUG: BLE New Bond" : DbgPrint()
+            OnBleBonded(nCtx)
         
-      case BLE_EVBLEMSGID_UPDATED_BOND
-        #cmpif DEBUG_BLEMSG_FLAG : sprint #dbg$,  "\nDEBUG: BLE Updated Bond" : DbgPrint()
-        OnBleBonded(nCtx)
+        case BLE_EVBLEMSGID_UPDATED_BOND
+            #cmpif DEBUG_BLEMSG_FLAG : sprint #dbg$,  "\nDEBUG: BLE Updated Bond" : DbgPrint()
+            OnBleBonded(nCtx)
         
-      case BLE_EVBLEMSGID_ENCRYPTED
-        #cmpif DEBUG_BLEMSG_FLAG : sprint #dbg$,  "\nDEBUG: BLE Encrypted Connection" : DbgPrint()
-        OnBleEncrypted(nCtx)
+        case BLE_EVBLEMSGID_ENCRYPTED
+            #cmpif DEBUG_BLEMSG_FLAG : sprint #dbg$,  "\nDEBUG: BLE Encrypted Connection" : DbgPrint()
+            OnBleEncrypted(nCtx)
 
-      case BLE_EVBLEMSGID_CONN_TO_BONDED_MASTER
-        #cmpif DEBUG_BLEMSG_FLAG : sprint #dbg$,  "\nDEBUG: BLE Conn to Bonded Master ";nCtx : DbgPrint()
+        case BLE_EVBLEMSGID_CONN_TO_BONDED_MASTER
+            #cmpif DEBUG_BLEMSG_FLAG : sprint #dbg$,  "\nDEBUG: BLE Conn to Bonded Master ";nCtx : DbgPrint()
+ 
+        case BLE_EVBLEMSGID_AUTH_KEY_REQUEST
+            #cmpif DEBUG_BLEMSG_FLAG : sprint #dbg$,  "\nDEBUG: BLE Auth Key Request, type=";nCtx : DbgPrint()
 
-      case BLE_EVBLEMSGID_AUTH_KEY_REQUEST
-        #cmpif DEBUG_BLEMSG_FLAG : sprint #dbg$,  "\nDEBUG: BLE Auth Key Request, type=";nCtx : DbgPrint()
-
-      case BLE_EVBLEMSGID_CONN_PARMS_UPDATE
-        #cmpif DEBUG_BLEMSG_FLAG : sprint #dbg$,  "\nDEBUG: BLE Conn Parm Negotiation UPDATE" : DbgPrint()
+        case BLE_EVBLEMSGID_CONN_PARMS_UPDATE
+            #cmpif DEBUG_BLEMSG_FLAG : sprint #dbg$,  "\nDEBUG: BLE Conn Parm Negotiation UPDATE" : DbgPrint()
         
+        case BLE_EVBLEMSGID_CONN_PARMS_UPDATE_FAIL
+            #cmpif DEBUG_BLEMSG_FLAG : sprint #dbg$,  "\nDEBUG: BLE Conn Parm Negotiation FAILED" : DbgPrint()
 
-      case BLE_EVBLEMSGID_CONN_PARMS_UPDATE_FAIL
-        #cmpif DEBUG_BLEMSG_FLAG : sprint #dbg$,  "\nDEBUG: BLE Conn Parm Negotiation FAILED" : DbgPrint()
-
-      case else
-        #cmpif DEBUG_BLEMSG_FLAG : sprint #dbg$,  "\nDEBUG: BLE Unknown Ble Msg : ";msgID : DbgPrint()
-  endselect
+        case else
+            #cmpif DEBUG_BLEMSG_FLAG : sprint #dbg$,  "\nDEBUG: BLE Unknown Ble Msg : ";msgID : DbgPrint()
+    endselect
 endFunc 1  
 
 //------------------------------------------------------------------------------
 // Helper if sending an event from function
 //------------------------------------------------------------------------------
 function HandlerMsgApp(nMsgId, nMsgCtx)
-  dim addr$
-  #cmpif DEBUG_ASSERT_FLAG :DbgAssert(nMsgId, MESSAGE_BLECONNECTION, 7200)  
-  #cmpif DEBUG_ASSERT_FLAG :DbgAssert(hBleConn, nMsgCtx, 7201)  
-  #cmpif DEBUG_STATECHECK_FLAG : if (nCurrentState != STATE_CONNECTMODE) then
-  #cmpif DEBUG_STATECHECK_FLAG :     sprint #dbg$,  "\nDEBUG: App Msg MESSAGE_BLECONNECTION in invalid state: "; stateString$[nCurrentState] : DbgPrint()
-  #cmpif DEBUG_STATECHECK_FLAG : endif  
+    dim addr$
+    #cmpif DEBUG_ASSERT_FLAG :DbgAssert(nMsgId, MESSAGE_BLECONNECTION, 7200)  
+    #cmpif DEBUG_ASSERT_FLAG :DbgAssert(hBleConn, nMsgCtx, 7201)  
+    #cmpif DEBUG_STATECHECK_FLAG : if (nCurrentState != STATE_CONNECTMODE) then
+    #cmpif DEBUG_STATECHECK_FLAG :     sprint #dbg$,  "\nDEBUG: App Msg MESSAGE_BLECONNECTION in invalid state: "; stateString$[nCurrentState] : DbgPrint()
+    #cmpif DEBUG_STATECHECK_FLAG : endif  
     
-  //We are encrypted so get the IEEE address
-  rc = BleIEEEFromHandle(nMsgCtx, addr$)
+    //We are encrypted so get the IEEE address
+    rc = BleIEEEFromHandle(nMsgCtx, addr$)
     
-  //Send the connect event automatically
-  OnConnection(addr$, CONNECTION_TYPE_BLE)
-  fWirelessConnection = 1
-  ChangeState(STATE_COMMANDMODE)
+    //Send the connect event automatically
+    OnConnection(addr$, CONNECTION_TYPE_BLE)
+    fWirelessConnection = 1
+    ChangeState(STATE_COMMANDMODE)
 endfunc 1
 
 

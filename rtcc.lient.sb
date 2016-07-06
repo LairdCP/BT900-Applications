@@ -1,5 +1,18 @@
-//******************************************************************************
-// Laird Technologies (c) 2014-2015
+// Copyright (c) 2015, Laird
+//
+// Permission to use, copy, modify, and/or distribute this software for any
+// purpose with or without fee is hereby granted, provided that the above
+// copyright notice and this permission notice appear in all copies.
+//
+// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+// ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
+// IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+//
+// SPDX-License-Identifier:ISC
 //
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // +++++                                                                      ++
@@ -130,23 +143,23 @@
 // -----------------------------------------------------------------------------
 
 //Defines for the DoFunc variable
-#define READ_TIME 0
-#define READ_VERSION 1
-#define READ_ALARMTIME 2
-#define READ_ALARMMODE 3
-#define WRITE_ALARMTIME 4
-#define WRITE_ALARMMODE 5
-#define WRITE_TIME 6
-#define ENABLE_NOTIFICATIONS 7
-#define DISABLE_NOTIFICATIONS 8
+#define READ_TIME              0
+#define READ_VERSION           1
+#define READ_ALARMTIME         2
+#define READ_ALARMMODE         3
+#define WRITE_ALARMTIME        4
+#define WRITE_ALARMMODE        5
+#define WRITE_TIME             6
+#define ENABLE_NOTIFICATIONS   7
+#define DISABLE_NOTIFICATIONS  8
 
-dim rc //Function return code
+dim rc                                              //Function return code
 dim TargetBT$ : TargetBT$ = "\00\00\16\a4\09\3a\99" //Bluetooth address` of the device to connect too
-dim Status : Status = 0 //0 = waiting for user input, 1 = scanning
-dim ConnectionStatus : ConnectionStatus = 0 //0 = disconnected, 1 = connected
+dim Status : Status = 0                             //0 = waiting for user input, 1 = scanning
+dim ConnectionStatus : ConnectionStatus = 0         //0 = disconnected, 1 = connected
 dim nCtxG //Global BLE handler
-dim APP_VERSION$ : APP_VERSION$ = "0.97b" //Version of client program
-dim TmpStr$ : TmpStr$ = "" //Temporary string for inter-function passing
+dim APP_VERSION$ : APP_VERSION$ = "0.97b"           //Version of client program
+dim TmpStr$ : TmpStr$ = ""                          //Temporary string for inter-function passing
 
 //List of UUID's
 dim TimeUUID : TimeUUID = 0
@@ -161,7 +174,7 @@ dim VersionHID : VersionHID = 0x2B04
 dim AlarmTimeHID : AlarmTimeHID = 0x2B03
 dim AlarmModeHID : AlarmModeHID = 0x2B02
 
-dim DoFunc : DoFunc = 0 //Temporary variable for what function to perform when characteristic is found
+dim DoFunc : DoFunc = 0                             //Temporary variable for what function to perform when characteristic is found
 
 //Global variables for timestamps
 dim TS_HH, TS_MM1, TS_SS, TS_DD, TS_MM2, TS_YYYY
@@ -299,11 +312,11 @@ ENDFUNC 1
 
 FUNCTION OnUartCmd()
     dim tlen, tkn$, Buf$
-    rc=-2 //assume there is no error
-    tlen = ExtractStrToken(urtcmd$,tkn$) //get first token
+    rc=-2 //Assume there is no error
+    tlen = ExtractStrToken(urtcmd$,tkn$) //Get first token
     IF tlen > 0 THEN
         IF strcmp(tkn$, "show")==0 THEN
-            tlen = ExtractStrToken(urtcmd$,tkn$) //get next token
+            tlen = ExtractStrToken(urtcmd$,tkn$) //Get next token
             IF strcmp(tkn$, "addr")==0 THEN
                 //Show target Bluetooth address
                 PRINT "Target Bluetooth address: ";STRHEXIZE$(TargetBT$);"\n"
@@ -349,10 +362,10 @@ FUNCTION OnUartCmd()
             ENDIF
 '            rc = _at()
         ELSEIF strcmp(tkn$, "set")==0 THEN
-            tlen = ExtractStrToken(urtcmd$,tkn$) //get next token
+            tlen = ExtractStrToken(urtcmd$,tkn$) //Get next token
             IF strcmp(tkn$, "addr")==0 THEN
                 //Change BT address to connect to
-                tlen = ExtractStrToken(urtcmd$,tkn$) //get next token
+                tlen = ExtractStrToken(urtcmd$,tkn$) //Get next token
                 IF (strlen(tkn$) == 14) THEN
                     //Update BT addr
                     TargetBT$ = STRDEHEXIZE$(tkn$)
@@ -395,7 +408,7 @@ FUNCTION OnUartCmd()
                         PRINT "Error: Provided timestamp is not valid\n"
                     ENDIF
                 ELSEIF strcmp(tkn$, "alarm")==0 THEN
-                    tlen = ExtractStrToken(urtcmd$,tkn$) //get next token
+                    tlen = ExtractStrToken(urtcmd$,tkn$) //Get next token
                     IF strcmp(tkn$, "time")==0 THEN
                         //Update alarm on server
                         tkn$ = mid$(urtcmd$, 1, strlen(urtcmd$)-2)
@@ -425,10 +438,10 @@ FUNCTION OnUartCmd()
                         ENDIF
                     ELSEIF strcmp(tkn$, "mode")==0 THEN
                         //Set alarm mode and if enabled
-                        tlen = ExtractStrToken(urtcmd$,tkn$) //get next token
+                        tlen = ExtractStrToken(urtcmd$,tkn$) //Get next token
                         IF strcmp(tkn$, "on")==0 THEN
                             //Enable
-                            tlen = ExtractStrToken(urtcmd$,tkn$) //get next token
+                            tlen = ExtractStrToken(urtcmd$,tkn$) //Get next token
                             rc = BleEncode8(Buf$, 1, 0)
                             DoFunc = WRITE_ALARMMODE
                             IF strcmp(tkn$, "seconds")==0 THEN
@@ -494,7 +507,7 @@ FUNCTION OnUartCmd()
                     ENDIF
                 ELSEIF strcmp(tkn$, "notifications")==0 THEN
                     //Enable or disable notifications
-                    tlen = ExtractStrToken(urtcmd$,tkn$) //get next token
+                    tlen = ExtractStrToken(urtcmd$,tkn$) //Get next token
                     IF strcmp(tkn$, "on")==0 THEN
                         //Enable notifications
                         DoFunc = ENABLE_NOTIFICATIONS
@@ -551,7 +564,7 @@ FUNCTION HndlrUartRx()
         Status = 0
         PRINT "Ended scanning.\n"
     ELSE
-        //check if CR has been received
+        //Check if CR has been received
         nMatch=UartReadMatch(stRsp$,13)
         if nMatch!=0 then
             //CR exists in the input buffer
@@ -721,6 +734,7 @@ FUNCTION HndlrNtfyDo()
     //Runs on notification received
     dim nCtX, Hndl, Dat$, discard, Tmp
     rc = BLEGATTCNOTIFYREAD(nCtX, Hndl, Dat$, discard)
+
 //    IF (Hndl == TimeUUID && strlen(Dat$) == 10) THEN - Might not have TimeUUID handle at this point
     IF (strlen(Dat$) == 10) THEN
         IF (strlen(Dat$) == 10) THEN

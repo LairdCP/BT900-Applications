@@ -1,5 +1,18 @@
-//******************************************************************************
-// Laird Technologies (c) 2014
+// Copyright (c) 2014, Laird
+//
+// Permission to use, copy, modify, and/or distribute this software for any
+// purpose with or without fee is hereby granted, provided that the above
+// copyright notice and this permission notice appear in all copies.
+//
+// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+// ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
+// IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+//
+// SPDX-License-Identifier:ISC
 //
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // +++++                                                                      ++
@@ -65,43 +78,39 @@
         //Set this to the BT address of the BT classic device you want to connect to by default
 #define PEER_BT_ADDR                     "0016A4093A5F"
 
-        //if set to 1, on startup an SPP port will be opened for peer devices to connect to
-#define OPEN_SPP_ON_STARTUP                 0
+        //If set to 1, on startup an SPP port will be opened for peer devices to connect to
+#define OPEN_SPP_ON_STARTUP              0
 
-        //if set to 1, on startup the module will connect to device PEER_BT_ADDR for SPP
-#define CONNECT_ON_STARTUP                  0
+        //If set to 1, on startup the module will connect to device PEER_BT_ADDR for SPP
+#define CONNECT_ON_STARTUP               0
 
-#define PAIRABLE_ON_STARTUP                 0
+#define PAIRABLE_ON_STARTUP              0
 
-#define DISCOVERABLE_ON_STARTUP             1       //if OPEN_SPP_ON_STARTUP==1, discoverablilty will be enabled for DISCOV_TIMEOUT specified
+#define DISCOVERABLE_ON_STARTUP          1    //If OPEN_SPP_ON_STARTUP==1, discoverablilty will be enabled for DISCOV_TIMEOUT specified
 
         //0 - General, 1 - Limited
-#define DISCOV_MODE                         0
+#define DISCOV_MODE                      0
 
-        //time module will be discoverable for in seconds if discoverabilty enabled
-#define DISCOV_TIMEOUT                     60
+        //Time module will be discoverable for in seconds if discoverabilty enabled
+#define DISCOV_TIMEOUT                   60
 
-#define USE_BRIDGE                          1   //Set to 0 to use smartBASIC to transfer data between UART and SPP, set to 1 to use direct briding (faster throughput)
+#define USE_BRIDGE                       1    //Set to 0 to use smartBASIC to transfer data between UART and SPP, set to 1 to use direct briding (faster throughput)
 
 
-//Inquiry config parameters (See description for BtcInquiryConfig() in BT900 Extention user manual)
-#define INQR_TMT                           10   //Inquiry timeout in seconds
-#define INQR_TYPE                          0    //Inquiry type - general inquiry
-#define INQR_MODE                          2    //Inquiry mode - extended inquiry
-#define MAX_DEVS_REC_RESP                  100  //Max number of devices to receive inquiry responses from
+        //Inquiry config parameters (See description for BtcInquiryConfig() in BT900 Extention user manual)
+#define INQR_TMT                         10   //Inquiry timeout in seconds
+#define INQR_TYPE                        0    //Inquiry type - general inquiry
+#define INQR_MODE                        2    //Inquiry mode - extended inquiry
+#define MAX_DEVS_REC_RESP                100  //Max number of devices to receive inquiry responses from
 
-        //for subsequent incoming pair requests, if set to 1, pairing information will be saved in bonding manager
-#define SAVE_PAIRINGS                      1
+        //For subsequent incoming pair requests, if set to 1, pairing information will be saved in bonding manager
+#define SAVE_PAIRINGS                    1
 
         //Set this to 0 to disable all debugging messages
-#define ENABLE_DEBUG_PRINTS                1
-
+#define ENABLE_DEBUG_PRINTS              1
 
 
 //******************************************************************************
 // Library Import
 //******************************************************************************
 #include "lib\spp.atcmd.sblib"
-
-
-

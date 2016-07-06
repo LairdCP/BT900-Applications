@@ -1,5 +1,18 @@
-//******************************************************************************
-// Laird Technologies (c) 2014
+// Copyright (c) 2014, Laird
+//
+// Permission to use, copy, modify, and/or distribute this software for any
+// purpose with or without fee is hereby granted, provided that the above
+// copyright notice and this permission notice appear in all copies.
+//
+// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+// ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
+// IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+//
+// SPDX-License-Identifier:ISC
 //
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // +++++                                                                      ++
@@ -9,68 +22,68 @@
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
 //
-//	smartZ
+//    smartZ
 //
 //
-//	This app provides for a command line interface to the BT900 devkit over the UART.
-//	The commands are designed to mimic the behaviour of BlueZ commands used in Linux.
+//    This app provides for a command line interface to the BT900 devkit over the UART.
+//    The commands are designed to mimic the behaviour of BlueZ commands used in Linux.
 //
-//	When you run the app you will get a -------> command prompt to allow you to submit
-//	commands as follows:-
-//
-//
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//		hcitool dev 		Display local devices
-//		hcitool inq 		Inquire remote devices
-//		hcitool scan		Scan for remote devices
-//		hcitool name		Get name from remote device
-//		hcitool con 		Display active connections
-//		hcitool pair		Pair with remote device
-//		hcitool unpair  	Unpair from remote device
-//		hcitool leadv		Start LE advertisement
-//		hcitool noleadv		Stop LE advertisement
-//		hcitool lescan      Start LE scan
-//		hcitool lecc        Create a LE Connection
-//		hcitool ledc        Disconnect a LE Connection
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//    When you run the app you will get a -------> command prompt to allow you to submit
+//    commands as follows:-
 //
 //
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//		rfcomm connect <bdaddr>
+//        hcitool dev                    Display local devices
+//        hcitool inq                    Inquire remote devices
+//        hcitool scan                   Scan for remote devices
+//        hcitool name                   Get name from remote device
+//        hcitool con                    Display active connections
+//        hcitool pair                   Pair with remote device
+//        hcitool unpair                 Unpair from remote device
+//        hcitool leadv                  Start LE advertisement
+//        hcitool noleadv                Stop LE advertisement
+//        hcitool lescan                 Start LE scan
+//        hcitool lecc                   Create a LE Connection
+//        hcitool ledc                   Disconnect a LE Connection
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
 //
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//		gatttool --primary        	Primary Service Discovery
-//		gatttool --characteristics	Characteristics Discovery
-//		gatttool --char-read      	Characteristics Value/Descriptor Read
-//		gatttool --char-write    	Characteristics Value Write Without Response
-//		gatttool --char-desc     	Characteristics Descriptor Discovery
-//		gatttool --listen        	Listen for notifications and indications
-//
-//		Options:
-//		-b, --device=MAC			Specify remote Bluetooth address
-//		-l, --sec-level				Set security level. Default: low
+//        rfcomm connect <bdaddr>
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
 //
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//		hciconfig auth  				Enable Authentication
-//		hciconfig noauth				Disable Authentication
-//		hciconfig piscan				Enable Page and Inquiry scan
-//		hciconfig noscan				Disable scan
-//		hciconfig iscan 				Enable Inquiry scan
-//		hciconfig pscan 				Enable Page scan
-//		hciconfig name   	[name]		Get/Set local name
-//		hciconfig inqmode	[mode]		Get/Set inquiry mode
-//		hciconfig inqtype	[type]		Get/Set inquiry scan type
-//		hciconfig inqtpl	[level]		Get/Set inquiry transmit power level
-//		hciconfig letpl		[level]		Get/Set LE transmit power level
-//		hciconfig putkey	<bdaddr>	Store link key on the device
-//		hciconfig delkey	<bdaddr>	Delete link key from the device
-//		hciconfig version				Display version information
-//		hciconfig leadv  				Enable LE advertising
-//		hciconfig noleadv				Disable LE advertising
+//        gatttool --primary             Primary Service Discovery
+//        gatttool --characteristics     Characteristics Discovery
+//        gatttool --char-read           Characteristics Value/Descriptor Read
+//        gatttool --char-write          Characteristics Value Write Without Response
+//        gatttool --char-desc           Characteristics Descriptor Discovery
+//        gatttool --listen              Listen for notifications and indications
+//
+//        Options:
+//        -b, --device=MAC               Specify remote Bluetooth address
+//        -l, --sec-level                Set security level. Default: low
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+//
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//        hciconfig auth                 Enable Authentication
+//        hciconfig noauth               Disable Authentication
+//        hciconfig piscan               Enable Page and Inquiry scan
+//        hciconfig noscan               Disable scan
+//        hciconfig iscan                Enable Inquiry scan
+//        hciconfig pscan                Enable Page scan
+//        hciconfig name     [name]      Get/Set local name
+//        hciconfig inqmode  [mode]      Get/Set inquiry mode
+//        hciconfig inqtype  [type]      Get/Set inquiry scan type
+//        hciconfig inqtpl   [level]     Get/Set inquiry transmit power level
+//        hciconfig letpl    [level]     Get/Set LE transmit power level
+//        hciconfig putkey   <bdaddr>    Store link key on the device
+//        hciconfig delkey   <bdaddr>    Delete link key from the device
+//        hciconfig version              Display version information
+//        hciconfig leadv                Enable LE advertising
+//        hciconfig noleadv              Disable LE advertising
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
 //
@@ -78,107 +91,105 @@
 // Definitions
 //******************************************************************************
 
-// Number of connections
-#define NUM_OF_CONNS                         			8
+//Number of connections
+#define NUM_OF_CONNS                             8
 
-// BLE EVENT MSG IDs
-#define BLE_EVBLEMSGID_CONNECT                          0 // msgCtx = connection handle
-#define BLE_EVBLEMSGID_DISCONNECT                       1 // msgCtx = connection handle
+//BLE EVENT MSG IDs
+#define BLE_EVBLEMSGID_CONNECT                   0 //msgCtx = connection handle
+#define BLE_EVBLEMSGID_DISCONNECT                1 //msgCtx = connection handle
 
-// SMARTZ COMMAND IDs:
-#define SMARTZ_COMMAND_NONE								0
-// SMARTZ COMMAND IDs: HCITOOL
-#define SMARTZ_COMMAND_HCITOOL_DEV						1
-#define SMARTZ_COMMAND_HCITOOL_INQ						2
-#define SMARTZ_COMMAND_HCITOOL_SCAN						3
-#define SMARTZ_COMMAND_HCITOOL_NAME						4
-#define SMARTZ_COMMAND_HCITOOL_CON						5
-#define SMARTZ_COMMAND_HCITOOL_PAIR						6
-#define SMARTZ_COMMAND_HCITOOL_UNPAIR					7
-#define SMARTZ_COMMAND_HCITOOL_LESCAN					8
-#define SMARTZ_COMMAND_HCITOOL_LEADV					9
-#define SMARTZ_COMMAND_HCITOOL_LENOADV					10
-#define SMARTZ_COMMAND_HCITOOL_LECC						11
-#define SMARTZ_COMMAND_HCITOOL_LEDC						12
+//SMARTZ COMMAND IDs:
+#define SMARTZ_COMMAND_NONE                      0
+//SMARTZ COMMAND IDs: HCITOOL
+#define SMARTZ_COMMAND_HCITOOL_DEV               1
+#define SMARTZ_COMMAND_HCITOOL_INQ               2
+#define SMARTZ_COMMAND_HCITOOL_SCAN              3
+#define SMARTZ_COMMAND_HCITOOL_NAME              4
+#define SMARTZ_COMMAND_HCITOOL_CON               5
+#define SMARTZ_COMMAND_HCITOOL_PAIR              6
+#define SMARTZ_COMMAND_HCITOOL_UNPAIR            7
+#define SMARTZ_COMMAND_HCITOOL_LESCAN            8
+#define SMARTZ_COMMAND_HCITOOL_LEADV             9
+#define SMARTZ_COMMAND_HCITOOL_LENOADV           10
+#define SMARTZ_COMMAND_HCITOOL_LECC              11
+#define SMARTZ_COMMAND_HCITOOL_LEDC              12
 
-// SMARTZ COMMAND IDs: GATTTOOL
-#define SMARTZ_COMMAND_GATTTOOL_PRIMARY					21
-#define SMARTZ_COMMAND_GATTTOOL_CHARACTERISTICS			22
-#define SMARTZ_COMMAND_GATTTOOL_CHAR_READ				23
-#define SMARTZ_COMMAND_GATTTOOL_CHAR_WRITE				24
-#define SMARTZ_COMMAND_GATTTOOL_CHAR_DESC				25
-#define SMARTZ_COMMAND_GATTTOOL_LISTEN					26
+//SMARTZ COMMAND IDs: GATTTOOL
+#define SMARTZ_COMMAND_GATTTOOL_PRIMARY          21
+#define SMARTZ_COMMAND_GATTTOOL_CHARACTERISTICS  22
+#define SMARTZ_COMMAND_GATTTOOL_CHAR_READ        23
+#define SMARTZ_COMMAND_GATTTOOL_CHAR_WRITE       24
+#define SMARTZ_COMMAND_GATTTOOL_CHAR_DESC        25
+#define SMARTZ_COMMAND_GATTTOOL_LISTEN           26
 
-// SMARTZ COMMAND IDs: RFCOMM
-#define SMARTZ_COMMAND_RFCOMM_CONNECT					31
+//SMARTZ COMMAND IDs: RFCOMM
+#define SMARTZ_COMMAND_RFCOMM_CONNECT            31
 
-// AUTHENTICATION EVENT TYPES
-#define EBTCAUTHKEYTYPE_NONE                 			0
-#define EBTCAUTHKEYTYPE_PASSKEY				 			1
-#define EBTCAUTHKEYTYPE_OOB					 			2
-#define EBTCAUTHKEYTYPE_PIN  				 			3
+//AUTHENTICATION EVENT TYPES
+#define EBTCAUTHKEYTYPE_NONE                     0
+#define EBTCAUTHKEYTYPE_PASSKEY                  1
+#define EBTCAUTHKEYTYPE_OOB                      2
+#define EBTCAUTHKEYTYPE_PIN                      3
 
-// IO CAPABILITIES
-#define IOCAP_JUSTWORKS			             			0
-#define IOCAP_YESNO							 			1
-#define IOCAP_KEYBOARD						 			2
-#define IOCAP_DISPLAY		  				 			3
+//IO CAPABILITIES
+#define IOCAP_JUSTWORKS                          0
+#define IOCAP_YESNO                              1
+#define IOCAP_KEYBOARD                           2
+#define IOCAP_DISPLAY                            3
 
-// APP RUN MODES
-#define NORMAL_MODE                                 	0
-#define RFCOMM_MODE                          			1
-#define GATTTOOL_LISTEN									2
-#define AUTH_MODE										3
+//APP RUN MODES
+#define NORMAL_MODE                              0
+#define RFCOMM_MODE                              1
+#define GATTTOOL_LISTEN                          2
+#define AUTH_MODE                                3
 
 //******************************************************************************
 // Global Variable Declarations
 //******************************************************************************
 
 
-// global variables
+//Global variables
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-dim rc							// response code
-dim stRsp$						// Uart rx data is stored here
-dim pr$							// command prompt
-dim urtcmd$						// cmd line from uart
-dim tkn$,tlen					// used by command parser
-dim hc[NUM_OF_CONNS+1]			// contains connection handles
-dim conns						// number of connections
-dim name$						// local device name
-dim addr$						// address of device being connected to
-dim command : command = 0		// Currently active smartZ command
+dim rc                          //Response code
+dim stRsp$                      //Uart rx data is stored here
+dim pr$                         //Command prompt
+dim urtcmd$                     //CMD line from uart
+dim tkn$,tlen                   //Used by command parser
+dim hc[NUM_OF_CONNS+1]          //Contains connection handles
+dim conns                       //Number of connections
+dim name$                       //Local device name
+dim addr$                       //Address of device being connected to
+dim command : command = 0       //Currently active smartZ command
 
-
-// global variables used for hcitool command
+//Global variables used for hcitool command
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 dim AuthType
 
-// global variables used for rfcomm command
+//Global variables used for rfcomm command
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-dim hcSpp						// handle of connection to use for VSP service
-dim carCnt						// count variable for number of times '^' entered
+dim hcSpp                       //Handle of connection to use for VSP service
+dim carCnt                      //Count variable for number of times '^' entered
 
-
-// global variables used for the hciconfig command
+//Global variables used for the hciconfig command
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-dim nDiscv : nDiscv = 1			// The device is discoverable by default
-dim nConn : nConn = 1			// The device is connectable by default
-dim nPair : nPair = 1			// The device is pairable by default
-dim inqtype	: inqtype = 0		// Inquiry Type: 0 General, 1 Limited
-dim inqmode	: inqmode = 2		// Inquiry Mode: 0 for Standard, 1 for with RSSI, 2 for Extended)
-dim inqtpl : inqtpl=4			// Inquiry transmit power level
-dim letpl : letpl = 4			// LE Tx Power level in dBm
-dim iocap : iocap = 0			// IO Capability: 0 JustWorks, 1 YES/NO, 2 KEYBOARD, 3 DISPLAY
-dim mjVersion : mjVersion=2		// Major version number
-dim mnVersion : mnVersion=2		// Minor version number
+dim nDiscv : nDiscv = 1         //The device is discoverable by default
+dim nConn : nConn = 1           //The device is connectable by default
+dim nPair : nPair = 1           //The device is pairable by default
+dim inqtype    : inqtype = 0    //Inquiry Type: 0 General, 1 Limited
+dim inqmode    : inqmode = 2    //Inquiry Mode: 0 for Standard, 1 for with RSSI, 2 for Extended)
+dim inqtpl : inqtpl=4           //Inquiry transmit power level
+dim letpl : letpl = 4           //LE Tx Power level in dBm
+dim iocap : iocap = 0           //IO Capability: 0 JustWorks, 1 YES/NO, 2 KEYBOARD, 3 DISPLAY
+dim mjVersion : mjVersion=2     //Major version number
+dim mnVersion : mnVersion=2     //Minor version number
 
 
-// globale variables used for gatttool command
+//Globale variables used for gatttool command
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-dim gattLsn : gattLsn = 0		// If Lsn = 1, notifications will be shown
-dim chrHdl						// global characteristic handle of the current characteristic being serviced
-dim valHdl						// global characteristic value handle of the current characteristic value handle being serviced
-dim secPair						// If 1, it means sec-level is medium or high and therefore should pair
+dim gattLsn : gattLsn = 0       //If Lsn = 1, notifications will be shown
+dim chrHdl                      //Global characteristic handle of the current characteristic being serviced
+dim valHdl                      //Global characteristic value handle of the current characteristic value handle being serviced
+dim secPair                     //If 1, it means sec-level is medium or high and therefore should pair
 
 
 //******************************************************************************
@@ -195,9 +206,9 @@ pr$    = "------->"
 // Display the error message
 //==============================================================================
 sub AssertResCode(resCode)
-	if rc !=0 then
-		print "error: ";integer.h' rc;"\n"
-	endif
+    if rc !=0 then
+        print "error: ";integer.h' rc;"\n"
+    endif
 endsub
 
 //==============================================================================
@@ -205,12 +216,12 @@ endsub
 //==============================================================================
 sub delay(t as integer)
 
-		t = t*1000
-		DIM tm
-		tm = gettickcount()
-		while (gettickcount()-tm) < t
-			//wait for t*1000 milliseconds
-		endwhile
+        t = t*1000
+        DIM tm
+        tm = gettickcount()
+        while (gettickcount()-tm) < t
+            //Wait for t*1000 milliseconds
+        endwhile
 
 endsub
 
@@ -219,10 +230,10 @@ endsub
 //==============================================================================
 sub InitConnHandles()
 
-	dim z
-	for z=0 to (NUM_OF_CONNS)
-		hc[z]=-1
-	next
+    dim z
+    for z=0 to (NUM_OF_CONNS)
+        hc[z]=-1
+    next
 
 endsub
 
@@ -231,13 +242,13 @@ endsub
 //==============================================================================
 function AcqConnHandle(hConn)
 
-	dim z
-	for z=1 to (NUM_OF_CONNS)
-		if hc[z] == -1 then
-			hc[z]=hConn
-			exitfunc z
-		endif
-	next
+    dim z
+    for z=1 to (NUM_OF_CONNS)
+        if hc[z] == -1 then
+            hc[z]=hConn
+            exitfunc z
+        endif
+    next
 
 endfunc 0
 
@@ -246,15 +257,15 @@ endfunc 0
 //==============================================================================
 function RelConnHandle(hConn)
 
-	dim x, z
-	for z=1 to (NUM_OF_CONNS)
-		if hc[z] == hConn then
-			for x = z to (NUM_OF_CONNS-1)
-				hc[x] = hc[x+1]
-			next
-			exitfunc z
-		endif
-	next
+    dim x, z
+    for z=1 to (NUM_OF_CONNS)
+        if hc[z] == hConn then
+            for x = z to (NUM_OF_CONNS-1)
+                hc[x] = hc[x+1]
+            next
+            exitfunc z
+        endif
+    next
 
 endfunc 0
 
@@ -275,45 +286,45 @@ endfunc 0
 //==============================================================================
 sub InitBtDevice()
 
-	dim nHandle
+    dim nHandle
 
-	// Set device name
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	// Get the device's bdaddr and display it in hex format
-	name$ = SYSINFO$(4)
-	name$ = right$(name$, 6)
-	name$ = StrHexize$(name$)
-	// Set the name of the local Bluetooth device to be smartZ+<bdaddr>
-	name$ = "smartZ-" + name$
-	rc = BTCSETFRIENDLYNAME (name$)
-	AssertResCode(rc)
+    //Set device name
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    //Get the device's bdaddr and display it in hex format
+    name$ = SYSINFO$(4)
+    name$ = right$(name$, 6)
+    name$ = StrHexize$(name$)
+    //Set the name of the local Bluetooth device to be smartZ+<bdaddr>
+    name$ = "smartZ-" + name$
+    rc = BTCSETFRIENDLYNAME (name$)
+    AssertResCode(rc)
 
-	// Configure classic BT radio
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	// Set device is discoverable with 300s discoverability timeout
-	rc = BtcSetDiscoverable(1, 300)
-	AssertResCode(rc)
-	// Set device to be connectable
-	rc = BtcSetConnectable(1)
-	AssertResCode(rc)
-	// Set the device to be pairable
-	rc = BtcSetPairable(1)
-	AssertResCode(rc)
-	// Set inquiry type to be general
-	rc = BtcInquiryConfig(0, inqtype)
-	AssertResCode(rc)
-	// Set inquiry mode to be extended
-	rc = BtcInquiryConfig(1, inqmode)
-	AssertResCode(rc)
-	// Open Spp
-	rc = btcSppOpen(nHandle)
-	AssertResCode(rc)
-	// Set the IO capability to Just works
-	rc = BtcSecMngrIoCap(0)
-	AssertResCode(rc)
-	// Set the JustWorks configuration to 0 so that pairing works by itself
-	rc = BtcSecMngrJustWorksConf(0)
-	AssertResCode(rc)
+    //Configure classic BT radio
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    //Set device is discoverable with 300s discoverability timeout
+    rc = BtcSetDiscoverable(1, 300)
+    AssertResCode(rc)
+    //Set device to be connectable
+    rc = BtcSetConnectable(1)
+    AssertResCode(rc)
+    //Set the device to be pairable
+    rc = BtcSetPairable(1)
+    AssertResCode(rc)
+    //Set inquiry type to be general
+    rc = BtcInquiryConfig(0, inqtype)
+    AssertResCode(rc)
+    //Set inquiry mode to be extended
+    rc = BtcInquiryConfig(1, inqmode)
+    AssertResCode(rc)
+    //Open Spp
+    rc = btcSppOpen(nHandle)
+    AssertResCode(rc)
+    //Set the IO capability to Just works
+    rc = BtcSecMngrIoCap(0)
+    AssertResCode(rc)
+    //Set the JustWorks configuration to 0 so that pairing works by itself
+    rc = BtcSecMngrJustWorksConf(0)
+    AssertResCode(rc)
 
 endsub
 //==============================================================================
@@ -321,19 +332,19 @@ endsub
 //==============================================================================
 sub Initialise()
 
-	// Set device to be discoverable, connectible, and pairable
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	InitBtDevice()
-	// Initialise connection handles
-	InitConnHandles()
+    //Set device to be discoverable, connectible, and pairable
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    InitBtDevice()
+    //Initialise connection handles
+    InitConnHandles()
 
-	// Display the following lines as soon as the program starts
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	print "\n-----------------------\n"
-	print " smartZ v";mjVersion;".";mnVersion;"\n"
-	print "-----------------------\n"
-	print "\nType \22help\22 or \22<command> help\22\n"
-	print pr$
+    //Display the following lines as soon as the program starts
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    print "\n-----------------------\n"
+    print " smartZ v";mjVersion;".";mnVersion;"\n"
+    print "-----------------------\n"
+    print "\nType \22help\22 or \22<command> help\22\n"
+    print pr$
 
 endsub
 //==============================================================================
@@ -341,16 +352,16 @@ endsub
 //==============================================================================
 sub _help()
 
-	print "Available Commands: \n\n"
-	print "	help\n"
-	print "	hcitool\n"
-	print "	gatttool\n"
-	print "	rfcomm\n"
-	print "	hciconfig\n"
-	print "	quit/exit\n"
-	print "\n"
-	print "For more information on the usage of each command use:\n"
-	print "<command> --help\n\n"
+    print "Available Commands: \n\n"
+    print "    help\n"
+    print "    hcitool\n"
+    print "    gatttool\n"
+    print "    rfcomm\n"
+    print "    hciconfig\n"
+    print "    quit/exit\n"
+    print "\n"
+    print "For more information on the usage of each command use:\n"
+    print "<command> --help\n\n"
 
 endsub
 //==============================================================================
@@ -358,86 +369,86 @@ endsub
 //==============================================================================
 function OnUartCmd() as integer
 
-	// get first token
-	tlen = ExtractStrToken(urtcmd$,tkn$)
+    //Get first token
+    tlen = ExtractStrToken(urtcmd$,tkn$)
 
-	if strcmp(tkn$,"hcitool")==0 then
-		_hci()
+    if strcmp(tkn$,"hcitool")==0 then
+        _hci()
 
     elseif strcmp(tkn$,"gatttool")==0 then
-		_gatt()
+        _gatt()
 
-	elseif strcmp(tkn$,"hciconfig")==0 then
-		_hciCfg()
+    elseif strcmp(tkn$,"hciconfig")==0 then
+        _hciCfg()
 
-	elseif strcmp(tkn$, "rfcomm")==0 then
-		_rfcomm()
+    elseif strcmp(tkn$, "rfcomm")==0 then
+        _rfcomm()
 
-	elseif strcmp(tkn$, "help")==0 then
-		_help()
+    elseif strcmp(tkn$, "help")==0 then
+        _help()
 
-	elseif strcmp(tkn$,"exit")==0 || strcmp(tkn$,"quit")==0  then
-		// Exit this application
-		reset(0)
+    elseif strcmp(tkn$,"exit")==0 || strcmp(tkn$,"quit")==0  then
+        //Exit this application
+        reset(0)
 
-	elseif strcmp(tkn$,"")==0 then
-		//received carriage return. Do nothing
+    elseif strcmp(tkn$,"")==0 then
+        //Received carriage return. Do nothing
 
-	else
-		print tkn$;": command not found\n"
-	endif
+    else
+        print tkn$;": command not found\n"
+    endif
 
-	print pr$
+    print pr$
 
 endfunc 1
 
-'//******************************************************************************
-'// Handler definitions
-'//******************************************************************************
+//******************************************************************************
+// Handler definitions
+//******************************************************************************
 
 //==============================================================================
 // This handler is called when data has arrived through the UART
 //==============================================================================
 function HandlerUartRxCmd() as integer
 
-	dim nMatch
+    dim nMatch
 
-	// read UART data until CR
-	nMatch=UartReadMatch(stRsp$,13)
-	if nMatch!=0 then
-		//CR exists in the input buffer
-		urtcmd$ = strsplitleft$(stRsp$, nMatch)
-		// process the received string
-		exitfunc OnUartCmd()
-	endif
+    //Read UART data until CR
+    nMatch=UartReadMatch(stRsp$,13)
+    if nMatch!=0 then
+        //CR exists in the input buffer
+        urtcmd$ = strsplitleft$(stRsp$, nMatch)
+        //Process the received string
+        exitfunc OnUartCmd()
+    endif
 
 endfunc 1
-'//==============================================================================
-'// Called after SendMsgApp is called. Used to switch between command, rfcomm, and
-'// gatttool listen modes
-'//==============================================================================
+//==============================================================================
+// Called after SendMsgApp is called. Used to switch between command, rfcomm, and
+// gatttool listen modes
+//==============================================================================
 function SetMode(msgID, cmd) as integer
 
-	if cmd == NORMAL_MODE then
-		// if normal mode, UART data will be processed normally
-		OnEvent	 EVUARTRX					call HandlerUartRxCmd
-		carCnt=0
+    if cmd == NORMAL_MODE then
+        //If normal mode, UART data will be processed normally
+        OnEvent     EVUARTRX                    call HandlerUartRxCmd
+        carCnt=0
 
-	elseif cmd == RFCOMM_MODE then
-		// if rfcomm mode, UART data is send immediately over SPP
-		OnEvent	EVUARTRX					call HandlerUartRxSpp
+    elseif cmd == RFCOMM_MODE then
+        //If rfcomm mode, UART data is send immediately over SPP
+        OnEvent    EVUARTRX                    call HandlerUartRxSpp
 
-	elseif cmd == GATTTOOL_LISTEN then
-		// if gatttool mode, UART data will be discarded as terminal
-		// is used for displaying notifications/indications
-		print "\nListening for notifications/indications. For hangup, type \22stop\22\n"
-		OnEvent	EVUARTRX					call HandlerUartRxLsn
+    elseif cmd == GATTTOOL_LISTEN then
+        //If gatttool mode, UART data will be discarded as terminal
+        //is used for displaying notifications/indications
+        print "\nListening for notifications/indications. For hangup, type \22stop\22\n"
+        OnEvent    EVUARTRX                    call HandlerUartRxLsn
 
-	elseif cmd == AUTH_MODE then
-		// Now wait for UART event
-		OnEvent	EVUARTRX					call HandlerUartAuth
+    elseif cmd == AUTH_MODE then
+        //Now wait for UART event
+        OnEvent    EVUARTRX                    call HandlerUartAuth
 
-	endif
+    endif
 
 endfunc 1
 //******************************************************************************
@@ -449,15 +460,15 @@ endfunc 1
 //------------------------------------------------------------------------------
 // Enable synchronous event handlers
 //------------------------------------------------------------------------------
-// Data received over the UART. Process the data accordingly
-OnEvent  EVUARTRX				call HandlerUartRxCmd
+//Data received over the UART. Process the data accordingly
+OnEvent  EVUARTRX                call HandlerUartRxCmd
 
-// Event recieved to switch between normal, rfcomm, and gatttool mode
-OnEvent  EVMSGAPP				call SetMode
+//Event recieved to switch between normal, rfcomm, and gatttool mode
+OnEvent  EVMSGAPP                call SetMode
 
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-// Initialise the device
+//Initialise the device
 Initialise()
 
 //------------------------------------------------------------------------------
