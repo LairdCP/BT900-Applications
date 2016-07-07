@@ -1,5 +1,18 @@
-//******************************************************************************
-// Laird Technologies (c) 2014
+// Copyright (c) 2014, Laird
+//
+// Permission to use, copy, modify, and/or distribute this software for any
+// purpose with or without fee is hereby granted, provided that the above
+// copyright notice and this permission notice appear in all copies.
+//
+// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+// ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
+// IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+//
+// SPDX-License-Identifier:ISC
 //
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // +++++                                                                      ++
@@ -54,57 +67,55 @@ descriptor$ = "\05\01\09\02\A1\01\09\01\A1\00\05\09\19\01\29\03\15\00\25\01\95\0
 
 //-------------------------------------------------------------------------
 //#CMD#//  mouse device open #STRdescriptor# #STRname#
-
-
 //-------------------------------------------------------------------------
 function _mouse()  
     tlen = ExtractStrToken(urtcmd$,tkn$)
     if tlen == 0 then
         exitfunc 5
     endif
-    
-	if strcmp(tkn$,"start")==0 then
-		urtcmd$ = "btc setclassofdevice 0x580"
-		ProcessCmd()
-		
-		urtcmd$ = "hid device open 0x00 0x10 0x10 MyMouse"
-		ProcessCmd()
-		
-		urtcmd$ = "btc setconnectable 1"
-		ProcessCmd()
-		
-		urtcmd$ = "btc setdiscoverable 1 0"
-		ProcessCmd()
-		
-		exitfunc 0
-	endif
-	
-	if strcmp(tkn$,"close")==0 then
-		urtcmd$ = "hid disconnect " + sMouseHandle$
-		ProcessCmd()
-		
-		urtcmd$ = "hid close"
-		ProcessCmd()
-		
-		urtcmd$ = "btc setconnectable 0"
-		ProcessCmd()
-		
-		urtcmd$ = "btc setdiscoverable 0 0"
-		ProcessCmd()
-		
-		exitfunc 0
-	endif
-	
-	if strcmp(tkn$,"wiggle")==0 then
-		TimerStart(0,20,1)			
-		exitfunc 0
-	endif
-	
-	if strcmp(tkn$,"stop")==0 then
-		TimerCancel(0)		
-		exitfunc 0
-	endif
-	
+
+    if strcmp(tkn$,"start")==0 then
+        urtcmd$ = "btc setclassofdevice 0x580"
+        ProcessCmd()
+
+        urtcmd$ = "hid device open 0x00 0x10 0x10 MyMouse"
+        ProcessCmd()
+
+        urtcmd$ = "btc setconnectable 1"
+        ProcessCmd()
+
+        urtcmd$ = "btc setdiscoverable 1 0"
+        ProcessCmd()
+
+        exitfunc 0
+    endif
+
+    if strcmp(tkn$,"close")==0 then
+        urtcmd$ = "hid disconnect " + sMouseHandle$
+        ProcessCmd()
+
+        urtcmd$ = "hid close"
+        ProcessCmd()
+
+        urtcmd$ = "btc setconnectable 0"
+        ProcessCmd()
+
+        urtcmd$ = "btc setdiscoverable 0 0"
+        ProcessCmd()
+
+        exitfunc 0
+    endif
+
+    if strcmp(tkn$,"wiggle")==0 then
+        TimerStart(0,20,1)
+        exitfunc 0
+    endif
+
+    if strcmp(tkn$,"stop")==0 then
+        TimerCancel(0)
+        exitfunc 0
+    endif
+
 endfunc 5
 
 //******************************************************************************
@@ -117,9 +128,9 @@ endfunc 5
 //==============================================================================
 //==============================================================================
 sub HandlerConnHook(hAppHandle)
-    print "\n --- HID Connect: handle=";hAppHandle;pr$  
-		
-	SPRINT #sMouseHandle$,hAppHandle
+    print "\n --- HID Connect: handle=";hAppHandle;pr$
+
+    SPRINT #sMouseHandle$,hAppHandle
 endsub
 
 //==============================================================================
@@ -127,50 +138,50 @@ endsub
 //==============================================================================
 sub HandlerDisconHook(hAppHandle)
     print "\n --- HID Disconnect: handle=";hAppHandle;pr$
-	
-	sMouseHandle$ = ""
+
+    sMouseHandle$ = ""
 endsub
 
 //==============================================================================
 // Called after an HID control event
 //==============================================================================
-sub HandlerControlHook(hAppHandle, nControl)	
-    print "\n --- HID Control: (";integer.h' nControl;") handle=";hAppHandle;pr$      
+sub HandlerControlHook(hAppHandle, nControl)
+    print "\n --- HID Control: (";integer.h' nControl;") handle=";hAppHandle;pr$
 endsub
 
 //==============================================================================
 // Called when data is received via HID
 //==============================================================================
 sub HandlerDataHook(nAppHandle, sReport$)
-	print"\nHandle: ";nAppHandle; "\nData: ";StrHexize$(sReport$);pr$
+    print"\nHandle: ";nAppHandle; "\nData: ";StrHexize$(sReport$);pr$
 endsub
 
 //==============================================================================
 // Called when data is received via HID
 //==============================================================================
 function HandlerTimer0()
-	if nSteps > 50 then
-		nDirection = (nDirection + 1) % 4
-		nSteps = 0
-	endif
-	
-	nSteps = nSteps + 1
-	
-	if nDirection == 0 then
-		urtcmd$ = "hid write " + sMouseHandle$ + " 000004"
-	elseif nDirection == 1 then
-		urtcmd$ = "hid write " + sMouseHandle$ + " 000400"
-	elseif nDirection == 2 then
-		urtcmd$ = "hid write " + sMouseHandle$ + " 0000FC"
-	else
-		urtcmd$ = "hid write " + sMouseHandle$ + " 00FC00"
-	endif
-	
-	ProcessCmd()
-endfunc 1                           
+    if nSteps > 50 then
+        nDirection = (nDirection + 1) % 4
+        nSteps = 0
+    endif
+
+    nSteps = nSteps + 1
+
+    if nDirection == 0 then
+        urtcmd$ = "hid write " + sMouseHandle$ + " 000004"
+    elseif nDirection == 1 then
+        urtcmd$ = "hid write " + sMouseHandle$ + " 000400"
+    elseif nDirection == 2 then
+        urtcmd$ = "hid write " + sMouseHandle$ + " 0000FC"
+    else
+        urtcmd$ = "hid write " + sMouseHandle$ + " 00FC00"
+    endif
+    
+    ProcessCmd()
+endfunc 1
 
 
 //******************************************************************************
 // Equivalent to main() in C
 //******************************************************************************
-OnEvent  EVTMR0 				     call HandlerTimer0
+OnEvent  EVTMR0                      call HandlerTimer0

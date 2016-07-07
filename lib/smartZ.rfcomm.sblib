@@ -1,5 +1,18 @@
-//******************************************************************************
-// Laird Technologies (c) 2014
+// Copyright (c) 2014, Laird
+//
+// Permission to use, copy, modify, and/or distribute this software for any
+// purpose with or without fee is hereby granted, provided that the above
+// copyright notice and this permission notice appear in all copies.
+//
+// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+// ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
+// IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+//
+// SPDX-License-Identifier:ISC
 //
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // +++++                                                                      ++
@@ -18,7 +31,7 @@
 //
 //
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//		rfcomm connect <bdaddr>
+//        rfcomm connect <bdaddr>
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 //
 //
@@ -42,8 +55,8 @@ dim UartBuff$ : UartBuff$ = ""
 //==============================================================================
 sub _rfcommHelp()
 
-	print "Usage:\n"
-	print "		rfcomm connect <bdaddr>\n"
+    print "Usage:\n"
+    print "        rfcomm connect <bdaddr>\n"
 
 endsub
 
@@ -52,32 +65,32 @@ endsub
 //-------------------------------------------------------------------------
 function _rfcommConnect()
 
-'--- Extract all strings in command ---'
-'--------------------------------------'
-	while ExtractStrToken(urtcmd$, tkn$)!=0
-		if strcmp(tkn$,"help")==0 then
-			//print the gatttool help menu
-			print "Usage:\n"
-			print "		rfcomm connect <bdaddr>\n"
-			exitfunc 1
+//--- Extract all strings in command ---//
+//--------------------------------------//
+    while ExtractStrToken(urtcmd$, tkn$)!=0
+        if strcmp(tkn$,"help")==0 then
+            //Print the gatttool help menu
+            print "Usage:\n"
+            print "        rfcomm connect <bdaddr>\n"
+            exitfunc 1
 
-		else
-			if strcmp(tkn$,"")==0 then
-				print "A valid Bluetooth address is required\n"
-			else
-				// Found bdaddr. Dehexize it
-				addr$ = strdehexize$(tkn$)
-			endif
-		endif
-	endwhile
-'--------------------------------------'
+        else
+            if strcmp(tkn$,"")==0 then
+                print "A valid Bluetooth address is required\n"
+            else
+                //Found bdaddr. Dehexize it
+                addr$ = strdehexize$(tkn$)
+            endif
+        endif
+    endwhile
+//--------------------------------------//
 
-	// Connect to SPP device
-	rc = BtcSppConnect(addr$)
-	AssertResCode(rc)
-	if rc == 0 then
-		print "Connecting ... \n"
-	endif
+    //Connect to SPP device
+    rc = BtcSppConnect(addr$)
+    AssertResCode(rc)
+    if rc == 0 then
+        print "Connecting ... \n"
+    endif
 
 endfunc 1
 
@@ -86,20 +99,20 @@ endfunc 1
 //==============================================================================
 sub _rfcomm()
 
-	// Extract and process rfcomm subcommand
-	while ExtractStrToken(urtcmd$, tkn$)!= 0
-		if strcmp(tkn$, "help")==0 then
-			// Display the rfcomm help menu
-			_rfcommHelp()
-			break
+    //Extract and process rfcomm subcommand
+    while ExtractStrToken(urtcmd$, tkn$)!= 0
+        if strcmp(tkn$, "help")==0 then
+            //Display the rfcomm help menu
+            _rfcommHelp()
+            break
 
-		elseif strcmp(tkn$, "connect")==0 then
-			// if found "connect" string, connect with spp device
-			command = SMARTZ_COMMAND_RFCOMM_CONNECT
-			rc = _rfcommConnect()
+        elseif strcmp(tkn$, "connect")==0 then
+            //If found "connect" string, connect with spp device
+            command = SMARTZ_COMMAND_RFCOMM_CONNECT
+            rc = _rfcommConnect()
 
-		endif
-	endwhile
+        endif
+    endwhile
 
 endsub
 
@@ -112,23 +125,23 @@ endsub
 //==============================================================================
 function HandlerSppCon(hConn, res) as integer
 
-	dim hz, conAddr$
-    //if connected successfully, acquire handle and switch to rfcomm mode
-	if res == 0 then
-		hcSpp = hConn
-		// add connection handle to list of connected handles
-		hz = AcqConnHandle(hcSpp)
-		conns = conns + 1
-		rc = BtcGetBDAddrFromHandle(hcSpp,conAddr$)
-		AssertResCode(rc)
-		print "\nConnected to ";strhexize$(conAddr$)
-		print "\nType \22^^^\22 for hangup\n"
-		// Switch to rfcomm mode
-		rc=SendMsgApp(0,RFCOMM_MODE)
-		AssertResCode(rc)
-	else
-		print "\nConnection failed: ";res;"\n";pr$
-    endif        
+    dim hz, conAddr$
+    //If connected successfully, acquire handle and switch to rfcomm mode
+    if res == 0 then
+        hcSpp = hConn
+        //Add connection handle to list of connected handles
+        hz = AcqConnHandle(hcSpp)
+        conns = conns + 1
+        rc = BtcGetBDAddrFromHandle(hcSpp,conAddr$)
+        AssertResCode(rc)
+        print "\nConnected to ";strhexize$(conAddr$)
+        print "\nType \22^^^\22 for hangup\n"
+        //Switch to rfcomm mode
+        rc=SendMsgApp(0,RFCOMM_MODE)
+        AssertResCode(rc)
+    else
+        print "\nConnection failed: ";res;"\n";pr$
+    endif
 
 endfunc 1
 
@@ -146,14 +159,14 @@ endfunc 1
 //==============================================================================
 function HandlerSppDiscon(hConn)
 
-	// Upon disconneciton, release connection handle and return to normal mode
+    //Upon disconneciton, release connection handle and return to normal mode
     dim hz
     hz = RelConnHandle(hConn)
     conns = conns - 1
     print "\nDisconnected\n";pr$
-	// switch back to normal mode
-	rc=SendMsgApp(0,NORMAL_MODE)
-	AssertResCode(rc)
+    //Switch back to normal mode
+    rc=SendMsgApp(0,NORMAL_MODE)
+    AssertResCode(rc)
 
 endfunc 1
 
@@ -162,12 +175,12 @@ endfunc 1
 //==============================================================================
 function HandlerSppData()
 
-	// When receiving SPP data just print it to terminal
+    //When receiving SPP data just print it to terminal
     dim hPort, data$, rLen
-    '//read and print data while there is data available to read
-	while BtcSppRead(hPort, data$, rLen) == 0    
+    //Read and print data while there is data available to read
+    while BtcSppRead(hPort, data$, rLen) == 0
         if rLen>0 then
-			print data$
+            print data$
         endif
     endwhile
 
@@ -177,20 +190,20 @@ endfunc 1
 // This function is called to send SPP data
 //==============================================================================
 function WriteSPPData(txData$)
-	dim txLength
+    dim txLength
 
-	if (SPPTxWaiting == 1) then
-		// We are waiting for a TX notify event from SPP
-		exitfunc 0
-	endif
+    if (SPPTxWaiting == 1) then
+        //We are waiting for a TX notify event from SPP
+        exitfunc 0
+    endif
 
-	rc = BtcSPPWrite(hcSpp, txData$, txLength)
-	if (rc != 0) then
-		//Failed to send
-	else
-		StrShiftLeft(txData$, txLength)
-		SPPTxWaiting = 1
-	endif
+    rc = BtcSPPWrite(hcSpp, txData$, txLength)
+    if (rc != 0) then
+        //Failed to send
+    else
+        StrShiftLeft(txData$, txLength)
+        SPPTxWaiting = 1
+    endif
 endfunc 1
 
 //==============================================================================
@@ -198,22 +211,22 @@ endfunc 1
 //==============================================================================
 function HandlerUartRxSpp()
 
-	// Data is printed immediately unless "^^^" is received
-	// in which case the device will disconnect
-    dim nUartDataLen             // Length of data read from Uart after one UartReadN
+    //Data is printed immediately unless "^^^" is received
+    //in which case the device will disconnect
+    dim nUartDataLen             //Length of data read from Uart after one UartReadN
 
     nUartDataLen = UartReadN(UartBuff$, UART_RX_BUFFER)
 
-    // Check if there was any UART data
+    //Check if there was any UART data
     if nUartDataLen > 0 then
         if (nUartDataLen == 3 || nUartDataLen == 4) then
-            // Check if received ^^^ in Line mode
+            //Check if received ^^^ in Line mode
             dim i$, j$
             i$ = UartBuff$
             //rc = ExtractStrToken(i$,j$)
             j$ = strsplitleft$(i$,3)
             if strcmp(j$,"^^^")==0 then
-                // Disconnect and exit gracefully
+                //Disconnect and exit gracefully
                 rc = BtcSppDisconnect(hcSpp)
                 AssertResCode(rc)
                 UartBuff$ = ""
@@ -229,11 +242,11 @@ function HandlerUartRxSpp()
                 exitfunc 1
             endif
         else
-            // Set carrot count to 0 as we got something else
+            //Set carrot count to 0 as we got something else
             carCnt = 0
         endif
 
-        // Reaching here means we have data to send
+        //Reaching here means we have data to send
         if (hcSpp != 0) then
             rc = WriteSPPData(UartBuff$)
         endif
@@ -250,7 +263,7 @@ function HndlrSPPTxEmpty(hConn)
     //BLE notify buffer has free space, so set flag accordingly
     SPPTxWaiting = 0
 
-    // Call the Uart Handle to make sure that data is emptied
+    //Call the Uart Handle to make sure that data is emptied
     rc = HandlerUartRxSpp()
 
 endfunc 1
@@ -259,8 +272,8 @@ endfunc 1
 // Enable synchronous event handlers
 //------------------------------------------------------------------------------
 // rfcomm related events
-OnEvent  EVSPPCONN                	call HandlerSppCon
-OnEvent  EVBTC_SPP_CONN_TIMEOUT   	call HandlerSppConnTimOut
-OnEvent  EVSPPDISCON              	call HandlerSppDiscon
-OnEvent  EVBTC_SPP_DATA_RECEIVED  	call HandlerSppData
-OnEvent  EvSPPTxEmpty 			    call HndlrSPPTxEmpty
+OnEvent  EVSPPCONN                    call HandlerSppCon
+OnEvent  EVBTC_SPP_CONN_TIMEOUT       call HandlerSppConnTimOut
+OnEvent  EVSPPDISCON                  call HandlerSppDiscon
+OnEvent  EVBTC_SPP_DATA_RECEIVED      call HandlerSppData
+OnEvent  EvSPPTxEmpty                 call HndlrSPPTxEmpty

@@ -1,5 +1,18 @@
-//******************************************************************************
-// Laird Technologies (c) 2014
+// Copyright (c) 2014, Laird
+//
+// Permission to use, copy, modify, and/or distribute this software for any
+// purpose with or without fee is hereby granted, provided that the above
+// copyright notice and this permission notice appear in all copies.
+//
+// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+// ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
+// IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+//
+// SPDX-License-Identifier:ISC
 //
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // +++++                                                                      ++
@@ -75,12 +88,12 @@ function _inquiry()
     endif
     
     if strcmp(tkn$,"cancel")==0 then
-        //cancel the inquiry
+        //Cancel the inquiry
         exitfunc BtcInquiryCancel()
     endif
     
     if strcmp(tkn$,"config")==0 then
-        //extract 2 : (cfgID value) and store starting at i[1]
+        //Extract 2 : (cfgID value) and store starting at i[1]
         rc = ExtractIntTokens(urtcmd$,1,2)
         if rc != 0 then
             exitfunc rc
@@ -88,7 +101,7 @@ function _inquiry()
         exitfunc BtcInquiryConfig(i[1],i[2])  
     endif
     if strcmp(tkn$,"start")==0 then
-        //extract 1 : (inqTimeoutS) and store starting at i[1]
+        //Extract 1 : (inqTimeoutS) and store starting at i[1]
         rc = ExtractIntTokens(urtcmd$,1,1)
         if rc != 0 then
             exitfunc rc
@@ -100,42 +113,43 @@ endfunc 5
 //******************************************************************************
 // Handler definitions
 //******************************************************************************
+
 //==============================================================================
 // This handler is called when there is an inquiry report waiting to be read
 //==============================================================================
 function HandlerInqResp(respType) as integer
     dim ad$,dta$,ndx,rsi,tag
-	
+
     rc = BtcInquiryGetReport(ad$,dta$,ndx,rsi)
-	print "\nMAC: "; StrHexize$(ad$)
-  
-	if respType > 0 then
-		print " ";rsi
-		
-		if respType == 2 then
-			print "\n  EIR: "; StrHexize$(dta$)
-			dim tg$
-			while BtcGetEIRbyIndex(ndx,dta$,tag,ad$)==0
-				//write tag value as hex to string tg$
-				sprint #tg$,integer.h'tag
-				
-				//hexize eir tag data if not a shortened or complete local name
-				if tag < 0x08 || tag > 0x09 then	
-					ad$ = StrHexize$(ad$)
-				else
-					StrDeescape(ad$)
-				endif
-				
-				//print the last 2 hex digits of the tag, and the data
-				if strlen(ad$)!=0 then
-					print "\n  - Tag 0x" + RIGHT$(tg$,2) +": "; ad$
-				endif
-									   
-				ndx=ndx+1
-			endwhile
-			print "\n"
-		endif
-	endif
+    print "\nMAC: "; StrHexize$(ad$)
+
+    if respType > 0 then
+        print " ";rsi
+
+        if respType == 2 then
+            print "\n  EIR: "; StrHexize$(dta$)
+            dim tg$
+            while BtcGetEIRbyIndex(ndx,dta$,tag,ad$)==0
+                //Write tag value as hex to string tg$
+                sprint #tg$,integer.h'tag
+
+                //Hexize eir tag data if not a shortened or complete local name
+                if tag < 0x08 || tag > 0x09 then
+                    ad$ = StrHexize$(ad$)
+                else
+                    StrDeescape(ad$)
+                endif
+
+                //Print the last 2 hex digits of the tag, and the data
+                if strlen(ad$)!=0 then
+                    print "\n  - Tag 0x" + RIGHT$(tg$,2) +": "; ad$
+                endif
+
+                ndx=ndx+1
+            endwhile
+            print "\n"
+        endif
+    endif
 endfunc 1
 
 //==============================================================================

@@ -1,5 +1,18 @@
-//******************************************************************************
-// Laird Technologies (c) 2014
+// Copyright (c) 2014, Laird
+//
+// Permission to use, copy, modify, and/or distribute this software for any
+// purpose with or without fee is hereby granted, provided that the above
+// copyright notice and this permission notice appear in all copies.
+//
+// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+// ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
+// IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+//
+// SPDX-License-Identifier:ISC
 //
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // +++++                                                                      ++
@@ -13,18 +26,18 @@
 // e.g. BT900.
 //
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//		hcitool dev 		Display local devices
-//		hcitool inq 		Inquire remote devices
-//		hcitool scan		Scan for remote devices
-//		hcitool name		Get name from remote device
-//		hcitool con 		Display active connections
-//		hcitool pair		Pair with remote device
-//		hcitool unpair  	Unpair from remote device
-//		hcitool leadv		Start LE advertisement
-//		hcitool noleadv		Stop LE advertisement
-//		hcitool lescan      Start LE scan
-//		hcitool lecc        Create a LE Connection
-//		hcitool ledc        Disconnect a LE Connection
+//        hcitool dev         Display local devices
+//        hcitool inq         Inquire remote devices
+//        hcitool scan        Scan for remote devices
+//        hcitool name        Get name from remote device
+//        hcitool con         Display active connections
+//        hcitool pair        Pair with remote device
+//        hcitool unpair      Unpair from remote device
+//        hcitool leadv       Start LE advertisement
+//        hcitool noleadv     Stop LE advertisement
+//        hcitool lescan      Start LE scan
+//        hcitool lecc        Create a LE Connection
+//        hcitool ledc        Disconnect a LE Connection
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 //******************************************************************************
@@ -36,516 +49,516 @@
 //==============================================================================
 sub _hciHelp()
 
-	print "Usage:\n"
-	print "	hcitool <command> [command parameters]\n\n"
-	print "Commands:\n"
-	print "	dev 		Display local devices\n"
-	print "	inq 		Inquire remote devices\n"
-	print "	scan		Scan for remote devices\n"
-	print "	name		Get name from remote device\n"
-	print "	con 		Display active connection handles\n"
-	print "	pair		Pair with remote device\n"
-	print "	unpair  	Unpair from remote device\n"
-	print "	leadv		Start LE advertisement\n"
-	print "	noleadv 	Stop LE advertisement\n"
-	print "	lescan      Start LE scan\n"
-	print "	lecc        Create a LE Connection\n"
-	print "	ledc        Disconnect a LE Connection\n"
-	print "\n"
-	print "For more information on the usage of each command use:\n"
-	print "	hcitool <command> --help\n\n"
+    print "Usage:\n"
+    print "    hcitool <command> [command parameters]\n\n"
+    print "Commands:\n"
+    print "    dev         Display local devices\n"
+    print "    inq         Inquire remote devices\n"
+    print "    scan        Scan for remote devices\n"
+    print "    name        Get name from remote device\n"
+    print "    con         Display active connection handles\n"
+    print "    pair        Pair with remote device\n"
+    print "    unpair      Unpair from remote device\n"
+    print "    leadv       Start LE advertisement\n"
+    print "    noleadv     Stop LE advertisement\n"
+    print "    lescan      Start LE scan\n"
+    print "    lecc        Create a LE Connection\n"
+    print "    ledc        Disconnect a LE Connection\n"
+    print "\n"
+    print "For more information on the usage of each command use:\n"
+    print "    hcitool <command> --help\n\n"
 
 endsub
 
 //==============================================================================
-//	hcitool inq [--length=N] [--numrsp=N]
+//    hcitool inq [--length=N] [--numrsp=N]
 //==============================================================================
 function _hciInq()
 
-	// set default inquiry tine and maximum number of responses
-	dim inqLen : inqLen = 10
-	dim numRsp : numRsp = 50
+    //Set default inquiry tine and maximum number of responses
+    dim inqLen : inqLen = 10
+    dim numRsp : numRsp = 50
 
-'--- Extract all strings in command ---'
+//--- Extract all strings in command ---//
+//--------------------------------------//
+    while ExtractStrToken(urtcmd$, tkn$)!=0
+        if strcmp(tkn$,"help")==0 then
+            //Display the hcitool inq help menu
+            print "Usage:\n"
+            print "        hcitool inq    [--length=t] maximum inquiry duration in seconds\n"
+            print "                 [--numrsp=N] specify maximum number of inquiry responses\n"
+            exitfunc 1
+
+        elseif strcmp(tkn$,"length")==0 then
+            strshiftleft(urtcmd$, 1)                //Discard the = sign
+            rc = extractStrToken(urtcmd$, tkn$)     //Take the next string from the command
+            rc = extractInttoken(tkn$,inqLen)       //Extract the integer value of the string
+
+        elseif strcmp(tkn$,"numrsp")==0 then
+            strshiftleft(urtcmd$, 1)                //Discard the = sign
+            rc = extractStrToken(urtcmd$, tkn$)     //Take the next string from the command
+            rc = extractInttoken(tkn$,numRsp)       //Extract the integer value of the string
+
+        endif
+    endwhile
 '--------------------------------------'
-	while ExtractStrToken(urtcmd$, tkn$)!=0
-		if strcmp(tkn$,"help")==0 then
-			// Display the hcitool inq help menu
-			print "Usage:\n"
-			print "		hcitool inq	[--length=t] maximum inquiry duration in seconds\n"
-			print " 				[--numrsp=N] specify maximum number of inquiry responses\n"
-			exitfunc 1
 
-		elseif strcmp(tkn$,"length")==0 then
-			strshiftleft(urtcmd$, 1)					// discard the = sign
-			rc = extractStrToken(urtcmd$, tkn$)			// take the next string from the command
-			rc = extractInttoken(tkn$,inqLen)			// extract the integer value of the string
-
-		elseif strcmp(tkn$,"numrsp")==0 then
-			strshiftleft(urtcmd$, 1)					// discard the = sign
-			rc = extractStrToken(urtcmd$, tkn$)			// take the next string from the command
-			rc = extractInttoken(tkn$,numRsp)			// extract the integer value of the string
-
-		endif
-	endwhile
-'--------------------------------------'
-
-	print "Inquiring ...\n"
-	// Inquiry mode: Standard
-	rc = btcInquiryConfig(1, 0)
-	AssertResCode(rc)
-	// specify maximum number of responses
-	rc = btcInquiryConfig(2, numRsp)
-	AssertResCode(rc)
-	// start inquiry
-	rc =  btcinquirystart(inqLen)
-	AssertResCode(rc)
+    print "Inquiring ...\n"
+    //Inquiry mode: Standard
+    rc = btcInquiryConfig(1, 0)
+    AssertResCode(rc)
+    //Specify maximum number of responses
+    rc = btcInquiryConfig(2, numRsp)
+    AssertResCode(rc)
+    //Start inquiry
+    rc =  btcinquirystart(inqLen)
+    AssertResCode(rc)
 
 endfunc 1
 
 //==============================================================================
-//	hcitool scan [--length=N] [--numrsp=N]
+//    hcitool scan [--length=N] [--numrsp=N]
 //==============================================================================
 function _hciScan()
 
-	// Set the default inquiry time and maximum number of responses
-	dim inqLen : inqLen = 10
-	dim numRsp : numRsp = 50
+    //Set the default inquiry time and maximum number of responses
+    dim inqLen : inqLen = 10
+    dim numRsp : numRsp = 50
 
-'--- Extract all strings in command ---'
+//--- Extract all strings in command ---//
+//--------------------------------------//
+    while ExtractStrToken(urtcmd$, tkn$)!=0
+        if strcmp(tkn$,"help")==0 then
+            //Display the hcitool scan help menu
+            print "Usage:\n"
+            print "        hcitool scan [--length=t] maximum inquiry duration in seconds\n"
+            print "                  [--numrsp=N] specify maximum number of inquiry responses\n"
+            exitfunc 1
+
+        elseif strcmp(tkn$,"length")==0 then
+            strshiftleft(urtcmd$, 1)                //Discard the = sign
+            rc = extractStrToken(urtcmd$, tkn$)     //Take the next string from the command
+            rc = extractInttoken(tkn$,inqLen)       //Extract the integer value of the string
+
+        elseif strcmp(tkn$,"numrsp")==0 then
+            strshiftleft(urtcmd$, 1)                //Discard the = sign
+            rc = extractStrToken(urtcmd$, tkn$)     //Take the next string from the command
+            rc = extractInttoken(tkn$,numRsp)       //Extract the integer value of the string
+
+        endif
+    endwhile
 '--------------------------------------'
-	while ExtractStrToken(urtcmd$, tkn$)!=0
-		if strcmp(tkn$,"help")==0 then
-			// Display the hcitool scan help menu
-			print "Usage:\n"
-			print "		hcitool scan [--length=t] maximum inquiry duration in seconds\n"
-			print " 				 [--numrsp=N] specify maximum number of inquiry responses\n"
-			exitfunc 1
 
-		elseif strcmp(tkn$,"length")==0 then
-			strshiftleft(urtcmd$, 1)					// discard the = sign
-			rc = extractStrToken(urtcmd$, tkn$)			// take the next string from the command
-			rc = extractInttoken(tkn$,inqLen)			// extract the integer value of the string
-
-		elseif strcmp(tkn$,"numrsp")==0 then
-			strshiftleft(urtcmd$, 1)					// discard the = sign
-			rc = extractStrToken(urtcmd$, tkn$)			// take the next string from the command
-			rc = extractInttoken(tkn$,numRsp)			// extract the integer value of the string
-
-		endif
-	endwhile
-'--------------------------------------'
-
-	print "Scanning ...\n"
-	// Inquiry mode: Extended
-	rc = btcInquiryConfig(1, 2)
-	AssertResCode(rc)
-	// specify maximum number of responses
-	rc = btcInquiryConfig(2, numRsp)
-	AssertResCode(rc)
-	// start inquiry
-	rc =  btcinquirystart(inqLen)
-	AssertResCode(rc)
+    print "Scanning ...\n"
+    //Inquiry mode: Extended
+    rc = btcInquiryConfig(1, 2)
+    AssertResCode(rc)
+    //Specify maximum number of responses
+    rc = btcInquiryConfig(2, numRsp)
+    AssertResCode(rc)
+    //Start inquiry
+    rc =  btcinquirystart(inqLen)
+    AssertResCode(rc)
 
 endfunc 1
 
 //==============================================================================
-//	hcitool name <bdaddr>
+//    hcitool name <bdaddr>
 //==============================================================================
 function _hciName()
 
-	// Initialise number of parameters (minimum need=1)
-	dim num_of_params : num_of_params = 0
+    //Initialise number of parameters (minimum need=1)
+    dim num_of_params : num_of_params = 0
 
-'--- Extract all strings in command ---'
+//--- Extract all strings in command ---//
+//--------------------------------------//
+    while ExtractStrToken(urtcmd$, tkn$)!=0
+        if strcmp(tkn$,"help")==0 then
+            //Display the hcitool name help menu
+            print "Usage:\n"
+            print "        hcitool name <bdaddr>\n"
+            exitfunc 1
+
+        else
+            addr$ = strdehexize$(tkn$)              //Dehexize address to be usable
+            num_of_params = num_of_params + 1
+
+        endif
+    endwhile
 '--------------------------------------'
-	while ExtractStrToken(urtcmd$, tkn$)!=0
-		if strcmp(tkn$,"help")==0 then
-			// Display the hcitool name help menu
-			print "Usage:\n"
-			print "		hcitool name <bdaddr>\n"
-			exitfunc 1
 
-		else
-			addr$ = strdehexize$(tkn$)					// Dehexize address to be usable
-			num_of_params = num_of_params + 1
+    //Exit if no remote address has been provided
+    if num_of_params != 1 then
+        print "name: too few arguments (minimal: 1)\n"
+        print "Usage:\n"
+        print "        name <bdaddr>\n"
+        exitfunc 1
+    endif
 
-		endif
-	endwhile
-'--------------------------------------'
-
-	// Exit if no remote address has been provided
-	if num_of_params != 1 then
-		print "name: too few arguments (minimal: 1)\n"
-		print "Usage:\n"
-		print "		name <bdaddr>\n"
-		exitfunc 1
-	endif
-
-	// specify maximum number of responses
-	rc = btcInquiryConfig(2, 30)
-	AssertResCode(rc)
-	// start inquiry
-	rc =  btcinquirystart(10)
-	AssertResCode(rc)
+    //Specify maximum number of responses
+    rc = btcInquiryConfig(2, 30)
+    AssertResCode(rc)
+    //Start inquiry
+    rc =  btcinquirystart(10)
+    AssertResCode(rc)
 
 endfunc 1
 
 //==============================================================================
-//	hcitool dev
+//    hcitool dev
 //==============================================================================
 function _hciDev()
 
-	dim addr$
+    dim addr$
 
-'--- Extract all strings in command ---'
-'--------------------------------------'
-	while ExtractStrToken(urtcmd$, tkn$)!=0
-		if strcmp(tkn$,"help")==0 then
-			//Display the hcitool dev help menu
-			print "Usage:\n"
-			print "		hcitool dev\n"
-			exitfunc 1
-		endif
-	endwhile
-'--------------------------------------'
+//--- Extract all strings in command ---//
+//--------------------------------------//
+    while ExtractStrToken(urtcmd$, tkn$)!=0
+        if strcmp(tkn$,"help")==0 then
+            //Display the hcitool dev help menu
+            print "Usage:\n"
+            print "        hcitool dev\n"
+            exitfunc 1
+        endif
+    endwhile
+//--------------------------------------//
 
-	// Get Bluetooth address of local device
-	addr$ = SYSINFO$(4)
-	addr$ = right$(addr$, 6)
-	// Display the local device name + Bluetooth address
-	print "Device: \n	";name$;"    ";StrHexize$(addr$);"\n"
+    //Get Bluetooth address of local device
+    addr$ = SYSINFO$(4)
+    addr$ = right$(addr$, 6)
+    //Display the local device name + Bluetooth address
+    print "Device: \n    ";name$;"    ";StrHexize$(addr$);"\n"
 
 endfunc 1
 
 //==============================================================================
-//	hcitool con
+//    hcitool con
 //==============================================================================
 function _hciCon()
 
-'--- Extract all strings in command ---'
-'--------------------------------------'
-	while ExtractStrToken(urtcmd$, tkn$)!=0
-		if strcmp(tkn$,"help")==0 then
-			// Display the hcitool con help menu
-			print "Usage:\n"
-			print "		hcitool con\n"
-			exitfunc 1
-		endif
-	endwhile
-'--------------------------------------'
+//--- Extract all strings in command ---//
+//--------------------------------------//
+    while ExtractStrToken(urtcmd$, tkn$)!=0
+        if strcmp(tkn$,"help")==0 then
+            //Display the hcitool con help menu
+            print "Usage:\n"
+            print "        hcitool con\n"
+            exitfunc 1
+        endif
+    endwhile
+//--------------------------------------//
 
-	dim conAddr$, z
+    dim conAddr$, z
 
-	// Loop through the acquired connection handles and display connected devices
-	print "Connections:\n"
-	for z=1 to conns
-		rc = BleGetAddrFromConnHandle(hc[z],conAddr$)
-		if rc!=0 then
-			rc = BtcGetBDAddrFromHandle(hc[z],conAddr$)
-		endif
-		print "	> ";strhexize$(conAddr$);" handle ";hc[z];"\n"
-	next
+    //Loop through the acquired connection handles and display connected devices
+    print "Connections:\n"
+    for z=1 to conns
+        rc = BleGetAddrFromConnHandle(hc[z],conAddr$)
+        if rc!=0 then
+            rc = BtcGetBDAddrFromHandle(hc[z],conAddr$)
+        endif
+        print "    > ";strhexize$(conAddr$);" handle ";hc[z];"\n"
+    next
 
 endfunc 1
 
 //==============================================================================
-//	hcitool pair <bdaddr>
+//    hcitool pair <bdaddr>
 //==============================================================================
 function _hciPair()
 
-	dim nBnd : nBnd = 0					// Bond flag. If 1, the device will bond
+    dim nBnd : nBnd = 0                    //Bond flag. If 1, the device will bond
 
-'--- Extract all strings in command ---'
-'--------------------------------------'
-	while ExtractStrToken(urtcmd$, tkn$)!=0
-		if strcmp(tkn$,"help")==0 then
-			// Display the hcitool pair help menu
-			print "Usage:\n"
-			print "		hcitool pair <bdaddr> [--bond]\n"
-			exitfunc 1
-		
-		elseif strcmp(tkn$,"bond")==0 then
-		// If [bond] is passed, set nBnd flag to 1 to enable bonding
-			nBnd = 1
+//--- Extract all strings in command ---//
+//--------------------------------------//
+    while ExtractStrToken(urtcmd$, tkn$)!=0
+        if strcmp(tkn$,"help")==0 then
+            //Display the hcitool pair help menu
+            print "Usage:\n"
+            print "        hcitool pair <bdaddr> [--bond]\n"
+            exitfunc 1
 
-		elseif strcmp(tkn$,"-")==0 then
-			//do nothing
+        elseif strcmp(tkn$,"bond")==0 then
+        //If [bond] is passed, set nBnd flag to 1 to enable bonding
+            nBnd = 1
 
-		else
-			addr$ = strdehexize$(tkn$)
+        elseif strcmp(tkn$,"-")==0 then
+            //Do nothing
 
-		endif
-	endwhile
-'--------------------------------------'
+        else
+            addr$ = strdehexize$(tkn$)
 
-	// Pair with device
-	rc = BtcPair(addr$, nBnd)
-	AssertResCode(rc)
-	if rc == 0 then
-		print "Pairing ...\n"
-	endif
+        endif
+    endwhile
+//--------------------------------------//
+
+    //Pair with device
+    rc = BtcPair(addr$, nBnd)
+    AssertResCode(rc)
+    if rc == 0 then
+        print "Pairing ...\n"
+    endif
 
 endfunc 1
 
 //==============================================================================
-//	hcitool unpair <bdaddr>
+//    hcitool unpair <bdaddr>
 //==============================================================================
 function _hciUnpair()
 
-'--- Extract all strings in command ---'
-'--------------------------------------'
-	while ExtractStrToken(urtcmd$, tkn$)!=0
-		if strcmp(tkn$,"help")==0 then
-			// Display the hcitool unpair help menu
-			print "Usage:\n"
-			print "		hcitool unpair <bdaddr>\n"
-			exitfunc 1
+//--- Extract all strings in command ---//
+//--------------------------------------//
+    while ExtractStrToken(urtcmd$, tkn$)!=0
+        if strcmp(tkn$,"help")==0 then
+            //Display the hcitool unpair help menu
+            print "Usage:\n"
+            print "        hcitool unpair <bdaddr>\n"
+            exitfunc 1
 
-		else
-			addr$ = strdehexize$(tkn$)
-		endif
-	endwhile
-'--------------------------------------'
+        else
+            addr$ = strdehexize$(tkn$)
+        endif
+    endwhile
+//--------------------------------------//
 
-	// Erase keys from database
-	rc = BtcBondingEraseKey(addr$)
-	AssertResCode(rc)
-	if rc == 0 then
-		print "Unpaired\n"
-	endif
+    //Erase keys from database
+    rc = BtcBondingEraseKey(addr$)
+    AssertResCode(rc)
+    if rc == 0 then
+        print "Unpaired\n"
+    endif
 
 endfunc 1
 
 //==============================================================================
-//	hcitool leadv	[--timeout]
+//    hcitool leadv    [--timeout]
 //==============================================================================
 function _hciLeAdv()
 
-	// Set default time-out of LE adverts to be infinite
-	dim timOut	: timOut = 0
+    //Set default time-out of LE adverts to be infinite
+    dim timOut    : timOut = 0
 
-'--- Extract all strings in command ---'
-'--------------------------------------'
-	while ExtractStrToken(urtcmd$, tkn$)!=0
-		if strcmp(tkn$,"help")==0 then
-		// Display the hcitool leadv help menu
-			print "Usage:\n"
-			print "		hcitool leadv [--timeout=t] advert time-out in seconds\n"
-			print ""
-			exitfunc 1
+//--- Extract all strings in command ---//
+//--------------------------------------//
+    while ExtractStrToken(urtcmd$, tkn$)!=0
+        if strcmp(tkn$,"help")==0 then
+        //Display the hcitool leadv help menu
+            print "Usage:\n"
+            print "        hcitool leadv [--timeout=t] advert time-out in seconds\n"
+            print ""
+            exitfunc 1
 
-		elseif strcmp(tkn$,"timeout")==0 then
-		// modify the timeout variable
-			strshiftleft(urtcmd$, 1)					// discard the = sign
-			rc = extractStrToken(urtcmd$, tkn$)			// take the next string from the command
-			rc = extractInttoken(tkn$,timOut)			// extract the integer value of the string
+        elseif strcmp(tkn$,"timeout")==0 then
+        //Modify the timeout variable
+            strshiftleft(urtcmd$, 1)                //Discard the = sign
+            rc = extractStrToken(urtcmd$, tkn$)     //Take the next string from the command
+            rc = extractInttoken(tkn$,timOut)       //Extract the integer value of the string
 
-		endif
-	endwhile
-'--------------------------------------'
+        endif
+    endwhile
+//--------------------------------------//
 
-	dim a$
-	// change timeout value from seconds to milliseconds
-	timOut = timOut * 1000
-	rc = BleAdvertStart(0,a$,25,timOut,0)
-	AssertResCode(rc)
+    dim a$
+    //Change timeout value from seconds to milliseconds
+    timOut = timOut * 1000
+    rc = BleAdvertStart(0,a$,25,timOut,0)
+    AssertResCode(rc)
 
 endfunc 1
 
 //==============================================================================
-//	hcitool noleadv
+//    hcitool noleadv
 //==============================================================================
 function _hciNoLeAdv()
 
-'--- Extract all strings in command ---'
-'--------------------------------------'
-	while ExtractStrToken(urtcmd$, tkn$)!=0
-		if strcmp(tkn$,"help")==0 then
-		// Display the hcitool noleadv help menu
-			print "Usage:\n"
-			print "		hcitool noleadv\n"
-			print ""
-			exitfunc 1
+//--- Extract all strings in command ---//
+//--------------------------------------//
+    while ExtractStrToken(urtcmd$, tkn$)!=0
+        if strcmp(tkn$,"help")==0 then
+        //Display the hcitool noleadv help menu
+            print "Usage:\n"
+            print "        hcitool noleadv\n"
+            print ""
+            exitfunc 1
 
-		endif
-	endwhile
-'--------------------------------------'
+        endif
+    endwhile
+//--------------------------------------//
 
-	rc = BleAdvertStop()
-	AssertResCode(rc)
+    rc = BleAdvertStop()
+    AssertResCode(rc)
 
 endfunc 1
 
 //==============================================================================
-//	hcitool lescan [--length]
+//    hcitool lescan [--length]
 //==============================================================================
 function _hciLeScan()
 
-	// Set default scan time to 5 seconds
-	dim scnLen : scnLen = 5000
+    //Set default scan time to 5 seconds
+    dim scnLen : scnLen = 5000
 
-'--- Extract all strings in command ---'
-'--------------------------------------'
-	while ExtractStrToken(urtcmd$, tkn$)!=0
-		if strcmp(tkn$,"help")==0 then
-		// Display the hcitool lescan help menu
-			print "Usage:\n"
-			print "		hcitool lescan [--length=N] maximum scan duration in seconds\n"
-			print ""
-			exitfunc 1
+//--- Extract all strings in command ---//
+//--------------------------------------//
+    while ExtractStrToken(urtcmd$, tkn$)!=0
+        if strcmp(tkn$,"help")==0 then
+        //Display the hcitool lescan help menu
+            print "Usage:\n"
+            print "        hcitool lescan [--length=N] maximum scan duration in seconds\n"
+            print ""
+            exitfunc 1
 
-		elseif strcmp(tkn$,"length")==0 then
-			strshiftleft(urtcmd$, 1)					// discard the = sign
-			rc = extractStrToken(urtcmd$, tkn$)			// take the next string from the command
-			rc = extractInttoken(tkn$,scnLen)			// extract the integer value of the string
-			scnLen = scnLen*1000
+        elseif strcmp(tkn$,"length")==0 then
+            strshiftleft(urtcmd$, 1)                //Discard the = sign
+            rc = extractStrToken(urtcmd$, tkn$)     //Take the next string from the command
+            rc = extractInttoken(tkn$,scnLen)       //Extract the integer value of the string
+            scnLen = scnLen*1000
 
-		endif
-	endwhile
-'--------------------------------------'
+        endif
+    endwhile
+//--------------------------------------//
 
-	rc = BleScanStart(scnLen, 0)
-	AssertResCode(rc)
-	if rc == 0 then
-		print "LE Scan ...\n"
-	endif
+    rc = BleScanStart(scnLen, 0)
+    AssertResCode(rc)
+    if rc == 0 then
+        print "LE Scan ...\n"
+    endif
 
 endfunc 1
 
 //==============================================================================
-//	hcitool lecc <bdaddr>
+//    hcitool lecc <bdaddr>
 //==============================================================================
 function _hciLeCc() as integer
 
-	addr$=""
+    addr$=""
 
-'--- Extract all strings in command ---'
-'--------------------------------------'
-	while ExtractStrToken(urtcmd$, tkn$)!=0
-		if strcmp(tkn$,"help")==0 then
-			// Display the hcitool lecc help menu
-			print "Usage:\n"
-			print "		hcitool lecc <bdaddr>\n"
-			exitfunc 1
+//--- Extract all strings in command ---//
+//--------------------------------------//
+    while ExtractStrToken(urtcmd$, tkn$)!=0
+        if strcmp(tkn$,"help")==0 then
+            //Display the hcitool lecc help menu
+            print "Usage:\n"
+            print "        hcitool lecc <bdaddr>\n"
+            exitfunc 1
 
-		else
-			addr$ = strdehexize$(tkn$)
+        else
+            addr$ = strdehexize$(tkn$)
 
-		endif
-	endwhile
-'--------------------------------------'
+        endif
+    endwhile
+//--------------------------------------//
 
-	rc = BleConnect(addr$, 5000, 20000, 75000, 5000000)						// ConnectionTimeoutms, minConIntervalus, maxConIntervalus, nSupervisionTimeoutus
-	AssertResCode(rc)
-	if rc == 0 then
-		print "Connecting ... \n"
-	endif
+    rc = BleConnect(addr$, 5000, 20000, 75000, 5000000)   //ConnectionTimeoutms, minConIntervalus, maxConIntervalus, nSupervisionTimeoutus
+    AssertResCode(rc)
+    if rc == 0 then
+        print "Connecting ... \n"
+    endif
 
 endfunc 1
 
 //==============================================================================
-//	hcitool ledc <handle>
+//    hcitool ledc <handle>
 //==============================================================================
 function _hciLeDc() as integer
 
-	dim conHdl
+    dim conHdl
 
-'--- Extract all strings in command ---'
-'--------------------------------------'
-	while ExtractStrToken(urtcmd$, tkn$)!=0
-		if strcmp(tkn$,"help")==0 then
-			// Display the hcitool ledc help menu
-			print "Usage:\n"
-			print "		hcitool ledc <handle>\n"
+//--- Extract all strings in command ---//
+//--------------------------------------//
+    while ExtractStrToken(urtcmd$, tkn$)!=0
+        if strcmp(tkn$,"help")==0 then
+            //Display the hcitool ledc help menu
+            print "Usage:\n"
+            print "        hcitool ledc <handle>\n"
 
-			exitfunc 1
+            exitfunc 1
 
-		else
-			conHdl = StrValDec(tkn$)
+        else
+            conHdl = StrValDec(tkn$)
 
-		endif
-	endwhile
-'--------------------------------------'
+        endif
+    endwhile
+//--------------------------------------//
 
-	// Disconnect from LE device
-	rc = bledisconnect(conHdl)
-	AssertResCode(rc)
-	if rc == 0 then
-		print "Disconnecting ...\n"
-	endif
+    //Disconnect from LE device
+    rc = bledisconnect(conHdl)
+    AssertResCode(rc)
+    if rc == 0 then
+        print "Disconnecting ...\n"
+    endif
 
 endfunc 1
 
 //==============================================================================
-//	Extract the hcitool command
+//    Extract the hcitool command
 //==============================================================================
 sub _hci()
 
-	// Extract and process hcitool subcommand
+    //Extract and process hcitool subcommand
 
-	while ExtractStrToken(urtcmd$, tkn$)!=0
-		if strcmp(tkn$,"help")==0 then
-			// Display the hcitool command help menu
-			_hciHelp()
-			break
+    while ExtractStrToken(urtcmd$, tkn$)!=0
+        if strcmp(tkn$,"help")==0 then
+            //Display the hcitool command help menu
+            _hciHelp()
+            break
 
-		elseif strcmp(tkn$,"dev")==0 then
-			// Display the address of the local device
-			rc = _hciDev()								
+        elseif strcmp(tkn$,"dev")==0 then
+            //Display the address of the local device
+            rc = _hciDev()
 
-		elseif strcmp(tkn$,"inq")==0 then				
-			command = SMARTZ_COMMAND_HCITOOL_INQ
-			// Inquire for remote devices (show address only)
-			rc = _hciInq()							
+        elseif strcmp(tkn$,"inq")==0 then                
+            command = SMARTZ_COMMAND_HCITOOL_INQ
+            //Inquire for remote devices (show address only)
+            rc = _hciInq()
 
-		elseif strcmp(tkn$,"scan")==0 then
-			// Scan for remote devices (show address and name)
-			command = SMARTZ_COMMAND_HCITOOL_SCAN
-			rc = _hciScan()							
+        elseif strcmp(tkn$,"scan")==0 then
+            //Scan for remote devices (show address and name)
+            command = SMARTZ_COMMAND_HCITOOL_SCAN
+            rc = _hciScan()
 
-		elseif strcmp(tkn$,"name")==0 then
-			// Get name from remote device
-			command = SMARTZ_COMMAND_HCITOOL_NAME
-			rc = _hciName()							
+        elseif strcmp(tkn$,"name")==0 then
+            //Get name from remote device
+            command = SMARTZ_COMMAND_HCITOOL_NAME
+            rc = _hciName()
 
-		elseif strcmp(tkn$,"con")==0 then
-			// Display active connection handles
-			command = SMARTZ_COMMAND_HCITOOL_CON
-			rc = _hciCon()							
+        elseif strcmp(tkn$,"con")==0 then
+            //Display active connection handles
+            command = SMARTZ_COMMAND_HCITOOL_CON
+            rc = _hciCon()
 
-		elseif strcmp(tkn$, "pair")==0 then
-			// Pair with remote device
-			command = SMARTZ_COMMAND_HCITOOL_PAIR
-			rc = _hciPair()
+        elseif strcmp(tkn$, "pair")==0 then
+            //Pair with remote device
+            command = SMARTZ_COMMAND_HCITOOL_PAIR
+            rc = _hciPair()
 
-		elseif strcmp(tkn$, "unpair")==0 then
-			// Unpair from remote device
-			command = SMARTZ_COMMAND_HCITOOL_UNPAIR
-			rc = _hciUnpair()
+        elseif strcmp(tkn$, "unpair")==0 then
+            //Unpair from remote device
+            command = SMARTZ_COMMAND_HCITOOL_UNPAIR
+            rc = _hciUnpair()
 
-		elseif strcmp(tkn$, "leadv")== 0 then
-			// LE advertise
-			rc = _hciLeAdv()
+        elseif strcmp(tkn$, "leadv")== 0 then
+            //LE advertise
+            rc = _hciLeAdv()
 
-		elseif strcmp(tkn$, "noleadv")== 0 then
-			// Stop LE adverts
-			rc = _hciNoLeAdv()
+        elseif strcmp(tkn$, "noleadv")== 0 then
+            //Stop LE adverts
+            rc = _hciNoLeAdv()
 
-		elseif strcmp(tkn$, "lescan")==0 then
-			// Start LE scan
-			rc = _hciLeScan()
+        elseif strcmp(tkn$, "lescan")==0 then
+            //Start LE scan
+            rc = _hciLeScan()
 
-		elseif strcmp(tkn$, "lecc")==0 then
-			// Create a LE connection
-			rc = _hciLeCc()
+        elseif strcmp(tkn$, "lecc")==0 then
+            //Create a LE connection
+            rc = _hciLeCc()
 
-		elseif strcmp(tkn$, "ledc")==0 then
-			// Disconnect a LE Connection
-			rc = _hciLeDc()
+        elseif strcmp(tkn$, "ledc")==0 then
+            //Disconnect a LE Connection
+            rc = _hciLeDc()
 
-		endif
-	endwhile
+        endif
+    endwhile
 
 endsub
 
@@ -559,69 +572,69 @@ endsub
 //==============================================================================
 function HandlerInqResp(respType) as integer
 
-	dim ad$,dta$,ndx,rsi,tag, name$
+    dim ad$,dta$,ndx,rsi,tag, name$
 
-	// Get the report from the inquiry response
-	rc = BtcInquiryGetReport(ad$,dta$,ndx,rsi)
+    //Get the report from the inquiry response
+    rc = BtcInquiryGetReport(ad$,dta$,ndx,rsi)
 
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	if command == SMARTZ_COMMAND_HCITOOL_INQ then
-		// Display device address only
-		print "\n		"; StrHexize$(ad$)
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if command == SMARTZ_COMMAND_HCITOOL_INQ then
+        //Display device address only
+        print "\n        "; StrHexize$(ad$)
 
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	elseif command == SMARTZ_COMMAND_HCITOOL_SCAN then
-		// Display device name and address
-		print "\n		"; StrHexize$(ad$)
-		if respType == 2 then
-			// Get local name
-			tag = 0x09
-			rc=BtcGetEIRbyTag(dta$, tag, name$)
-			if rc == 0x5703 then
-				tag = 0x08
-				rc=BtcGetEIRbyTag(dta$, tag, name$)
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif command == SMARTZ_COMMAND_HCITOOL_SCAN then
+        //Display device name and address
+        print "\n        "; StrHexize$(ad$)
+        if respType == 2 then
+            //Get local name
+            tag = 0x09
+            rc=BtcGetEIRbyTag(dta$, tag, name$)
+            if rc == 0x5703 then
+                tag = 0x08
+                rc=BtcGetEIRbyTag(dta$, tag, name$)
 
-			endif
+            endif
 
-			if rc == 0 then
-				print "  ";name$
-			endif
-		else
-			print "  n/a"
-		endif
+            if rc == 0 then
+                print "  ";name$
+            endif
+        else
+            print "  n/a"
+        endif
 
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	elseif command == SMARTZ_COMMAND_HCITOOL_NAME then
-		// Only looking for name of specified address.
-		// If address is not the same, exit
-		if strcmp(ad$, addr$)!=0 then
-			exitfunc 1
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    elseif command == SMARTZ_COMMAND_HCITOOL_NAME then
+        //Only looking for name of specified address.
+        //If address is not the same, exit
+        if strcmp(ad$, addr$)!=0 then
+            exitfunc 1
 
-		else
-			print "\n		"; StrHexize$(ad$)
-			if respType == 2 then
-				//Get local name
-				tag = 0x09
-				rc=BtcGetEIRbyTag(dta$, tag, name$)
-				if rc == 0x5703 then
-					tag = 0x08
-					rc=BtcGetEIRbyTag(dta$, tag, name$)
-				endif
+        else
+            print "\n        "; StrHexize$(ad$)
+            if respType == 2 then
+                //Get local name
+                tag = 0x09
+                rc=BtcGetEIRbyTag(dta$, tag, name$)
+                if rc == 0x5703 then
+                    tag = 0x08
+                    rc=BtcGetEIRbyTag(dta$, tag, name$)
+                endif
 
-				if rc == 0 then
-					print "  ";name$
-				endif
+                if rc == 0 then
+                    print "  ";name$
+                endif
 
-			else
-				print "  n/a"
-			endif
-			// Found the device so cancel inquiry
-			rc = BtcInquiryCancel()
-			AssertResCode(rc)
-			print "\n";pr$
+            else
+                print "  n/a"
+            endif
+            //Found the device so cancel inquiry
+            rc = BtcInquiryCancel()
+            AssertResCode(rc)
+            print "\n";pr$
 
-		endif
-	endif
+        endif
+    endif
 
 endfunc 1
 
@@ -630,10 +643,10 @@ endfunc 1
 //==============================================================================
 function HandlerBtcInqTimOut() as integer
 
-	rc = BtcInquiryCancel()
-	AssertResCode(rc)
-	print "\n";pr$
-	command = SMARTZ_COMMAND_NONE
+    rc = BtcInquiryCancel()
+    AssertResCode(rc)
+    print "\n";pr$
+    command = SMARTZ_COMMAND_NONE
 
 endfunc 1
 
@@ -642,9 +655,9 @@ endfunc 1
 //==============================================================================
 function HandlerBtcDiscTimOut() as integer
 
-	//Set device discoverability depending on latest configuration
-	rc = BtcSetDiscoverable(nDiscv, 300)
-	AssertResCode(rc)
+    //Set device discoverability depending on latest configuration
+    rc = BtcSetDiscoverable(nDiscv, 300)
+    AssertResCode(rc)
 
 endfunc 1
 
@@ -653,8 +666,8 @@ endfunc 1
 //==============================================================================
 function HandlerPasskey(passkey)
 
-	print "\nPasskey: ";passkey;"\n"
-	print pr$
+    print "\nPasskey: ";passkey;"\n"
+    print pr$
 
 endfunc 1
 
@@ -663,25 +676,25 @@ endfunc 1
 //==============================================================================
 function HandlerAuthReq(reqType)
 
-	AuthType = reqType
-	if AuthType == EBTCAUTHKEYTYPE_NONE then
-			print "\nPair wih device (y/n)? "
+    AuthType = reqType
+    if AuthType == EBTCAUTHKEYTYPE_NONE then
+            print "\nPair wih device (y/n)? "
 
-	elseif AuthType == EBTCAUTHKEYTYPE_PASSKEY then
-			print "\nEnter passkey : "
+    elseif AuthType == EBTCAUTHKEYTYPE_PASSKEY then
+            print "\nEnter passkey : "
 
-	elseif reqType == EBTCAUTHKEYTYPE_OOB then
-			print "OOB pairing will be added in future versions\n"
-			exitfunc 1
+    elseif reqType == EBTCAUTHKEYTYPE_OOB then
+            print "OOB pairing will be added in future versions\n"
+            exitfunc 1
 
-	elseif AuthType == EBTCAUTHKEYTYPE_PIN then
-			print "\nEnter PIN : "
+    elseif AuthType == EBTCAUTHKEYTYPE_PIN then
+            print "\nEnter PIN : "
 
-	endif
+    endif
 
-	// Switch to Authentication mode as we are expecting user input
-	rc=SendMsgApp(0,AUTH_MODE)
-	AssertResCode(rc)
+    //Switch to Authentication mode as we are expecting user input
+    rc=SendMsgApp(0,AUTH_MODE)
+    AssertResCode(rc)
 
 endfunc 1
 
@@ -690,11 +703,11 @@ endfunc 1
 //==============================================================================
 function HandlerPairRes(res)
 
-	if res == 0 then
-		print "\nPaired\n";pr$
-	else
-		print "\nPairing attempt failed : ";res;"\n";pr$
-	endif
+    if res == 0 then
+        print "\nPaired\n";pr$
+    else
+        print "\nPairing attempt failed : ";res;"\n";pr$
+    endif
 
 endfunc 1
 
@@ -703,23 +716,23 @@ endfunc 1
 //==============================================================================
 function HandlerAdvRpt() as integer
 
-	dim ad$,dta$,ndisc,rsi,tag, nm$
-	rc = BleScanGetAdvReport(ad$,dta$,ndisc,rsi)
-	while rc==0
-		ad$ = right$(ad$,8)
-		print "\n		";strhexize$(ad$)
-		tag = 0x09
-		rc = BLEGETADBYTAG(dta$, tag, nm$)
-		if rc == 0x6060 then
-			tag = 0x08
-			rc = BLEGETADBYTAG(dta$, tag, nm$)
-		endif
+    dim ad$,dta$,ndisc,rsi,tag, nm$
+    rc = BleScanGetAdvReport(ad$,dta$,ndisc,rsi)
+    while rc==0
+        ad$ = right$(ad$,8)
+        print "\n        ";strhexize$(ad$)
+        tag = 0x09
+        rc = BLEGETADBYTAG(dta$, tag, nm$)
+        if rc == 0x6060 then
+            tag = 0x08
+            rc = BLEGETADBYTAG(dta$, tag, nm$)
+        endif
 
-		if rc == 0 then
-			print "  ";nm$
-		endif
-		rc = BleScanGetAdvReport(ad$,dta$,ndisc,rsi)
-	endwhile
+        if rc == 0 then
+            print "  ";nm$
+        endif
+        rc = BleScanGetAdvReport(ad$,dta$,ndisc,rsi)
+    endwhile
 
 endfunc 1
 
@@ -728,7 +741,7 @@ endfunc 1
 //==============================================================================
 function HandlerBleConnTimOut() as integer
 
-	print "\nCould not create connection: Connection timed out\n";pr$
+    print "\nCould not create connection: Connection timed out\n";pr$
 
 endfunc 1
 
@@ -737,9 +750,9 @@ endfunc 1
 //==============================================================================
 function HandlerBlrScanTimOut() as integer
 
-	rc = BleScanStop()
-	AssertResCode(rc)
-	print "\n";pr$
+    rc = BleScanStop()
+    AssertResCode(rc)
+    print "\n";pr$
 
 endfunc 1
 
@@ -748,26 +761,26 @@ endfunc 1
 //==============================================================================
 function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as integer
 
-	dim hz
+    dim hz
 
-	select nMsgId
+    select nMsgId
 
-	case BLE_EVBLEMSGID_CONNECT
-		hz = nCtx
-		// Add connection handle to list of connection handles
-		rc = AcqConnHandle(hz)
-		conns = conns + 1
-		print "\nConnection handle ";hz;"\n";pr$
+    case BLE_EVBLEMSGID_CONNECT
+        hz = nCtx
+        //Add connection handle to list of connection handles
+        rc = AcqConnHandle(hz)
+        conns = conns + 1
+        print "\nConnection handle ";hz;"\n";pr$
 
-	case BLE_EVBLEMSGID_DISCONNECT
-		// Release connection handle from list of connection handles
-		hz = nCtx
-		rc = RelConnHandle(hz)
-		conns = conns - 1
-		print "\nDisconnected\n";pr$
+    case BLE_EVBLEMSGID_DISCONNECT
+        //Release connection handle from list of connection handles
+        hz = nCtx
+        rc = RelConnHandle(hz)
+        conns = conns - 1
+        print "\nDisconnected\n";pr$
 
-	case else
-		//Unknown Ble Msg
+    case else
+        //Unknown Ble Msg
 
   endselect
 
@@ -778,63 +791,63 @@ endfunc 1
 //==============================================================================
 function HandlerUartAuth() as integer
 
-	// Upon gettting the carriage return send the (y/n), passkey, or PIN
+    //Upon gettting the carriage return send the (y/n), passkey, or PIN
 
-	dim nMatch
+    dim nMatch
 
-	nMatch=UartReadMatch(stRsp$,13)
-	if nMatch!=0 then
-		//CR exists in the input buffer
-		urtcmd$ = strsplitleft$(stRsp$, nMatch)
-		tlen = ExtractStrToken(urtcmd$,tkn$)
-		if AuthType == EBTCAUTHKEYTYPE_NONE then
-			// If the user has entered (y), then pair
-			if strcmp(tkn$,"y")==0 then
-				rc = BtcSendPAIRResp(1)
-				AssertResCode(rc)
-			else
-				rc = BtcSendPAIRResp(0)
-				AssertResCode(rc)
-			endif
+    nMatch=UartReadMatch(stRsp$,13)
+    if nMatch!=0 then
+        //CR exists in the input buffer
+        urtcmd$ = strsplitleft$(stRsp$, nMatch)
+        tlen = ExtractStrToken(urtcmd$,tkn$)
+        if AuthType == EBTCAUTHKEYTYPE_NONE then
+            //If the user has entered (y), then pair
+            if strcmp(tkn$,"y")==0 then
+                rc = BtcSendPAIRResp(1)
+                AssertResCode(rc)
+            else
+                rc = BtcSendPAIRResp(0)
+                AssertResCode(rc)
+            endif
 
-		elseif AuthType == EBTCAUTHKEYTYPE_PASSKEY then
-			// Send the extracted token as PASSKEY
-			dim nPasskey
-			tlen = ExtractIntToken(tkn$,nPasskey)
-			rc = BtcSecMngrPassKey(nPassKey)
-			AssertResCode(rc)
+        elseif AuthType == EBTCAUTHKEYTYPE_PASSKEY then
+            //Send the extracted token as PASSKEY
+            dim nPasskey
+            tlen = ExtractIntToken(tkn$,nPasskey)
+            rc = BtcSecMngrPassKey(nPassKey)
+            AssertResCode(rc)
 
-		elseif AuthType == EBTCAUTHKEYTYPE_PIN then
-			// Send the extracted token as PIN
-			rc = BtcSendPINResp(tkn$)
-			AssertResCode(rc)
+        elseif AuthType == EBTCAUTHKEYTYPE_PIN then
+            //Send the extracted token as PIN
+            rc = BtcSendPINResp(tkn$)
+            AssertResCode(rc)
 
-		endif
-		print pr$
+        endif
+        print pr$
 
-		// User input has been entered. Go back to normal mode
-		rc = SendMsgApp(0, NORMAL_MODE)
-		AssertResCode(rc)
+        //User input has been entered. Go back to normal mode
+        rc = SendMsgApp(0, NORMAL_MODE)
+        AssertResCode(rc)
 
-	endif
+    endif
 
 endfunc 1
 
 //------------------------------------------------------------------------------
 // Enable synchronous event handlers
 //------------------------------------------------------------------------------
-// hcitool related events (BTC)
-OnEvent EVINQRESP					call HandlerInqResp
-OnEvent	EVBTC_INQUIRY_TIMEOUT		call HandlerBtcInqTimOut
-OnEvent EVBTC_DISCOV_TIMEOUT		call HandlerBtcDiscTimOut
+//hcitool related events (BTC)
+OnEvent EVINQRESP              call HandlerInqResp
+OnEvent EVBTC_INQUIRY_TIMEOUT  call HandlerBtcInqTimOut
+OnEvent EVBTC_DISCOV_TIMEOUT   call HandlerBtcDiscTimOut
 
-// hcitool related events (BTC)
-OnEvent  EVBTC_PAIR_RESULT        	call HandlerPairRes
-OnEvent  EVBTC_AUTHREQ			  	call HandlerAuthReq
-OnEvent  EVBTC_PASSKEY			  	call HandlerPasskey
+//hcitool related events (BTC)
+OnEvent EVBTC_PAIR_RESULT      call HandlerPairRes
+OnEvent EVBTC_AUTHREQ          call HandlerAuthReq
+OnEvent EVBTC_PASSKEY          call HandlerPasskey
 
-// hcitool related events (BLE)
-OnEvent EVBLE_ADV_REPORT			call HandlerAdvRpt
-OnEvent EVBLE_SCAN_TIMEOUT       	call HandlerBlrScanTimOut
-OnEvent	EVBLE_CONN_TIMEOUT			call HandlerBleConnTimOut
-OnEvent EVBLEMSG                 	call HandlerBleMsg
+//hcitool related events (BLE)
+OnEvent EVBLE_ADV_REPORT       call HandlerAdvRpt
+OnEvent EVBLE_SCAN_TIMEOUT     call HandlerBlrScanTimOut
+OnEvent EVBLE_CONN_TIMEOUT     call HandlerBleConnTimOut
+OnEvent EVBLEMSG               call HandlerBleMsg

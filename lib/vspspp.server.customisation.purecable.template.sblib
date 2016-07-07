@@ -1,35 +1,49 @@
-//******************************************************************************
+// Copyright (c) 2015, Laird
+//
+// Permission to use, copy, modify, and/or distribute this software for any
+// purpose with or without fee is hereby granted, provided that the above
+// copyright notice and this permission notice appear in all copies.
+//
+// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+// ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
+// IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+//
+// SPDX-License-Identifier:ISC
 //
 //##############################################################################
-//#                                                                                     
-//#  BT900 VSP and SPP -> User customisation file                                  
-//#                                                                                     
-//#                                                                                     
+//#
+//#  BT900 VSP and SPP -> User customisation file
+//#
+//#
 //##############################################################################
-//# Version history in reverse chronological order                                      
+//# Version history in reverse chronological order
 //##############################################################################
-//#                                                                                     
-//#  ---------------------------------------------------------------------------   
+//# 
+//#  ---------------------------------------------------------------------------
 //#  ::Changelog::
-//#                                                                                                          
+//#
 //#   27/10/15 ->
 //#     Initial release
-//#  ---------------------------------------------------------------------------                                                                         
-//#                                                                                                          
+//#  ---------------------------------------------------------------------------
+//#
 //##############################################################################
 //
-//##############################################################################                                                                                                                                               
-//#                                                                                     
-//#  This file contains generic (for both VSP and SPP) hooks for the following events:
-//#  - Connection                                                                              
-//#  - Disconnection                                                                             
-//#  - New Bond                                                                             
-//#                                                                                     
-//#  These hooks are called by the main application at the appropriate times and
-//#  are provided for you to add extra functinality if you wish.                                                                            
-//#                                                                                     
 //##############################################################################
-//    
+//#
+//#  This file contains generic (for both VSP and SPP) hooks for the following events:
+//#  - Connection
+//#  - Disconnection
+//#  - New Bond
+//#
+//#  These hooks are called by the main application at the appropriate times and
+//#  are provided for you to add extra functinality if you wish.
+//#
+//##############################################################################
+//
 //
 //******************************************************************************
 
@@ -48,7 +62,7 @@
     //used in the name AD element. An advert cannot be > 31 characters
 #define BLE_MAX_DEVNAME_CHRS_IN_ADVERT        10
 
-    //set to 1 to enable encryption for VSP service (require bonding)
+    //Set to 1 to enable encryption for VSP service (require bonding)
 #define BLE_VSP_REQUIRE_ENCRYPTION            0     
 
     //Prefered minimum connection interval in microseconds 
@@ -78,15 +92,15 @@
 #define BLE_ADVERT_FLAGS_DISCOVERYMODE        FLAGS_GENERAL_DISCOVERY_MODE
 
     //Baud rate at which to open the UART
-#define UART_BAUDRATE                         (115200)         
+#define UART_BAUDRATE                         (115200)
 
-    // Timeout used by the app for managing the CCCD update
-#define TIMER_CONN_CCCD_BLE_DELAY_MS          (2500)  //must be < TIMER_CONN_ENC_BLE_DELAY_MS
-    // Timeout used by the app for ensuring connection state waits for encryption if appropriate
-#define TIMER_CONN_ENC_BLE_DELAY_MS           (5000)  //must be > TIMER_CONN_CCCD_BLE_DELAY_MS
-    // Timeout used do detect the inter-escape character delay
+    //Timeout used by the app for managing the CCCD update
+#define TIMER_CONN_CCCD_BLE_DELAY_MS          (2500)  //Must be < TIMER_CONN_ENC_BLE_DELAY_MS
+    //Timeout used by the app for ensuring connection state waits for encryption if appropriate
+#define TIMER_CONN_ENC_BLE_DELAY_MS           (5000)  //Must be > TIMER_CONN_CCCD_BLE_DELAY_MS
+    //Timeout used do detect the inter-escape character delay
 #define TIMER_BREAK_DATA_DELAY_MS             (150)
-                                                    
+
 //******************************************************************************
 // User Handler definitions
 //******************************************************************************
@@ -95,29 +109,29 @@
 // This will be called on startup just before the InitModule() is called
 //------------------------------------------------------------------------------
 sub OnModuleInitPre()
-endsub 
+endsub
 
 //------------------------------------------------------------------------------
 // This will be called on startup just after the InitModule() is called
 //------------------------------------------------------------------------------
 sub OnModuleInitPost()
-endsub 
+endsub
 
 //------------------------------------------------------------------------------
 // Called when a new bond has been established
 // nType is the type of connection: 0 - BLE (VSP), 1 - BTC (SPP)
 //------------------------------------------------------------------------------
-sub OnBond(byval addr$, nType) 
-  //do something here
+sub OnBond(byval addr$, nType)
+  //Do something here
 endsub
 
 //------------------------------------------------------------------------------
 // Called when a successful connection has been made 
 // nType is the type of connection: 0 - BLE (VSP), 1 - BTC (SPP)
 //------------------------------------------------------------------------------
-sub OnConnection(byval addr$, nType)  
-  //do something here
-endsub 
+sub OnConnection(byval addr$, nType)
+  //Do something here
+endsub
 
 //------------------------------------------------------------------------------
 // Called when **new** data has been received via the UART while bridged to a 
@@ -126,25 +140,20 @@ endsub
 // All the data that is still pending to be sent can be examined in 'UartRxBuffer$'
 //------------------------------------------------------------------------------
 sub OnUartData(byval rxData$)
-  //do something here with 'rxData$'
-endsub 
+  //Do something here with 'rxData$'
+endsub
 
 //------------------------------------------------------------------------------
 // Called when data has been received via the VSP or SPP port
 // 'rxData$' is the most recently received data - provided for processsing if needed
 //------------------------------------------------------------------------------
 sub OnWirelessData(byval rxData$) 
-  //do something here with 'rxData$'
+  //Do something here with 'rxData$'
 endsub
 
 //------------------------------------------------------------------------------
 // Called when a connection has been terminated
 //------------------------------------------------------------------------------
 sub OnHangup(hConn) 
-  //do something here
-endsub    
-
- 
-
-     
-                               
+  //Do something here
+endsub

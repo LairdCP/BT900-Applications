@@ -1,24 +1,37 @@
-'//******************************************************************************
-'// Laird Technologies (c) 2014
-'//
-'// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-'// ######                                                                #######
-'// ######        Library File meant to be #included in files             #######
-'// ######                                                                #######
-'// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-'//
-'// This library contains all the GPIO related #defines that will help to make 
-'// your app portable between smartBASIC modules
-'//
-'// Module: BT900
-'//
-'//******************************************************************************
+// Copyright (c) 2014, Laird
+//
+// Permission to use, copy, modify, and/or distribute this software for any
+// purpose with or without fee is hereby granted, provided that the above
+// copyright notice and this permission notice appear in all copies.
+//
+// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY
+// SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+// ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
+// IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+//
+// SPDX-License-Identifier:ISC
+//
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// ######                                                                #######
+// ######        Library File meant to be #included in files             #######
+// ######                                                                #######
+// +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//
+// This library contains all the GPIO related #defines that will help to make 
+// your app portable between smartBASIC modules
+//
+// Module: BT900
+//
+//******************************************************************************
 
-AssertBT900()       //this is to make sure the application doesn't compile if this 
+AssertBT900()       //This is to make sure the application doesn't compile if this 
                     //sblib file is #included for the wrong module
-'//******************************************************************************
-'// Definitions
-'//******************************************************************************
+//******************************************************************************
+// Definitions
+//******************************************************************************
 #define DEV_ID                  SysInfo(0)
 #define GPIO_BUZZER             12
 
@@ -49,21 +62,16 @@ AssertBT900()       //this is to make sure the application doesn't compile if th
 //-----------------------------------------------------------------------------
 function Adc2Mv(adc)
 
-	if sysinfo(2301) == 0 then
-		adc = (1200 * adc)/1023
-	elseif sysinfo(2301) == 2 then
-		adc = (3300 * adc)/4095	
-	endif
+    if sysinfo(2301) == 0 then
+        adc = (1200 * adc)/1023
+    elseif sysinfo(2301) == 2 then
+        adc = (3300 * adc)/4095    
+    endif
 
 endfunc adc
 //-----------------------------------------------------------------------------
 //  ((1864-mV)*16)/1889 * 10 in 10th of mV
 //-----------------------------------------------------------------------------
 function Mv2Temperature(mv)
-// endfunc (mv/-1167) - (185830/-1167)
+//endfunc (mv/-1167) - (185830/-1167)
 endfunc ((1864-mV) * 160)/189
-
-
-
-
-
