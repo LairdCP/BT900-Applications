@@ -66,7 +66,7 @@
 //     -uuid    :   Display iBeacon UUID
 //     -major   :   Display iBeacon Major value
 //     -minor   :   Display iBeacon Minor value
-//     -tx      :   Display iBeacon UUID
+//     -tx      :   Display iBeacon TX Power
 //     -all     :   Display all iBeacon data (all of the above)
 //     -none    :   Display no iBeacon data - just the device name, BT address and RSSI
 //     -other   :   Display any other AD tags
@@ -373,6 +373,8 @@ dim charIndex                 //Index of current characteristic being found/proc
 
 dim ltBseUuid$                //LT Base UUID
 dim hBseUuid                  //Handle if the LT Base UUID
+
+dim HasBatteryService         //Set to 1 if the battery service is found
 
 
 //******************************************************************************
@@ -901,7 +903,14 @@ function OnUartCmd() as integer
             rc=_iBeaconConfig(REM_CONN_TME_INDEX)
 
         elseif strcmp(tkn$,"batt")==0 then
-            rc=_iBeaconConfig(BATTLVL_INDEX)
+            if HasBatteryService == 1 then
+                //Battery service present
+                rc=_iBeaconConfig(BATTLVL_INDEX)
+            else
+                //Battery service not present
+                print "\nConnected device does not have battery service"
+                rc=-2
+            endif
 
         else
             rc=-4   //Send an "UNKNOWN COMMAND" response to user
@@ -1014,6 +1023,7 @@ function HandlerBleMsg(BYVAL nMsgId AS INTEGER, BYVAL nCtx AS INTEGER) as intege
         case BLE_EVBLEMSGID_CONNECT
             numConns = numConns + 1
             print "\n\nCONNECT"
+            HasBatteryService = 0
 
             //Get handle of the device name characteristic
             charIndex = DVC_NME_INDEX
@@ -1044,7 +1054,15 @@ endfunc 1
 //------------------------------------------------------------------------------
 function HandlerFindChar(hConn, chProps, hCharVal, hIncSvc)
     if hCharVal == 0 then
-        print "\nLaird iBeacon Service not found. Disconnecting..."
+        if charIndex == NUM_OF_CHARS-1 then
+            //Battery service not found
+            print "\nDone\n"
+            UartRsp(-2)
+        else
+            //Required characteristic not found
+            print "\nLaird iBeacon Service not found. Disconnecting..."
+            rc = BleDisconnect(hc[0])
+        endif
         exitfunc 1
     endif
 
@@ -1060,6 +1078,7 @@ function HandlerFindChar(hConn, chProps, hCharVal, hIncSvc)
 
         //All chars have been found if current index is NUM_OF_CHARS
         if charIndex == NUM_OF_CHARS then
+            HasBatteryService = 1
             print "\nDone\n"
             UartRsp(-2)
             exitfunc 1
