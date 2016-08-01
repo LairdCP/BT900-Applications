@@ -606,6 +606,8 @@
 #define NUM_OF_I_PARAMS                                 (8)
         //Size of s$[] and must be at least 8 elements for BleSvcRegDevInfo()
 #define NUM_OF_S_PARAMS                                 (8)
+        //Number of whitelists available
+#define NUM_OF_WHITELIST                                2
 
 #define VSP_MAX_CHARDATA_LEN                            (20)
 #define VSP_RX_CHAR_HANDLE                              (17)
