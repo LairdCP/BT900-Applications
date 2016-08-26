@@ -2374,7 +2374,7 @@ endfunc 1
 //==============================================================================
 // This handler is called when there is a scan attempt timeout
 //==============================================================================
-function HandlerFastPaged() as integer
+function HandlerFastPage() as integer
   dim ad$,rsi
   rc = BleScanGetPagerAddr(ad$,rsi)
   if rc != 0 then
@@ -2680,7 +2680,7 @@ OnEvent  EVBLEMSG                 call HandlerBleMsg
 OnEvent  EVBLE_CONN_TIMEOUT       call HandlerBlrConnTimOut
 OnEvent  EVBLE_SCAN_TIMEOUT       call HandlerBlrScanTimOut
 OnEvent  EVBLE_ADV_REPORT         call HandlerAdvRpt
-OnEvent  EVBLE_FAST_PAGED         call HandlerFastPaged
+OnEvent  EVBLE_FAST_PAGED         call HandlerFastPage
 
 OnEvent  EVDISCPRIMSVC            call HandlerPrimSvc
 OnEvent  EVDISCCHAR               call HandlerCharDisc
