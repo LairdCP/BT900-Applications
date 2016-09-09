@@ -578,7 +578,7 @@ FUNCTION HndlrBleMsg(nMsgId, nCtx)
         rc = BleGetAddrFromConnHandle(nCtx, addr$)
         if (rc==0) then
             if (BleBondingIsTrusted(addr$,fAsCentral,info,rollingAge,rollingCount)>0) then
-                rc = BleEncryptConnection(nCtx, 7, 1)   //Might not need this
+                rc = BleEncryptConnection(nCtx, 7, 0)   //Might not need this
             endif
         endif
 
