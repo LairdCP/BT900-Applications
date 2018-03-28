@@ -828,6 +828,7 @@ function _btc()
         endif
 
         s$[1] = StrDehexize$(s$[1])
+        prAddr$ = s$[1]
         exitfunc BtcPair(s$[1], StrValDec(s$[2]))
     endif
 
@@ -1157,23 +1158,24 @@ endfunc 1
 // Called when there is a pairing request from another device
 //==============================================================================
 function HandlerAuthReq(reqType) 
-    dim mac$
-    rc=BtcGetPairRequestBDAddr(mac$)
-    prAddr$ = mac$
-    if rc==0 then
         if reqType == EBTCAUTHKEYTYPE_NONE then
-            print "\nPair Req: "; StrHexize$(mac$);pr$
+            rc=BtcGetPairRequestBDAddr(prAddr$)
+            print "\nPair Req: "
         elseif reqType == EBTCAUTHKEYTYPE_PASSKEY then
-            print "\nPasskey Req: "; StrHexize$(mac$);pr$
+            rc=BtcGetPairRequestBDAddr(prAddr$)
+            print "\nPasskey Req: "
         elseif reqType == EBTCAUTHKEYTYPE_OOB then
-            print "\nOOB Req: "; StrHexize$(mac$);pr$
+            rc=BtcGetPairRequestBDAddr(prAddr$)
+            print "\nOOB Req: "
         elseif reqtype == EBTCAUTHKEYTYPE_PIN then
-            print "\nPIN Req: "; StrHexize$(mac$);pr$
-        endif    
-    else
-        AssertResCode(rc,2277)
-    endif
+            rc=BtcGetPinRequestBDAddr(prAddr$)
+            print "\nPIN Req: "
+        endif
+        print StrHexize$(prAddr$);pr$
 
+        if rc!=0 then
+            AssertResCode(rc,2277)
+        endif
 endfunc 1
 
 //==============================================================================
@@ -1200,7 +1202,6 @@ endfunc 1
 function HandlerPairRes(res)
     print "\nPair Result: ";res; " "; StrHexize$(prAddr$);pr$
 endfunc 1
-
 
 //==============================================================================
 // Called after an SPP connection attempt
