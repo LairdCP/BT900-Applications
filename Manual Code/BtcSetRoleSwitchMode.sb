@@ -1,0 +1,10 @@
+//Example :: BtcSetRoleSwitchMode.sb
+dim rc
+
+rc = BtcSetRoleSwitchMode(0)
+
+if (rc == 0) then
+    print "Disabled role switch successfully\n"
+else
+    print "Error disabled role switch, rc = ";integer.h'rc;"\n"
+endif
