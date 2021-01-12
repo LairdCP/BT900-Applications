@@ -1,0 +1,47 @@
+//Example :: BtcSppSetRequireEncryption.sb
+dim rc, hSpp, n$, a$
+
+function HandlerSppConn(portHandle, result)
+    print "Device connected\n"
+endfunc 1
+
+function HandlerSppData() 
+    dim hPort, data$, readLen
+
+    //Read and print data while there is data available to read
+    while BtcSppRead(hPort, data$, readLen) == 0  
+         if readLen > 0 then
+             print data$
+         endif
+    endwhile
+endfunc 1
+
+function HandlerNoEnc(BYVAL Addr$ AS STRING)
+    print "Device attempted to connect without encryption: ";strhexize$(Addr$);"\n"
+endfunc 1
+
+//Require encryption to connect to SPP
+BtcSppSetRequireEncryption(1)
+
+rc = BtcSppOpen(hSpp)
+
+if rc == 0 then
+    print "SPP service opened\n"
+else
+    print "Failed to open SPP service, rc = ";integer.h'rc;"\n"
+endif
+
+OnEvent EVSPPCONN call HandlerSppConn
+OnEvent EVBTC_SPP_DATA_RECEIVED call HandlerSppData
+OnEvent EVBTC_CONN_NOENC call HandlerNoEnc
+
+rc = BtcSetConnectable(1)
+rc = BtcSetDiscoverable(1, 60)
+rc = BtcSppOpen(hSpp)
+
+rc = BtcGetFriendlyName(n$)
+a$ = SysInfo$(4)
+print "\n";n$;" : ";StrHexize$(a$)
+print "\nModule is Discoverable. Make an SPP connection\n"
+
+WaitEvent
